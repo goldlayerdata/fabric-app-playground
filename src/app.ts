@@ -179,18 +179,21 @@ function saveProject() {
 }
 
 /** Replace the whole project (a checkpoint, reset, undo), keeping the old one for one undo. */
-function replaceProject(next: Project, note: string) {
+function replaceProject(next: Project, note: string, open?: string) {
   const previous = project;
+  const wasOpen = activeFile;
   project = JSON.parse(JSON.stringify(next));
   saveProject();
   syncModels();
-  const first = Object.keys(project.files).includes(PAGE_FILE) ? PAGE_FILE : Object.keys(project.files)[0];
+  const first =
+    open && open in project.files ? open : Object.keys(project.files).includes(PAGE_FILE) ? PAGE_FILE : Object.keys(project.files)[0];
   if (first) openFile(first);
   else showNoFiles();
   renderPrompt();
   updateDoneTick();
   runNow();
-  showUndo(note, () => replaceProject(previous, 'Undone.'));
+  // Undo goes back to the file that was open, too.
+  showUndo(note, () => replaceProject(previous, 'Undone.', wasOpen));
 }
 
 const squash = (s: string) => s.replace(/\s+/g, ' ').trim();
@@ -982,7 +985,11 @@ function renderFiles() {
       p.split('/').pop()!,
     );
     b.addEventListener('click', () => openFile(p));
-    return b;
+    if (p !== activeFile || isGenerated(p, project.files[p])) return b;
+    // The open file can be deleted (a slip like a mistyped name); Undo brings it back.
+    const del = h('button', { type: 'button', class: 'file-del', title: `Delete ${p}`, 'aria-label': `Delete ${p}` }, '×');
+    del.addEventListener('click', () => deleteFile(p));
+    return h('span', { class: 'file-pair' }, b, del);
   });
   const add = h('button', { type: 'button', class: 'file add', title: 'Create a file in the project' }, '+ New file');
   add.addEventListener('click', newFile);
@@ -992,6 +999,12 @@ function renderFiles() {
     ...items,
     add,
   );
+}
+
+function deleteFile(path: string) {
+  const next: Project = JSON.parse(JSON.stringify(project));
+  delete next.files[path];
+  replaceProject(next, `Deleted ${path}.`);
 }
 
 function newFile() {

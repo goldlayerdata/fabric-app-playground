@@ -22,6 +22,11 @@ export const terms = [
 
 export const help = [
   {
+    symptom: 'A file with the wrong name, or one you do not need',
+    cause: '**+ New file** creates whatever path you type.',
+    fix: 'Open the file and press **×** next to its name. Undo brings it back.',
+  },
+  {
     symptom: '"Playground: Not simulated here" in the terminal',
     cause: 'The terminal simulates only the commands this course uses.',
     fix: 'Type `help` for the list, or use **Do it for me** on the step.',
