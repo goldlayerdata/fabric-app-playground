@@ -18,7 +18,7 @@
 //   see     optional: what is visible once it's done
 //   why     optional: the explanation, shown under "see" in a quieter style
 //   file    optional: the file the step is about (its tab opens). Default: the file of its first edit.
-//   find    optional: text to mark in that file (blue), and select with "Show me in the code"
+//   find    optional: text to mark in that file (pink), and select with "Show me in the code"
 //   point   optional: a part of the playground to outline: editor, files, preview, status (the query
 //           count), terminal, log, queries, terms, run, reset
 //   edits   optional: the exact change, as [{ file?, from, to, all? }] (file defaults to src/App.tsx;
@@ -111,7 +111,7 @@ export const lessons = [
       {
         do: 'The code area is where we read and write those files.',
         point: 'editor',
-        see: 'Empty too. When a step is about some code, that code is marked in blue.',
+        see: 'Empty too. When a step is about some code, that code is marked in pink.',
         why: 'Our code is TypeScript: JavaScript, plus [[types|type]] that say what kind of value goes where. The editor checks it as we type and underlines problems in red.',
       },
       {
@@ -141,7 +141,7 @@ export const lessons = [
     ],
     summary: [
       'Files and code on the left, the page on the right, the terminal and the queries under it.',
-      'Blue marks show where a step is. **Do it for me** is always there for steps that change something.',
+      'Pink marks show where a step is. **Do it for me** is always there for steps that change something.',
       'Commands and data are simulated. Nothing connects to Fabric.',
     ],
     fabric: {
@@ -985,7 +985,7 @@ export const lessons = [
         do: 'Look at the list at the end of `useDax`, in `src/data.ts`.',
         file: DATA,
         find: '}, [runDax, query]);',
-        see: '`[runDax, query]`, marked in blue.',
+        see: '`[runDax, query]`, marked in pink.',
         why: '`useDax` runs its query again whenever something in this [[dependency list|dependency-list]] changes. A new year means new query text, so it runs again.',
       },
     ],

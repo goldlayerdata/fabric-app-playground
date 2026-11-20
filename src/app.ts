@@ -717,7 +717,7 @@ function markFind(step?: Step) {
   const matches = model.findMatches(text, false, false, true, null, false);
   if (!matches.length) return;
   findMarks = editor.createDecorationsCollection([
-    { range: matches[0].range, options: { className: 'find-mark', overviewRuler: { color: '#5fe3f0', position: monaco.editor.OverviewRulerLane.Center } } },
+    { range: matches[0].range, options: { className: 'find-mark', overviewRuler: { color: '#ff7fb5', position: monaco.editor.OverviewRulerLane.Center } } },
   ]);
   editor.revealRangeInCenterIfOutsideViewport(matches[0].range);
 }
@@ -885,8 +885,8 @@ monaco.editor.defineTheme('gold-layer', {
     'editor.background': '#0a1328',
     'editor.lineHighlightBackground': '#111c38',
     'editorLineNumber.foreground': '#4a5a82',
-    'editorLineNumber.activeForeground': '#5fe3f0',
-    'editorCursor.foreground': '#5fe3f0',
+    'editorLineNumber.activeForeground': '#ff7fb5',
+    'editorCursor.foreground': '#ff7fb5',
     'editor.selectionBackground': '#2b3d6b',
     'editorWidget.background': '#111c38',
   },
@@ -1509,9 +1509,9 @@ function renderAbout() {
   const a = (href: string, text: string) => h('a', { href, target: '_blank', rel: 'noopener' }, text);
   $('tab-about').append(
     p(
-      h('b', {}, 'A Gold Layer Lab playground. '),
-      'Unofficial, and not affiliated with Microsoft. It is for Power BI developers who want to read and write the code of a Fabric app, from an empty folder to a reviewed report. More experiments are in the ',
-      a('https://goldlayerdata.com/lab.html', 'Lab'),
+      h('b', {}, 'A Gold Layer tool. '),
+      'Unofficial, and not affiliated with Microsoft. It is for Power BI developers who want to read and write the code of a Fabric app, from an empty folder to a reviewed report. More free tools are on the ',
+      a('https://goldlayerdata.com/tools.html', 'Tools page'),
       ', and articles and shorts on ',
       a('https://goldlayerdata.com/', 'goldlayerdata.com'),
       '.',
