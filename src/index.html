@@ -3,16 +3,18 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Page playground · Gold Layer</title>
-    <meta name="description" content="Script a report-style page in TypeScript and React, with simulated data from a Contoso model. A Gold Layer playground for Power BI developers. Unofficial, not affiliated with Microsoft." />
+    <title>Page playground · Gold Layer Lab</title>
+    <meta name="description" content="Script a report-style page in TypeScript and React, with simulated data from a Contoso model. A Gold Layer Lab playground for Power BI developers. Unofficial, not affiliated with Microsoft." />
+    <meta name="theme-color" content="#0A1328" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="assets/app.css" />
   </head>
   <body>
     <div class="splash" id="splash" role="dialog" aria-modal="true" aria-labelledby="splash-title">
       <div class="splash-card">
-        <p class="splash-brand"><span class="brand-mark" aria-hidden="true"></span> Gold Layer</p>
-        <h1 id="splash-title">Page playground</h1>
-        <p class="splash-lead">Build a Fabric app from an empty folder, one step at a time.</p>
+        <p class="splash-brand"><a class="brand-home" href="https://goldlayerdata.com/" title="Gold Layer, home"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16.6 12 21.2 21 16.6" fill="none" stroke="#2A4A8C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 12.1 12 16.7 21 12.1" fill="none" stroke="#4069C4" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 3 21 7.6 12 12.2 3 7.6Z" fill="#F2C811" stroke="#F2C811" stroke-width="1.2" stroke-linejoin="round"/></svg> Gold Layer</a> <span class="brand-lab">Lab</span> <span class="brand-sep">/</span> Page playground</p>
+        <h1 id="splash-title">Build a Fabric app, one step at a time.</h1>
+        <p class="splash-lead">From an empty folder to a report page on a semantic model. Nothing to install.</p>
         <p class="splash-sub">For Power BI developers who know DAX and have never written TypeScript. We create the project, connect a semantic model, build a report page, and review a page an agent wrote.</p>
         <ol class="splash-modules" id="splash-modules" start="0"></ol>
         <div class="splash-actions">
@@ -20,15 +22,33 @@
           <button type="button" class="link-btn" id="splash-restart" hidden title="Empties the project and clears progress. Undo is offered.">Restart the whole course</button>
         </div>
         <p class="splash-progress" id="splash-progress"></p>
+        <p class="splash-site">
+          <span>More from Gold Layer:</span>
+          <a href="https://goldlayerdata.com/">Articles</a>
+          <a href="https://goldlayerdata.com/shorts.html">Shorts</a>
+          <a class="here" href="https://goldlayerdata.com/lab.html">Lab</a>
+          <a href="https://goldlayerdata.com/tools.html">Tools</a>
+        </p>
+        <p class="splash-site splash-follow">
+          <span>Follow:</span>
+          <a href="https://www.youtube.com/@goldlayerdata" target="_blank" rel="me noopener">YouTube</a>
+          <a href="https://www.instagram.com/goldlayerdata/" target="_blank" rel="me noopener">Instagram</a>
+          <a href="https://www.tiktok.com/@goldlayerdata" target="_blank" rel="me noopener">TikTok</a>
+          <a href="https://www.linkedin.com/in/jonathanpapworth/" target="_blank" rel="me noopener">LinkedIn</a>
+          <a href="https://github.com/goldlayerdata" target="_blank" rel="me noopener">GitHub</a>
+        </p>
         <p class="splash-note">Simulated: nothing here connects to Fabric or Power BI. Unofficial, and not affiliated with Microsoft. Made for a desktop browser.</p>
       </div>
     </div>
     <header class="top">
-      <div class="brand" id="brand" role="button" tabindex="0" title="Show the start screen">
-        <span class="brand-mark" aria-hidden="true"></span>
-        <span class="brand-name">Gold Layer</span>
+      <div class="brand">
+        <a class="brand-home" href="https://goldlayerdata.com/lab.html" target="_blank" rel="noopener" title="Gold Layer Lab on goldlayerdata.com (opens in a new tab)"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16.6 12 21.2 21 16.6" fill="none" stroke="#2A4A8C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 12.1 12 16.7 21 12.1" fill="none" stroke="#4069C4" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 3 21 7.6 12 12.2 3 7.6Z" fill="#F2C811" stroke="#F2C811" stroke-width="1.2" stroke-linejoin="round"/></svg> Gold Layer</a>
         <span class="brand-sep">/</span>
-        <span class="brand-page">Page playground</span>
+        <span class="brand-here" id="brand" role="button" tabindex="0" title="Show the start screen">
+          <span class="brand-lab">Lab</span>
+          <span class="brand-sep">/</span>
+          <span class="brand-page">Page playground</span>
+        </span>
       </div>
       <button type="button" class="course-btn" id="btn-course" aria-expanded="false" aria-controls="course">
         <span class="burger" aria-hidden="true">☰</span>

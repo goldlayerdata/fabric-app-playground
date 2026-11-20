@@ -18,7 +18,7 @@
 //   see     optional: what is visible once it's done
 //   why     optional: the explanation, shown under "see" in a quieter style
 //   file    optional: the file the step is about (its tab opens). Default: the file of its first edit.
-//   find    optional: text to mark in that file (gold), and select with "Show me in the code"
+//   find    optional: text to mark in that file (blue), and select with "Show me in the code"
 //   point   optional: a part of the playground to outline: editor, files, preview, status (the query
 //           count), terminal, log, queries, terms, run, reset
 //   edits   optional: the exact change, as [{ file?, from, to, all? }] (file defaults to src/App.tsx;
@@ -111,7 +111,7 @@ export const lessons = [
       {
         do: 'The code area is where we read and write those files.',
         point: 'editor',
-        see: 'Empty too. When a step is about some code, that code is marked in gold.',
+        see: 'Empty too. When a step is about some code, that code is marked in blue.',
         why: 'Our code is TypeScript: JavaScript, plus [[types|type]] that say what kind of value goes where. The editor checks it as we type and underlines problems in red.',
       },
       {
@@ -141,7 +141,7 @@ export const lessons = [
     ],
     summary: [
       'Files and code on the left, the page on the right, the terminal and the queries under it.',
-      'Gold marks show where a step is. **Do it for me** is always there for steps that change something.',
+      'Blue marks show where a step is. **Do it for me** is always there for steps that change something.',
       'Commands and data are simulated. Nothing connects to Fabric.',
     ],
     fabric: {
@@ -298,7 +298,7 @@ export const lessons = [
         see: 'Red lines under `baseUrl` and `publishableKey`. The next two cards explain the code, then the red lines.',
       },
       {
-        do: 'Look at the gold-marked `connectorsService`.',
+        do: 'Look at the marked `connectorsService`.',
         file: CLIENT,
         find: 'connectorsService<AppConnectorsSchema>',
         see: '`RayfinClient.create` makes the one client the app uses. `auth: browserSession(…)` handles the signed-in session. `connectorsService` registers our connectors: `configs` tells the client each connector\'s type (the ids stay in `rayfin.yml`), and `runtime: fabricSemanticModel()` turns the model\'s answer into a result the page can read.',
@@ -312,7 +312,7 @@ export const lessons = [
         why: 'That is the red line: the client needs text for `baseUrl`. `import.meta.env` holds the values `rayfin dev` writes for us.',
       },
       {
-        do: 'Back in `src/services/rayfinClient.ts`, check the values first: replace the gold-marked lines with these.',
+        do: 'Back in `src/services/rayfinClient.ts`, check the values first: replace the marked lines with these.',
         code: C.CLIENT_ENV_TO,
         file: CLIENT,
         edits: [{ file: CLIENT, from: C.CLIENT_ENV_FROM, to: C.CLIENT_ENV_TO }],
@@ -325,7 +325,7 @@ export const lessons = [
         edits: [{ file: APP, from: '', to: C.TEST_PAGE }],
         find: 'rayfinClient.connectors.contoso',
         see: 'The page shows **Revenue: 150632573.6073**, and the Log shows the query.',
-        why: 'Read only the gold-marked call: it is the one line that talks to the model. The rest is replaced in the next lesson, and each part comes back later. (In a real project, Rayfin\'s docs say to test connector queries against a deployed app: `rayfin dev` doesn\'t wire connectors.)',
+        why: 'Read only the marked call: it is the one line that talks to the model. The rest is replaced in the next lesson, and each part comes back later. (In a real project, Rayfin\'s docs say to test connector queries against a deployed app: `rayfin dev` doesn\'t wire connectors.)',
       },
     ],
     summary: [
@@ -360,7 +360,7 @@ export const lessons = [
         see: 'A dashed box around each visual: the grid cells it takes.',
       },
       {
-        do: 'Look at the gold-marked line: the canvas.',
+        do: 'Look at the marked line: the canvas.',
         file: APP,
         find: 'grid grid-cols-12 grid-rows-6',
         see: '`grid-cols-12 grid-rows-6` makes the 12 × 6 grid; `aspect-video` keeps it 16:9.',
@@ -415,14 +415,14 @@ export const lessons = [
         why: '`export` lets other files use it.',
       },
       {
-        do: 'In `src/App.tsx`, add this line at the very top, above the gold-marked line:',
+        do: 'In `src/App.tsx`, add this line at the very top, above the marked line:',
         code: "import { KpiCard } from './components';",
         edits: [{ file: APP, from: 'export default function App() {', to: `${COMP_IMPORT}\nexport default function App() {` }],
         see: 'Nothing changes yet.',
         why: '`./components` is our `src/components.tsx`; imports leave out the `.tsx`.',
       },
       {
-        do: 'Replace the gold-marked Revenue card with the component:',
+        do: 'Replace the marked Revenue card with the component:',
         code: '<div className="col-span-4 row-span-2">\n  <KpiCard title="Revenue (USD)" value={150632573.6} />\n</div>',
         edits: [
           {
@@ -449,7 +449,7 @@ export const lessons = [
         see: 'Narrower cards, and space beside them. The chart stays pinned on the right.',
       },
       {
-        do: 'Add a third card, on a new line under the gold-marked `</div>` of the Orders card:',
+        do: 'Add a third card, on a new line under the marked `</div>` of the Orders card:',
         code: '<div className="col-span-2 row-span-2">\n  <KpiCard title="Customers" value={7297} />\n</div>',
         edits: [
           {
@@ -509,7 +509,7 @@ export const lessons = [
         see: 'The red line goes.',
       },
       {
-        do: 'Hover over the gold-marked `KpiCard`.',
+        do: 'Hover over the marked `KpiCard`.',
         file: APP,
         find: 'KpiCard title="Revenue (USD)"',
         see: 'Its props and their types, read from `src/components.tsx`.',
@@ -544,13 +544,13 @@ export const lessons = [
         why: 'We don\'t need every line of it. Two parts matter, and the next two cards mark them.',
       },
       {
-        do: 'Look at the gold-marked `runDax`.',
+        do: 'Look at the marked `runDax`.',
         file: DATA,
         find: 'export const runDax',
         see: 'One line: it sends a DAX query through our client, the same call as the test page.',
       },
       {
-        do: 'Look at the gold-marked `useDax`.',
+        do: 'Look at the marked `useDax`.',
         file: DATA,
         find: 'export function useDax',
         see: 'Like a visual loading: `undefined` while it waits, then the model\'s result.',
@@ -564,38 +564,38 @@ export const lessons = [
         why: '`.map` makes one bar for each row. `toBars` reads `row[0]` as the label and `row[1]` as the value: positions, counted from 0. Keep that in mind.',
       },
       {
-        do: 'In `src/App.tsx`, add this import on a new line under the gold-marked one:',
+        do: 'In `src/App.tsx`, add this import on a new line under the marked one:',
         code: DATA_IMPORT_1,
         edits: [{ file: APP, from: COMP_IMPORT, to: `${COMP_IMPORT}${DATA_IMPORT_1}\n` }],
         see: 'Nothing on the page yet.',
       },
       {
-        do: 'Run the query: add these lines on new lines under the gold-marked `export default function App() {`.',
+        do: 'Run the query: add these lines on new lines under the marked `export default function App() {`.',
         code: COUNTRIES_LINES.replace(/^ {2}/gm, ''),
         edits: [{ from: 'export default function App() {\n', to: `export default function App() {\n${COUNTRIES_LINES}\n` }],
         see: 'In the Log, the query and what came back: a `status`, `columns` (their names) and `rows` (lists of values).',
         why: '`a ? b : c` works like `IF(a, b, c)`: no result yet, no bars.',
       },
       {
-        do: 'Now the chart. In `src/components.tsx`, add this line at the very top, above the gold-marked line:',
+        do: 'Now the chart. In `src/components.tsx`, add this line at the very top, above the marked line:',
         code: "import type { Bar } from './data';",
         edits: [{ file: COMP, from: 'type KpiCardProps = {', to: "import type { Bar } from './data';\n\ntype KpiCardProps = {" }],
         see: 'Nothing changes yet.',
         why: '`import type` brings in only a type, here the shape of one bar.',
       },
       {
-        do: 'At the end of `src/components.tsx`, under the gold-marked end of `KpiCard`, add the bar chart:',
+        do: 'At the end of `src/components.tsx`, under the marked end of `KpiCard`, add the bar chart:',
         code: C.BAR_LIST.trimStart(),
         edits: [{ file: COMP, from: `${KPI_VALUE_LINE}    </div>\n  );\n}\n`, to: `${KPI_VALUE_LINE}    </div>\n  );\n}\n${C.BAR_LIST}` }],
         see: 'Nothing on the page yet.',
       },
       {
-        do: 'In `src/App.tsx`, add `BarList` to the gold-marked import: `import { BarList, KpiCard } from \'./components\';`',
+        do: 'In `src/App.tsx`, add `BarList` to the marked import: `import { BarList, KpiCard } from \'./components\';`',
         edits: [{ file: APP, from: "import { KpiCard } from './components';", to: "import { BarList, KpiCard } from './components';" }],
         see: 'Nothing changes yet.',
       },
       {
-        do: 'Draw the bars: on a new line under the gold-marked chart title, add:',
+        do: 'Draw the bars: on a new line under the marked chart title, add:',
         code: '<BarList rows={countries} />',
         edits: [
           {
@@ -613,13 +613,13 @@ export const lessons = [
         why: '`toTotals` finds each column by its name, such as `[Orders]`.',
       },
       {
-        do: 'In `src/App.tsx`, replace the gold-marked import from `./data` with:',
+        do: 'In `src/App.tsx`, replace the marked import from `./data` with:',
         code: DATA_IMPORT_2,
         edits: [{ from: DATA_IMPORT_1, to: DATA_IMPORT_2 }],
         see: 'Nothing changes yet.',
       },
       {
-        do: 'Run the totals query: add these lines under the gold-marked `const countries = …` line.',
+        do: 'Run the totals query: add these lines under the marked `const countries = …` line.',
         code: TOTALS_LINES.replace(/^ {2}/gm, ''),
         edits: [{ from: '  const countries = countriesResult ? toBars(countriesResult) : [];\n', to: `  const countries = countriesResult ? toBars(countriesResult) : [];\n${TOTALS_LINES}` }],
         see: 'In the Log: a second query.',
@@ -655,7 +655,7 @@ export const lessons = [
     idea: '`toBars` reads `row[1]` as the value. That holds only while the DAX keeps its columns in that order. Let\'s change the DAX, the way an agent might.',
     steps: [
       {
-        do: 'Change the DAX the way an agent might (we take it out again at the end): in `src/data.ts`, add an Orders column above the gold-marked `"Revenue", [Revenue]` line.',
+        do: 'Change the DAX the way an agent might (we take it out again at the end): in `src/data.ts`, add an Orders column above the marked `"Revenue", [Revenue]` line.',
         code: '"Orders", [# Orders],',
         edits: [{ file: DATA, from: COUNTRY_ROW, to: COUNTRY_ROW_ORDERS }],
         see: 'The bars now show order counts: United States 22,824. No red line, no error.',
@@ -667,7 +667,7 @@ export const lessons = [
         why: 'So `row[1]`, the second column, is now Orders.',
       },
       {
-        do: 'Look columns up by name instead. In `src/data.ts`, replace the gold-marked `toBars` with this:',
+        do: 'Look columns up by name instead. In `src/data.ts`, replace the marked `toBars` with this:',
         code: C.TO_BARS_BY_NAME,
         edits: [{ file: DATA, from: C.TO_BARS_BY_POSITION, to: C.TO_BARS_BY_NAME }],
         errors: 1,
@@ -713,31 +713,31 @@ export const lessons = [
         why: '`DEFINE MEASURE` adds a measure for this one query. The model never stores it, and no report can see it.',
       },
       {
-        do: 'Cards need to show a percent too. In `src/components.tsx`, add this line under the gold-marked `value: number;`:',
+        do: 'Cards need to show a percent too. In `src/components.tsx`, add this line under the marked `value: number;`:',
         code: "format?: 'compact' | 'percent';",
         edits: [{ file: COMP, from: '  value: number;\n', to: "  value: number;\n  format?: 'compact' | 'percent';\n" }],
         see: 'Nothing changes yet.',
         why: '`?` means a card can leave it out. `\'compact\' | \'percent\'` means one of those two words, nothing else.',
       },
       {
-        do: 'Take `format` in with the other props: change the gold-marked `{ title, value }` to `{ title, value, format }`.',
+        do: 'Take `format` in with the other props: change the marked `{ title, value }` to `{ title, value, format }`.',
         edits: [{ file: COMP, from: 'export function KpiCard({ title, value }: KpiCardProps)', to: 'export function KpiCard({ title, value, format }: KpiCardProps)' }],
         see: 'Nothing changes yet.',
       },
       {
-        do: 'Draw a percent when it says so: replace the gold-marked value line with this.',
+        do: 'Draw a percent when it says so: replace the marked value line with this.',
         code: KPI_VALUE_FORMAT.trim(),
         edits: [{ file: COMP, from: KPI_VALUE_LINE, to: KPI_VALUE_FORMAT }],
         see: 'The other cards are unchanged: they leave `format` out.',
       },
       {
-        do: 'In `src/App.tsx`, replace the gold-marked import from `./data` with:',
+        do: 'In `src/App.tsx`, replace the marked import from `./data` with:',
         code: DATA_IMPORT_3,
         edits: [{ from: DATA_IMPORT_2, to: DATA_IMPORT_3 }],
         see: 'Nothing changes yet.',
       },
       {
-        do: 'Run the margin query: add this line under the gold-marked `const totals = …` line.',
+        do: 'Run the margin query: add this line under the marked `const totals = …` line.',
         code: MARGIN_LINE.trim(),
         edits: [
           {
@@ -748,7 +748,7 @@ export const lessons = [
         see: 'A third query in the Log.',
       },
       {
-        do: 'Add the card, under the gold-marked `</div>` of the Customers card:',
+        do: 'Add the card, under the marked `</div>` of the Customers card:',
         code: '<div className="col-span-2 row-span-2">\n  <KpiCard title="Margin %" value={marginResult ? toPercent(marginResult) : 0} format="percent" />\n</div>',
         edits: [
           {
@@ -770,7 +770,7 @@ export const lessons = [
         see: 'Back to 55.9%.',
       },
       {
-        do: 'The model already has this measure. Replace the gold-marked `marginQuery` with one that names it:',
+        do: 'The model already has this measure. Replace the marked `marginQuery` with one that names it:',
         code: C.MARGIN_FROM_MODEL_TEXT,
         edits: [{ file: DATA, from: C.MARGIN_IN_QUERY_TEXT, to: C.MARGIN_FROM_MODEL_TEXT }],
         see: 'Still 55.9%. The formula now lives in one place: the model.',
@@ -820,20 +820,20 @@ export const lessons = [
         why: 'The page never showed it: on a failed result, `toBars` returns an empty list.',
       },
       {
-        do: 'At the end of `src/components.tsx`, under the gold-marked end of `BarList`, add an error panel:',
+        do: 'At the end of `src/components.tsx`, under the marked end of `BarList`, add an error panel:',
         code: C.ERROR_PANEL.trimStart(),
         edits: [{ file: COMP, from: '    </ul>\n  );\n}\n', to: `    </ul>\n  );\n}\n${C.ERROR_PANEL}` }],
         queryFails: true,
         see: 'Nothing changes yet.',
       },
       {
-        do: 'In `src/App.tsx`, add `ErrorPanel` to the gold-marked import: `import { BarList, ErrorPanel, KpiCard } from \'./components\';`',
+        do: 'In `src/App.tsx`, add `ErrorPanel` to the marked import: `import { BarList, ErrorPanel, KpiCard } from \'./components\';`',
         edits: [{ from: "import { BarList, KpiCard } from './components';", to: "import { BarList, ErrorPanel, KpiCard } from './components';" }],
         queryFails: true,
         see: 'Nothing changes yet.',
       },
       {
-        do: 'Wait for the results before drawing: add this line under the gold-marked `const marginResult = …` line.',
+        do: 'Wait for the results before drawing: add this line under the marked `const marginResult = …` line.',
         code: LOADING.trim(),
         edits: [{ from: MARGIN_LINE, to: `${MARGIN_LINE}\n${LOADING}` }],
         queryFails: true,
@@ -841,7 +841,7 @@ export const lessons = [
         why: '`!` means "not", `||` means "or": until every result is back, the page says so instead of showing zeros.',
       },
       {
-        do: 'Then check each result\'s [[status]]: add this line under the gold-marked Loading line.',
+        do: 'Then check each result\'s [[status]]: add this line under the marked Loading line.',
         code: ERRORS.trim(),
         edits: [{ from: LOADING, to: LOADING + ERRORS }],
         queryFails: true,
@@ -854,7 +854,7 @@ export const lessons = [
         see: 'The page is back.',
       },
       {
-        do: 'Add an empty state too, under the gold-marked line that checks the status:',
+        do: 'Add an empty state too, under the marked line that checks the status:',
         code: 'if (countries.length === 0) return <p className="p-4">No data for this page.</p>;',
         edits: [{ from: ERRORS, to: `${ERRORS}  if (countries.length === 0) return <p className="p-4">No data for this page.</p>;\n` }],
         see: 'Nothing changes: it is for a query that works but returns no rows.',
@@ -866,7 +866,7 @@ export const lessons = [
         why: 'This time there is no result at all: the call "throws". In a real browser app, that is what a request that can\'t reach the app\'s backend does.',
       },
       {
-        do: 'Look at the gold-marked `.catch` in `useDax`, in `src/data.ts`.',
+        do: 'Look at the marked `.catch` in `useDax`, in `src/data.ts`.',
         file: DATA,
         find: '.catch(',
         see: 'It turns a thrown call into an error result, so our status check shows it. Without it, the page would stay on "Loading…".',
@@ -898,32 +898,32 @@ export const lessons = [
     idea: 'We add a year slicer. The page keeps the selected year, and the queries take it as a filter.',
     steps: [
       {
-        do: 'At the end of `src/components.tsx`, under the gold-marked end of `ErrorPanel`, add a year slicer:',
+        do: 'At the end of `src/components.tsx`, under the marked end of `ErrorPanel`, add a year slicer:',
         code: C.YEAR_SLICER.trimStart(),
         edits: [{ file: COMP, from: '      <p className="mt-1 text-sm">{message}</p>\n    </div>\n  );\n}\n', to: `      <p className="mt-1 text-sm">{message}</p>\n    </div>\n  );\n}\n${C.YEAR_SLICER}` }],
         see: 'Nothing on the page yet.',
         why: 'The slicer shows a year and reports clicks. It doesn\'t keep the year itself: the page will.',
       },
       {
-        do: 'In `src/App.tsx`, add this line at the very top, above the gold-marked line:',
+        do: 'In `src/App.tsx`, add this line at the very top, above the marked line:',
         code: "import { useState } from 'react';",
         edits: [{ from: "import { BarList, ErrorPanel, KpiCard } from './components';", to: "import { useState } from 'react';\nimport { BarList, ErrorPanel, KpiCard } from './components';" }],
         see: 'Nothing changes yet.',
       },
       {
-        do: 'Add `YearSlicer` to the gold-marked import: `import { BarList, ErrorPanel, KpiCard, YearSlicer } from \'./components\';`',
+        do: 'Add `YearSlicer` to the marked import: `import { BarList, ErrorPanel, KpiCard, YearSlicer } from \'./components\';`',
         edits: [{ from: "import { BarList, ErrorPanel, KpiCard } from './components';", to: "import { BarList, ErrorPanel, KpiCard, YearSlicer } from './components';" }],
         see: 'Nothing changes yet.',
       },
       {
-        do: 'Keep a year: add this line under the gold-marked `export default function App() {`.',
+        do: 'Keep a year: add this line under the marked `export default function App() {`.',
         code: YEAR_STATE.trim(),
         edits: [{ from: 'export default function App() {\n', to: `export default function App() {\n${YEAR_STATE}` }],
         see: 'Nothing changes yet.',
         why: '`useState` gives two things: `year`, the value, and `setYear`, which changes it and redraws the page. `number | undefined` means a year, or nothing (all years). `useState` is a [[hook]]: one of React\'s `use…` functions.',
       },
       {
-        do: 'Put the slicer in the header: replace the two gold-marked lines with these three.',
+        do: 'Put the slicer in the header: replace the two marked lines with these three.',
         code: '<header className="col-span-12 row-span-1 flex items-center justify-between">\n  <h1 className="text-2xl font-bold">Sales overview</h1>\n  <YearSlicer value={year} onChange={setYear} />',
         edits: [
           {
@@ -934,7 +934,7 @@ export const lessons = [
         see: 'The slicer, on the right of the title. Clicks move the highlight, but nothing uses the year yet.',
       },
       {
-        do: 'In `src/data.ts`, add a filter helper above the gold-marked `the queries` line:',
+        do: 'In `src/data.ts`, add a filter helper above the marked `the queries` line:',
         code: C.FILTERS_YEAR.trimStart(),
         edits: [
           {
@@ -947,7 +947,7 @@ export const lessons = [
         why: 'For a picked year it makes one DAX filter, `TREATAS ( { 2024 }, \'date\'[Year] )`: the kind of filter Power BI writes for a slicer selection (copy a visual\'s query from Performance analyzer to see one).',
       },
       {
-        do: 'Make `totalsQuery` take a year: replace the gold-marked query with this function.',
+        do: 'Make `totalsQuery` take a year: replace the marked query with this function.',
         code: C.TOTALS_QUERY_FN,
         edits: [{ file: DATA, from: C.TOTALS_QUERY_CONST, to: C.TOTALS_QUERY_FN }],
         errors: '1+',
@@ -960,7 +960,7 @@ export const lessons = [
         see: 'The red line and the error go.',
       },
       {
-        do: 'Same for the countries query: replace the gold-marked `salesByCountryQuery` with this function.',
+        do: 'Same for the countries query: replace the marked `salesByCountryQuery` with this function.',
         code: C.COUNTRY_QUERY_FN,
         edits: [{ file: DATA, from: C.COUNTRY_QUERY_CONST, to: C.COUNTRY_QUERY_FN }],
         errors: '1+',
@@ -985,7 +985,7 @@ export const lessons = [
         do: 'Look at the list at the end of `useDax`, in `src/data.ts`.',
         file: DATA,
         find: '}, [runDax, query]);',
-        see: '`[runDax, query]`, marked in gold.',
+        see: '`[runDax, query]`, marked in blue.',
         why: '`useDax` runs its query again whenever something in this [[dependency list|dependency-list]] changes. A new year means new query text, so it runs again.',
       },
     ],
@@ -1009,13 +1009,13 @@ export const lessons = [
     idea: 'Agents often make the query function inside the page. Let\'s do that on purpose, and watch.',
     steps: [
       {
-        do: 'The slip on purpose, in two parts. First, in `src/App.tsx`, add this import under the gold-marked line:',
+        do: 'The slip on purpose, in two parts. First, in `src/App.tsx`, add this import under the marked line:',
         code: "import { rayfinClient } from './services/rayfinClient';",
         edits: [{ from: "import { useState } from 'react';\n", to: "import { useState } from 'react';\nimport { rayfinClient } from './services/rayfinClient';\n" }],
         see: 'Nothing changes yet.',
       },
       {
-        do: 'Then a `runDax` of our own, inside `App`: add this line under the gold-marked `year` line.',
+        do: 'Then a `runDax` of our own, inside `App`: add this line under the marked `year` line.',
         code: LOCAL_RUNDAX.trim(),
         edits: [{ from: YEAR_STATE, to: YEAR_STATE + LOCAL_RUNDAX }],
         see: 'No red line. The page looks fine, for a moment.',
@@ -1027,7 +1027,7 @@ export const lessons = [
         see: 'It keeps climbing, and the Log fills with the same queries. After more than 20 in 10 seconds, the playground stops the page.',
       },
       {
-        do: 'Look at the gold-marked line.',
+        do: 'Look at the marked line.',
         file: APP,
         find: 'const runDax = (query: string)',
         see: 'Our `runDax`, inside `App`.',
@@ -1068,7 +1068,7 @@ export const lessons = [
     idea: 'We add a category chart in place of About, then let a click on a country filter the cards and the categories.',
     steps: [
       {
-        do: 'In `src/data.ts`, let the filters take a store country too: replace the gold-marked `filters` function with this.',
+        do: 'In `src/data.ts`, let the filters take a store country too: replace the marked `filters` function with this.',
         code: C.FILTERS_BOTH_FN,
         edits: [{ file: DATA, from: C.FILTERS_YEAR_FN, to: C.FILTERS_BOTH_FN }],
         see: 'Nothing changes yet.',
@@ -1082,19 +1082,19 @@ export const lessons = [
         see: 'Nothing changes yet.',
       },
       {
-        do: 'Add a categories query, under the gold-marked end of `salesByCountryQuery`:',
+        do: 'Add a categories query, under the marked end of `salesByCountryQuery`:',
         code: C.CATEGORY_QUERY_FN.trimStart(),
         edits: [{ file: DATA, from: C.COUNTRY_QUERY_FN, to: C.COUNTRY_QUERY_FN + C.CATEGORY_QUERY_FN }],
         see: 'Nothing changes yet.',
       },
       {
-        do: 'In `src/App.tsx`, replace the gold-marked import from `./data` with:',
+        do: 'In `src/App.tsx`, replace the marked import from `./data` with:',
         code: DATA_IMPORT_4,
         edits: [{ from: DATA_IMPORT_3, to: DATA_IMPORT_4 }],
         see: 'Nothing changes yet.',
       },
       {
-        do: 'Run it: add this line under the gold-marked `const marginResult = …` line.',
+        do: 'Run it: add this line under the marked `const marginResult = …` line.',
         code: 'const categoriesResult = useDax(runDax, salesByCategoryQuery(year));',
         edits: [{ from: MARGIN_LINE, to: `${MARGIN_LINE}  const categoriesResult = useDax(runDax, salesByCategoryQuery(year));\n` }],
         see: 'A new query in the Log.',
@@ -1108,7 +1108,7 @@ export const lessons = [
         see: 'Nothing changes.',
       },
       {
-        do: 'Replace the gold-marked About section with the category chart:',
+        do: 'Replace the marked About section with the category chart:',
         code: "<section className=\"col-span-8 row-span-3 rounded-lg border border-gray-200 bg-white p-4\">\n  <h2 className=\"mb-2 font-semibold\">Revenue by category</h2>\n  <BarList rows={toBars(categoriesResult, 'product[CategoryName]', '[Revenue]')} />\n</section>",
         edits: [
           {
@@ -1119,14 +1119,14 @@ export const lessons = [
         see: 'Revenue by product category, under the cards.',
       },
       {
-        do: 'Keep a selected country: add this line under the gold-marked `year` line.',
+        do: 'Keep a selected country: add this line under the marked `year` line.',
         code: 'const [country, setCountry] = useState<string | undefined>(undefined);',
         edits: [{ from: YEAR_STATE, to: `${YEAR_STATE}  const [country, setCountry] = useState<string | undefined>(undefined);\n` }],
         see: 'Nothing changes yet.',
         why: 'Hooks (the `use…` lines) go at the top, above `Loading…`: that line can stop the drawing early, and every hook must run on every draw.',
       },
       {
-        do: 'Give the country chart the selection: replace the gold-marked `<BarList rows={countries} />` with this.',
+        do: 'Give the country chart the selection: replace the marked `<BarList rows={countries} />` with this.',
         code: '<BarList rows={countries} selected={country} onSelect={(c) => setCountry(c === country ? undefined : c)} />',
         edits: [{ from: '<BarList rows={countries} />', to: '<BarList rows={countries} selected={country} onSelect={(c) => setCountry(c === country ? undefined : c)} />' }],
         see: 'Clicking a country fades the others; clicking it again clears it.',
@@ -1178,7 +1178,7 @@ export const lessons = [
         why: '`PAGES` lists the pages; `App` keeps which one is open, with `useState`, and draws it. `export default` marks `App` as the file\'s main export: the one the preview draws.',
       },
       {
-        do: 'Add a second page id. Change the gold-marked `type PageId` line to:',
+        do: 'Add a second page id. Change the marked `type PageId` line to:',
         code: "type PageId = 'overview' | 'years';",
         edits: [{ from: "type PageId = 'overview';", to: "type PageId = 'overview' | 'years';" }],
         errors: 1,
@@ -1193,7 +1193,7 @@ export const lessons = [
         see: 'The red line stays.',
       },
       {
-        do: 'Write the page, above the gold-marked `the report` line in `src/App.tsx`. **Do it for me** also adds `salesByYearQuery` to the import from `./data`.',
+        do: 'Write the page, above the marked `the report` line in `src/App.tsx`. **Do it for me** also adds `salesByYearQuery` to the import from `./data`.',
         code: C.YEARS_PAGE.trim(),
         edits: [
           { from: '// ------------------------------------------------------------ the report\n', to: `${C.YEARS_PAGE}// ------------------------------------------------------------ the report\n` },
@@ -1203,7 +1203,7 @@ export const lessons = [
         see: 'The red line stays: `PAGES` has no entry for it yet.',
       },
       {
-        do: 'Add it to `PAGES`, under the gold-marked `overview:` line:',
+        do: 'Add it to `PAGES`, under the marked `overview:` line:',
         code: "years: { title: 'Years', Component: YearsPage },",
         edits: [{ from: "  overview: { title: 'Overview', Component: OverviewPage },\n", to: "  overview: { title: 'Overview', Component: OverviewPage },\n  years: { title: 'Years', Component: YearsPage },\n" }],
         see: 'The red line goes, and **Years** appears in the page list.',
@@ -1257,7 +1257,7 @@ export const lessons = [
         why: 'A query loop, as in **The redraw trap**.',
       },
       {
-        do: 'Fix it, in `src/SalesOverview.tsx`: move the gold-marked `runDax` line, with the comment above it, out of `SalesOverview` to just above `function useDax` (cut, then paste; **Do it for me** does the move).',
+        do: 'Fix it, in `src/SalesOverview.tsx`: move the marked `runDax` line, with the comment above it, out of `SalesOverview` to just above `function useDax` (cut, then paste; **Do it for me** does the move).',
         file: AGENT,
         find: 'const runDax: RunDax = (query)',
         edits: [
@@ -1281,7 +1281,7 @@ export const lessons = [
         point: 'log',
         file: AGENT,
         find: 'value: Number(row[1])',
-        see: '`[Orders]`. And the gold-marked part of the agent\'s `toBars` reads `row[1]`.',
+        see: '`[Orders]`. And the marked part of the agent\'s `toBars` reads `row[1]`.',
         why: 'So the bars show order counts, as in **The conversion**.',
       },
       {
@@ -1298,7 +1298,7 @@ export const lessons = [
         why: 'The agent\'s conversions turn a failed result into zeros, and its page never checks `status`. It even wrote an `ErrorPanel`, but nothing uses it.',
       },
       {
-        do: 'Fix it: add this line under the gold-marked `Loading…` line in `src/SalesOverview.tsx`.',
+        do: 'Fix it: add this line under the marked `Loading…` line in `src/SalesOverview.tsx`.',
         code: "for (const r of [totalsResult, countriesResult, marginResult]) if (r.status === 'error') return <ErrorPanel message={r.error.message} />;",
         file: AGENT,
         edits: [
@@ -1315,7 +1315,7 @@ export const lessons = [
         see: 'The data is back.',
       },
       {
-        do: 'Check 4: where do the formulas live? Look at the agent\'s gold-marked `marginQuery`.',
+        do: 'Check 4: where do the formulas live? Look at the agent\'s marked `marginQuery`.',
         file: AGENT,
         find: 'const marginQuery',
         see: 'A whole margin formula inside the query, with `DEFINE MEASURE`.',

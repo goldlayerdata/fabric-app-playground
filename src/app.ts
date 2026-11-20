@@ -717,7 +717,7 @@ function markFind(step?: Step) {
   const matches = model.findMatches(text, false, false, true, null, false);
   if (!matches.length) return;
   findMarks = editor.createDecorationsCollection([
-    { range: matches[0].range, options: { className: 'find-mark', overviewRuler: { color: '#f2c811', position: monaco.editor.OverviewRulerLane.Center } } },
+    { range: matches[0].range, options: { className: 'find-mark', overviewRuler: { color: '#5fe3f0', position: monaco.editor.OverviewRulerLane.Center } } },
   ]);
   editor.revealRangeInCenterIfOutsideViewport(matches[0].range);
 }
@@ -885,8 +885,8 @@ monaco.editor.defineTheme('gold-layer', {
     'editor.background': '#0a1328',
     'editor.lineHighlightBackground': '#111c38',
     'editorLineNumber.foreground': '#4a5a82',
-    'editorLineNumber.activeForeground': '#f2c811',
-    'editorCursor.foreground': '#f2c811',
+    'editorLineNumber.activeForeground': '#5fe3f0',
+    'editorCursor.foreground': '#5fe3f0',
     'editor.selectionBackground': '#2b3d6b',
     'editorWidget.background': '#111c38',
   },
@@ -1052,6 +1052,20 @@ async function tsWorkerGetter() {
 async function compile(): Promise<Record<string, string>> {
   const paths = Object.keys(project.files).filter((p) => isCode(p) && !p.endsWith('.d.ts'));
   if (!paths.length) return {};
+  // The editor replaces its TypeScript worker when package types or options change, as they do at start-up.
+  // A call that went to the replaced worker is never answered (seen on a reload with a project already there),
+  // so: wait a little, then compile again with the current worker.
+  for (let wait = 1500; ; wait += 1500) {
+    const out = await Promise.race([compileOnce(paths), new Promise<undefined>((r) => setTimeout(() => r(undefined), wait))]);
+    if (out) {
+      showTypeStatus();
+      return out;
+    }
+    if (wait >= 6000) throw new Error('The TypeScript checker did not answer. Press Run, or reload the page.');
+  }
+}
+
+async function compileOnce(paths: string[]): Promise<Record<string, string>> {
   const getWorker = await tsWorkerGetter();
   const worker = await getWorker(...paths.map(uriOf));
   const out: Record<string, string> = {};
@@ -1061,7 +1075,6 @@ async function compile(): Promise<Record<string, string>> {
     if (!js) throw new Error(`${p} could not be compiled.`);
     out[p] = js.text;
   }
-  showTypeStatus();
   return out;
 }
 
@@ -1496,8 +1509,12 @@ function renderAbout() {
   const a = (href: string, text: string) => h('a', { href, target: '_blank', rel: 'noopener' }, text);
   $('tab-about').append(
     p(
-      h('b', {}, 'A Gold Layer playground. '),
-      'Unofficial, and not affiliated with Microsoft. It is for Power BI developers who want to read and write the code of a Fabric app, from an empty folder to a reviewed report.',
+      h('b', {}, 'A Gold Layer Lab playground. '),
+      'Unofficial, and not affiliated with Microsoft. It is for Power BI developers who want to read and write the code of a Fabric app, from an empty folder to a reviewed report. More experiments are in the ',
+      a('https://goldlayerdata.com/lab.html', 'Lab'),
+      ', and articles and shorts on ',
+      a('https://goldlayerdata.com/', 'goldlayerdata.com'),
+      '.',
     ),
     p(
       h('b', {}, 'Nothing here talks to Fabric or Power BI. '),
@@ -1653,6 +1670,12 @@ $('splash-restart').addEventListener('click', () => {
   hideSplash();
 });
 $('brand').addEventListener('click', showSplash);
+$('brand').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    showSplash();
+  }
+});
 
 initTerminal();
 renderQueries();

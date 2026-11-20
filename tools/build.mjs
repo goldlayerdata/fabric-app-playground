@@ -86,6 +86,7 @@ function copyStatic() {
   mkdirSync(dist, { recursive: true });
   cpSync(join(root, 'src/index.html'), join(dist, 'index.html'));
   cpSync(join(root, 'src/preview.html'), join(dist, 'preview.html'));
+  cpSync(join(root, 'src/favicon.svg'), join(dist, 'favicon.svg'));
   cpSync(nm('@tailwindcss/browser/dist/index.global.js'), join(dist, 'tailwind.js'));
   cpSync(join(root, 'THIRD-PARTY-NOTICES.md'), join(dist, 'THIRD-PARTY-NOTICES.md'));
   cpSync(join(root, 'LICENSE'), join(dist, 'LICENSE.txt'));

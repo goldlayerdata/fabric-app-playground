@@ -34,7 +34,7 @@ npm run check      # checks the course, then builds it from an empty folder, ste
 | Glossary (Terms tab) and troubleshooting (Help tab) | `src/terms.mjs` |
 | Course drawer, progress, routing (`#lesson-id/step`, `#check/module-id`), terminal tab | `src/app.ts` |
 | Layout: three draggable dividers (sizes remembered, double-click resets) and **Pop out** on the lesson card and the bottom panel (large text, Esc docks) | `src/app.ts` (`initSplit`, `setPopped`), `src/app.css` |
-| Colours: gold for actions and steps, Lab blue `#5FE3F0` for the hands-on parts (terminal, glossary words, links, dividers), pink for "In a real Fabric app" | `src/app.css` |
+| Colours: a Gold Layer Lab piece, so Lab blue `#5FE3F0` leads (`--accent`), in text and lines only; gold only in the logo; pink for "In a real Fabric app". The logo links to goldlayerdata.com, and the start screen lists the site sections | `src/app.css` |
 
 ## Data
 
