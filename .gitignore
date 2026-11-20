@@ -1,0 +1,6 @@
+node_modules/
+dist/
+
+# Working notes that stay local: paths and instructions from the owner's PC
+HANDOFF.md
+reference/

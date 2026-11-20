@@ -1,0 +1,707 @@
+{
+  "years": [
+    2023,
+    2024,
+    2025,
+    2026
+  ],
+  "countries": [
+    "Australia",
+    "Canada",
+    "France",
+    "Germany",
+    "Italy",
+    "Netherlands",
+    "Online",
+    "United Kingdom",
+    "United States"
+  ],
+  "queries": [
+    {
+      "id": "revenue",
+      "group": "Basics",
+      "title": "Revenue, one value",
+      "query": "EVALUATE\nROW ( \"Revenue\", [Revenue] )"
+    },
+    {
+      "id": "sales-by-country",
+      "group": "Basics",
+      "title": "Sales by store country",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'store'[CountryName],\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-country-with-orders",
+      "group": "Basics",
+      "title": "Sales by store country, with orders",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'store'[CountryName],\n    \"Orders\", [# Orders],\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "totals",
+      "group": "Basics",
+      "title": "Totals: sales, orders, customers",
+      "query": "EVALUATE\nROW (\n    \"Revenue\", [Revenue],\n    \"Orders\", [# Orders],\n    \"Customers\", [# Customers]\n)"
+    },
+    {
+      "id": "sales-by-category",
+      "group": "Basics",
+      "title": "Sales by product category",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-year",
+      "group": "Basics",
+      "title": "Sales and orders by year",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'date'[Year],\n    \"Revenue\", [Revenue],\n    \"Orders\", [# Orders]\n)\nORDER BY 'date'[Year]"
+    },
+    {
+      "id": "sales-by-month",
+      "group": "Basics",
+      "title": "Sales by month",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'date'[YearMonthNumber],\n    'date'[YearMonthShort],\n    \"Revenue\", [Revenue]\n)\nORDER BY 'date'[YearMonthNumber]"
+    },
+    {
+      "id": "sales-by-country-2023",
+      "group": "Store countries, per year",
+      "title": "Sales by store country, 2023",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'store'[CountryName],\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-country-2024",
+      "group": "Store countries, per year",
+      "title": "Sales by store country, 2024",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'store'[CountryName],\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-country-2025",
+      "group": "Store countries, per year",
+      "title": "Sales by store country, 2025",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'store'[CountryName],\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-country-2026",
+      "group": "Store countries, per year",
+      "title": "Sales by store country, 2026",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'store'[CountryName],\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "totals-2023",
+      "group": "Totals, filtered",
+      "title": "Totals, 2023",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2023 }, 'date'[Year] )\n)"
+    },
+    {
+      "id": "totals-2024",
+      "group": "Totals, filtered",
+      "title": "Totals, 2024",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2024 }, 'date'[Year] )\n)"
+    },
+    {
+      "id": "totals-2025",
+      "group": "Totals, filtered",
+      "title": "Totals, 2025",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2025 }, 'date'[Year] )\n)"
+    },
+    {
+      "id": "totals-2026",
+      "group": "Totals, filtered",
+      "title": "Totals, 2026",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2026 }, 'date'[Year] )\n)"
+    },
+    {
+      "id": "totals-australia",
+      "group": "Totals, filtered",
+      "title": "Totals, Australia",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { \"Australia\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-canada",
+      "group": "Totals, filtered",
+      "title": "Totals, Canada",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { \"Canada\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-france",
+      "group": "Totals, filtered",
+      "title": "Totals, France",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { \"France\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-germany",
+      "group": "Totals, filtered",
+      "title": "Totals, Germany",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { \"Germany\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-italy",
+      "group": "Totals, filtered",
+      "title": "Totals, Italy",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { \"Italy\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-netherlands",
+      "group": "Totals, filtered",
+      "title": "Totals, Netherlands",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { \"Netherlands\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-online",
+      "group": "Totals, filtered",
+      "title": "Totals, Online",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { \"Online\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-united-kingdom",
+      "group": "Totals, filtered",
+      "title": "Totals, United Kingdom",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { \"United Kingdom\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-united-states",
+      "group": "Totals, filtered",
+      "title": "Totals, United States",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { \"United States\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-2023-australia",
+      "group": "Totals, filtered",
+      "title": "Totals, 2023, Australia",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    TREATAS ( { \"Australia\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-2023-canada",
+      "group": "Totals, filtered",
+      "title": "Totals, 2023, Canada",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    TREATAS ( { \"Canada\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-2023-france",
+      "group": "Totals, filtered",
+      "title": "Totals, 2023, France",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    TREATAS ( { \"France\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-2023-germany",
+      "group": "Totals, filtered",
+      "title": "Totals, 2023, Germany",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    TREATAS ( { \"Germany\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-2023-italy",
+      "group": "Totals, filtered",
+      "title": "Totals, 2023, Italy",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    TREATAS ( { \"Italy\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-2023-netherlands",
+      "group": "Totals, filtered",
+      "title": "Totals, 2023, Netherlands",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    TREATAS ( { \"Netherlands\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-2023-online",
+      "group": "Totals, filtered",
+      "title": "Totals, 2023, Online",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    TREATAS ( { \"Online\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-2023-united-kingdom",
+      "group": "Totals, filtered",
+      "title": "Totals, 2023, United Kingdom",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    TREATAS ( { \"United Kingdom\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-2023-united-states",
+      "group": "Totals, filtered",
+      "title": "Totals, 2023, United States",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    TREATAS ( { \"United States\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-2024-australia",
+      "group": "Totals, filtered",
+      "title": "Totals, 2024, Australia",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    TREATAS ( { \"Australia\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-2024-canada",
+      "group": "Totals, filtered",
+      "title": "Totals, 2024, Canada",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    TREATAS ( { \"Canada\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-2024-france",
+      "group": "Totals, filtered",
+      "title": "Totals, 2024, France",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    TREATAS ( { \"France\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-2024-germany",
+      "group": "Totals, filtered",
+      "title": "Totals, 2024, Germany",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    TREATAS ( { \"Germany\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-2024-italy",
+      "group": "Totals, filtered",
+      "title": "Totals, 2024, Italy",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    TREATAS ( { \"Italy\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-2024-netherlands",
+      "group": "Totals, filtered",
+      "title": "Totals, 2024, Netherlands",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    TREATAS ( { \"Netherlands\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-2024-online",
+      "group": "Totals, filtered",
+      "title": "Totals, 2024, Online",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    TREATAS ( { \"Online\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-2024-united-kingdom",
+      "group": "Totals, filtered",
+      "title": "Totals, 2024, United Kingdom",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    TREATAS ( { \"United Kingdom\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-2024-united-states",
+      "group": "Totals, filtered",
+      "title": "Totals, 2024, United States",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    TREATAS ( { \"United States\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-2025-australia",
+      "group": "Totals, filtered",
+      "title": "Totals, 2025, Australia",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    TREATAS ( { \"Australia\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-2025-canada",
+      "group": "Totals, filtered",
+      "title": "Totals, 2025, Canada",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    TREATAS ( { \"Canada\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-2025-france",
+      "group": "Totals, filtered",
+      "title": "Totals, 2025, France",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    TREATAS ( { \"France\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-2025-germany",
+      "group": "Totals, filtered",
+      "title": "Totals, 2025, Germany",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    TREATAS ( { \"Germany\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-2025-italy",
+      "group": "Totals, filtered",
+      "title": "Totals, 2025, Italy",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    TREATAS ( { \"Italy\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-2025-netherlands",
+      "group": "Totals, filtered",
+      "title": "Totals, 2025, Netherlands",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    TREATAS ( { \"Netherlands\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-2025-online",
+      "group": "Totals, filtered",
+      "title": "Totals, 2025, Online",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    TREATAS ( { \"Online\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-2025-united-kingdom",
+      "group": "Totals, filtered",
+      "title": "Totals, 2025, United Kingdom",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    TREATAS ( { \"United Kingdom\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-2025-united-states",
+      "group": "Totals, filtered",
+      "title": "Totals, 2025, United States",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    TREATAS ( { \"United States\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-2026-australia",
+      "group": "Totals, filtered",
+      "title": "Totals, 2026, Australia",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    TREATAS ( { \"Australia\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-2026-canada",
+      "group": "Totals, filtered",
+      "title": "Totals, 2026, Canada",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    TREATAS ( { \"Canada\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-2026-france",
+      "group": "Totals, filtered",
+      "title": "Totals, 2026, France",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    TREATAS ( { \"France\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-2026-germany",
+      "group": "Totals, filtered",
+      "title": "Totals, 2026, Germany",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    TREATAS ( { \"Germany\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-2026-italy",
+      "group": "Totals, filtered",
+      "title": "Totals, 2026, Italy",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    TREATAS ( { \"Italy\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-2026-netherlands",
+      "group": "Totals, filtered",
+      "title": "Totals, 2026, Netherlands",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    TREATAS ( { \"Netherlands\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-2026-online",
+      "group": "Totals, filtered",
+      "title": "Totals, 2026, Online",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    TREATAS ( { \"Online\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-2026-united-kingdom",
+      "group": "Totals, filtered",
+      "title": "Totals, 2026, United Kingdom",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    TREATAS ( { \"United Kingdom\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "totals-2026-united-states",
+      "group": "Totals, filtered",
+      "title": "Totals, 2026, United States",
+      "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    TREATAS ( { \"United States\" }, 'store'[CountryName] )\n)"
+    },
+    {
+      "id": "sales-by-category-2023",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2023",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2024",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2024",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2025",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2025",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2026",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2026",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-australia",
+      "group": "Categories, filtered",
+      "title": "Sales by category, Australia",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { \"Australia\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-canada",
+      "group": "Categories, filtered",
+      "title": "Sales by category, Canada",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { \"Canada\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-france",
+      "group": "Categories, filtered",
+      "title": "Sales by category, France",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { \"France\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-germany",
+      "group": "Categories, filtered",
+      "title": "Sales by category, Germany",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { \"Germany\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-italy",
+      "group": "Categories, filtered",
+      "title": "Sales by category, Italy",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { \"Italy\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-netherlands",
+      "group": "Categories, filtered",
+      "title": "Sales by category, Netherlands",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { \"Netherlands\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-online",
+      "group": "Categories, filtered",
+      "title": "Sales by category, Online",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { \"Online\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-united-kingdom",
+      "group": "Categories, filtered",
+      "title": "Sales by category, United Kingdom",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { \"United Kingdom\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-united-states",
+      "group": "Categories, filtered",
+      "title": "Sales by category, United States",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { \"United States\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2023-australia",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2023, Australia",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    TREATAS ( { \"Australia\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2023-canada",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2023, Canada",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    TREATAS ( { \"Canada\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2023-france",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2023, France",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    TREATAS ( { \"France\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2023-germany",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2023, Germany",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    TREATAS ( { \"Germany\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2023-italy",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2023, Italy",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    TREATAS ( { \"Italy\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2023-netherlands",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2023, Netherlands",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    TREATAS ( { \"Netherlands\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2023-online",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2023, Online",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    TREATAS ( { \"Online\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2023-united-kingdom",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2023, United Kingdom",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    TREATAS ( { \"United Kingdom\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2023-united-states",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2023, United States",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    TREATAS ( { \"United States\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2024-australia",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2024, Australia",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    TREATAS ( { \"Australia\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2024-canada",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2024, Canada",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    TREATAS ( { \"Canada\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2024-france",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2024, France",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    TREATAS ( { \"France\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2024-germany",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2024, Germany",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    TREATAS ( { \"Germany\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2024-italy",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2024, Italy",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    TREATAS ( { \"Italy\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2024-netherlands",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2024, Netherlands",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    TREATAS ( { \"Netherlands\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2024-online",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2024, Online",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    TREATAS ( { \"Online\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2024-united-kingdom",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2024, United Kingdom",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    TREATAS ( { \"United Kingdom\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2024-united-states",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2024, United States",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    TREATAS ( { \"United States\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2025-australia",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2025, Australia",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    TREATAS ( { \"Australia\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2025-canada",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2025, Canada",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    TREATAS ( { \"Canada\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2025-france",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2025, France",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    TREATAS ( { \"France\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2025-germany",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2025, Germany",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    TREATAS ( { \"Germany\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2025-italy",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2025, Italy",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    TREATAS ( { \"Italy\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2025-netherlands",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2025, Netherlands",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    TREATAS ( { \"Netherlands\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2025-online",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2025, Online",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    TREATAS ( { \"Online\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2025-united-kingdom",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2025, United Kingdom",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    TREATAS ( { \"United Kingdom\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2025-united-states",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2025, United States",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    TREATAS ( { \"United States\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2026-australia",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2026, Australia",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    TREATAS ( { \"Australia\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2026-canada",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2026, Canada",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    TREATAS ( { \"Canada\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2026-france",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2026, France",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    TREATAS ( { \"France\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2026-germany",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2026, Germany",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    TREATAS ( { \"Germany\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2026-italy",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2026, Italy",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    TREATAS ( { \"Italy\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2026-netherlands",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2026, Netherlands",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    TREATAS ( { \"Netherlands\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2026-online",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2026, Online",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    TREATAS ( { \"Online\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2026-united-kingdom",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2026, United Kingdom",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    TREATAS ( { \"United Kingdom\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "sales-by-category-2026-united-states",
+      "group": "Categories, filtered",
+      "title": "Sales by category, 2026, United States",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    TREATAS ( { \"United States\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "margin-from-model",
+      "group": "Measure or query",
+      "title": "Margin %: the model's measure",
+      "query": "EVALUATE\nROW ( \"Margin %\", [Margin %] )"
+    },
+    {
+      "id": "margin-in-query",
+      "group": "Measure or query",
+      "title": "Margin %: written in the query",
+      "query": "DEFINE\n    MEASURE '_Measures'[App Margin %] =\n        DIVIDE (\n            SUMX ( sales, sales[Quantity] * ( sales[NetPrice] - sales[UnitCost] ) ),\n            SUMX ( sales, sales[Quantity] * sales[NetPrice] )\n        )\nEVALUATE\nROW ( \"Margin %\", [App Margin %] )"
+    },
+    {
+      "id": "margin-in-query-list-price",
+      "group": "Measure or query",
+      "title": "Margin %: written in the query, with a slip (list price)",
+      "query": "DEFINE\n    MEASURE '_Measures'[App Margin %] =\n        DIVIDE (\n            SUMX ( sales, sales[Quantity] * ( sales[UnitPrice] - sales[UnitCost] ) ),\n            SUMX ( sales, sales[Quantity] * sales[NetPrice] )\n        )\nEVALUATE\nROW ( \"Margin %\", [App Margin %] )"
+    },
+    {
+      "id": "typo-store-country",
+      "group": "Saved errors",
+      "title": "Sales by 'store'[Country] (no such column)",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'store'[Country],\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC",
+      "expectError": true
+    },
+    {
+      "id": "typo-margin-measure",
+      "group": "Saved errors",
+      "title": "Margin % with a mistyped measure name, [Margin Pct]",
+      "query": "EVALUATE\nROW ( \"Margin %\", [Margin Pct] )",
+      "expectError": true
+    }
+  ]
+}

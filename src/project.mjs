@@ -1,0 +1,515 @@
+// The learner's project and the simulated terminal. Pure functions: the app and
+// tools/check-lessons.mjs both use them, so the checker builds the course exactly as a reader would.
+//
+// A project is { cwd, appDir, files: { path: text }, packages: [names], dev, history: [lines] }.
+// Paths are relative to the app folder. `cwd` is null in the starting folder, or the app folder's name.
+//
+// What the simulated CLI writes comes from real sources (see each command). Wording the real CLI
+// prints that we could not check is not imitated: those lines start with "Playground:".
+
+// ---------------------------------------------------------------- the data app template (Rayfin CLI 2.0.0)
+// From @microsoft/rayfin-cli 2.0.0 templates/data-app as bundled with the CLI (MIT, Microsoft Corporation):
+// rayfin/rayfin.yml and src/vite-env.d.ts verbatim; package.json's scripts and dependencies verbatim, with
+// devDependencies cut to a subset and the other fields left out. A real `npm create` may fetch a newer copy
+// of the template from GitHub. The real template has many more files (its own client in
+// src/lib/rayfin-client.ts, Fabric sign-in, its own semantic model hook, components, tests, agent files); the playground keeps
+// the ones this course uses and starts src/App.tsx empty (the real one starts with a placeholder page), so we write the app ourselves.
+const TEMPLATE_PACKAGE = {
+  name: 'data-app',
+  private: true,
+  type: 'module',
+  scripts: {
+    prebuild: 'rayfin env --framework vite',
+    dev: 'rayfin dev',
+    'dev:frontend': 'vite',
+    build: 'npx fabric-app-data generate -o src/fabric.generated.ts && tsc -b --noCheck && vite build',
+    'build:fabric': 'npx fabric-app-data generate -o src/fabric.generated.ts && tsc -b --noCheck && vite build',
+    lint: 'eslint .',
+    preview: 'vite preview',
+    test: 'vitest run',
+    'test:watch': 'vitest',
+    'test:fabric': 'node scripts/open-fabric-portal.mjs',
+  },
+  dependencies: {
+    '@microsoft/fabric-app-data': '1.0.0',
+    '@microsoft/fabric-app-data-embed-client': '1.0.0',
+    '@microsoft/fabric-app-data-proxy': '1.0.0',
+    '@microsoft/fabric-datagrid': '1.0.0',
+    '@microsoft/fabric-visuals': '1.0.0',
+    '@microsoft/fabric-visuals-core': '1.0.0',
+    '@microsoft/rayfin-auth': '^2.0.0',
+    '@microsoft/rayfin-auth-provider-fabric': '^2.0.0',
+    '@microsoft/rayfin-client': '^2.0.0',
+    '@microsoft/rayfin-core': '^2.0.0',
+    '@microsoft/rayfin-data': '^2.0.0',
+    '@microsoft/rayfin-functions': '^2.0.0',
+    '@microsoft/rayfin-lib': '^2.0.0',
+    '@microsoft/rayfin-local-dev': '^2.0.0',
+    '@tailwindcss/vite': '^4.2.1',
+    clsx: '^2.1.1',
+    'framer-motion': '^12.6.2',
+    'lucide-react': '^0.577.0',
+    react: '^19.0.0',
+    'react-dom': '^19.2.5',
+    'react-error-boundary': '^6.0.0',
+    'tailwind-merge': '^3.5.0',
+    tailwindcss: '^4.2.1',
+  },
+  devDependencies: {
+    '@microsoft/rayfin-cli': '^2.0.0',
+    '@types/react': '^19.2.14',
+    '@types/react-dom': '^19.2.3',
+    typescript: '~5.7.2',
+    vite: '^7.2.6',
+  },
+};
+
+const TEMPLATE_RAYFIN_YML = `id: data-app
+name: Data App
+version: 1.0.0
+services:
+  auth:
+    enabled: true
+    fabric:
+      enabled: true
+    allowedRedirectUris:
+      - http://localhost:5173
+  data:
+    enabled: false
+  staticHosting:
+    enabled: true
+    folder: dist
+    buildCommand: npm run build:fabric
+    indexDocument: index.html
+    assetAccess: protected
+  functions:
+    enabled: false
+`;
+
+const TEMPLATE_VITE_ENV = `/// <reference types="vite/client" />
+
+interface ImportMetaEnv {
+  /** Rayfin API base URL (e.g. http://localhost:5168). */
+  readonly VITE_RAYFIN_API_URL?: string;
+  /** Rayfin publishable key (pk-...). */
+  readonly VITE_RAYFIN_PUBLISHABLE_KEY?: string;
+  /** Fabric workspace ID — maps to FabricAuthOptions.workspaceId. */
+  readonly VITE_FABRIC_WORKSPACE_ID?: string;
+  /** Fabric/Rayfin item ID — maps to FabricAuthOptions.projectId. */
+  readonly VITE_FABRIC_ITEM_ID?: string;
+  /** Fabric portal base URL (e.g. https://app.fabric.microsoft.com/). */
+  readonly VITE_FABRIC_PORTAL_URL?: string;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
+`;
+
+/** The page file the preview draws: its default export. */
+export const PAGE_FILE = 'src/App.tsx';
+
+/** Values `rayfin dev` would write to .env.local. Made up, and marked as such. */
+export const SIMULATED_ENV = {
+  VITE_RAYFIN_API_URL: 'https://simulated.rayfin.invalid',
+  VITE_RAYFIN_PUBLISHABLE_KEY: 'pk-simulated',
+};
+
+/** Placeholder ids the lessons use: not real Fabric ids. */
+export const PLACEHOLDER = {
+  workspaceId: '00000000-0000-0000-0000-00000000c0de',
+  itemId: '00000000-0000-0000-0000-0000c0d50000',
+};
+
+// The packages whose code and types the playground provides once "installed".
+const CONNECTOR_PACKAGES = ['@microsoft/rayfin-connector-fabric-semanticmodel', '@microsoft/rayfin-connectors'];
+const KNOWN_PACKAGES = new Set([
+  ...Object.keys(TEMPLATE_PACKAGE.dependencies),
+  ...Object.keys(TEMPLATE_PACKAGE.devDependencies),
+  ...CONNECTOR_PACKAGES,
+]);
+
+export function emptyProject() {
+  return { cwd: null, appDir: null, files: {}, packages: [], dev: false, history: [] };
+}
+
+const clone = (p) => JSON.parse(JSON.stringify(p));
+
+/** Is a file generated by the CLI (and read-only here)? */
+export const isGenerated = (path, text = '') => /^\/\/ @generated/.test(text) || path === 'package.json' || path.endsWith('.yml');
+
+// ---------------------------------------------------------------- the terminal
+/** Split a command line into words, keeping '…' and "…" together. */
+function words(line) {
+  const out = [];
+  const re = /'([^']*)'|"([^"]*)"|(\S+)/g;
+  let m;
+  while ((m = re.exec(line))) out.push(m[1] ?? m[2] ?? m[3]);
+  return out;
+}
+
+/** The same command, however it was spaced. Used to tell whether a step's command was run. */
+export const normCommand = (line) => words(line.trim()).join(' ').replace(/^(npm|npx)\.cmd\b/, '$1');
+
+function flags(args) {
+  const out = { _: [] };
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i];
+    if (a === '--') continue;
+    if (a.startsWith('--')) {
+      const [k, v] = a.slice(2).split('=');
+      if (v !== undefined) out[k] = v;
+      else if (args[i + 1] !== undefined && !args[i + 1].startsWith('-')) out[k] = args[++i];
+      else out[k] = true;
+    } else if (a === '-y') out.yes = true;
+    else out._.push(a);
+  }
+  return out;
+}
+
+const PG = (s) => `Playground: ${s}`;
+// Before the project exists, nothing but `npm create` can work: say so, with the command.
+const NO_PROJECT = [
+  PG('There is no project yet, so there is nothing to open, list or install.'),
+  PG('It is created in the lesson "Create the project", with:'),
+  '  npm create @microsoft/rayfin@latest contoso-app -- --template dataapp',
+];
+const SIMULATED = PG('Simulated. The real command prints more; these are the parts that matter here.');
+
+/**
+ * Run one command line. `answer(query)` gives a saved query result (for `connector invoke`).
+ * Returns { project, lines, ok }: a new project, the lines to print, and whether it succeeded.
+ */
+export function runCommand(start, line, answer) {
+  const p = clone(start);
+  const text = line.trim();
+  if (!text) return { project: p, lines: [], ok: true };
+  p.history.push(text);
+  const w = words(text);
+  const cmd = w[0]?.replace(/\.cmd$/, '');
+  const fail = (...lines) => ({ project: p, lines, ok: false });
+  const done = (...lines) => ({ project: p, lines, ok: true });
+  const inApp = () => p.cwd && p.cwd === p.appDir;
+
+  if (cmd === 'help') {
+    return done(
+      PG('Commands simulated here, as in a real Rayfin 2.0 project:'),
+      '  npm create @microsoft/rayfin@latest <app-name> -- --template dataapp',
+      '  cd <app-name>          npm install          npx rayfin login',
+      '  npx rayfin connector add --type fabric-semanticmodel --workspace-id <id> --item-id <id> --name <name>',
+      '  npx rayfin connector list          npx rayfin connector invoke <name> executeQuery --input \'{"query":"…"}\'',
+      '  npm run dev          npx rayfin up          ls          clear',
+      ...(p.appDir ? [] : [PG('There is no project yet: the first one, `npm create …`, makes it, in the lesson "Create the project".')]),
+    );
+  }
+  if (cmd === 'clear' || cmd === 'cls') return done();
+  if (cmd === 'pwd') return done(p.cwd ? `~/${p.cwd}` : '~');
+  if (cmd === 'ls' || cmd === 'dir') {
+    if (!p.appDir) return done(PG('An empty folder: no project yet.'), ...NO_PROJECT.slice(1));
+    if (!p.cwd) return done(p.appDir);
+    const top = [...new Set(Object.keys(p.files).map((f) => f.split('/')[0]))].sort();
+    return done(top.join('  '));
+  }
+  if (cmd === 'cd') {
+    const to = w[1];
+    if (!to || to === '~' || to === '..') {
+      p.cwd = null;
+      return done();
+    }
+    if (p.appDir && to.replace(/[/\\]$/, '') === p.appDir) {
+      p.cwd = p.appDir;
+      return done();
+    }
+    if (!p.appDir) return fail(...NO_PROJECT);
+    return fail(PG(`No folder named ${to} here. The project folder is ${p.appDir}.`));
+  }
+
+  // npm create @microsoft/rayfin@latest <name> -- --template dataapp   (rayfin.ai Quickstart; Microsoft Learn)
+  if (cmd === 'npm' && (w[1] === 'create' || w[1] === 'init') && /^@microsoft\/rayfin(@latest)?$/.test(w[2] ?? '')) {
+    const f = flags(w.slice(3));
+    const name = f._[0];
+    if (p.cwd) return fail(PG('Create the app from your starting folder: run `cd ..` first.'));
+    if (!name) return fail(PG('Give the app a folder name: npm create @microsoft/rayfin@latest <app-name> -- --template dataapp'));
+    if (!/^[a-z0-9][a-z0-9._-]*$/.test(name)) return fail(PG('Use a lower-case folder name, such as contoso-app.'));
+    if (p.appDir) return fail(PG(`This playground holds one app, and ${p.appDir} already exists. Reset the course to start over.`));
+    if (f.template === undefined) {
+      return fail(
+        PG('The real command now asks "How would you like to start?" (the default template, or a built-in one).'),
+        PG('The playground skips the question: add -- --template dataapp, for the Fabric analytics app template.'),
+      );
+    }
+    if (f.template !== 'dataapp') return fail(PG(`Only the dataapp template is simulated here (you asked for ${f.template}).`));
+    p.appDir = name;
+    p.files = {
+      'package.json': `${JSON.stringify(TEMPLATE_PACKAGE, null, 2)}\n`,
+      'rayfin/rayfin.yml': TEMPLATE_RAYFIN_YML,
+      'src/vite-env.d.ts': TEMPLATE_VITE_ENV,
+      [PAGE_FILE]: '',
+    };
+    return done(
+      SIMULATED,
+      PG(`Created ${name}/ from the dataapp template.`),
+      PG('Shown here: package.json, rayfin/rayfin.yml, src/vite-env.d.ts, and an empty src/App.tsx.'),
+      PG('The real template has more: its own client (src/lib/rayfin-client.ts), Fabric sign-in, components,'),
+      PG('its own semantic model hook, tests, agent files and a placeholder page. Creating it does not sign you in.'),
+      PG(`Next: cd ${name}, then npm install.`),
+    );
+  }
+
+  // npm install [packages]
+  if (cmd === 'npm' && (w[1] === 'install' || w[1] === 'i')) {
+    if (!p.appDir) return fail(...NO_PROJECT);
+    if (!inApp()) return fail(PG(`No package.json here. Move into the project first: cd ${p.appDir}`));
+    const named = w.slice(2).filter((a) => !a.startsWith('-'));
+    if (!named.length) {
+      for (const pkg of [...Object.keys(TEMPLATE_PACKAGE.dependencies), ...Object.keys(TEMPLATE_PACKAGE.devDependencies)]) {
+        if (!p.packages.includes(pkg)) p.packages.push(pkg);
+      }
+      return done(SIMULATED, PG('Installed the template\'s packages, React and the Rayfin client among them.'));
+    }
+    const pkg = JSON.parse(p.files['package.json']);
+    const added = [];
+    for (const spec of named) {
+      const name = spec.replace(/(?<=.)@[^@/]+$/, '');
+      if (!KNOWN_PACKAGES.has(name)) return fail(PG(`${name} is not simulated here. The course needs only the packages it names.`));
+      // npm saves with its default ^ prefix unless --save-exact.
+      const asked = spec.slice(name.length + 1) || '2.0.0';
+      const version = /^[\d]/.test(asked) && !w.includes('--save-exact') ? `^${asked}` : asked;
+      pkg.dependencies[name] = version;
+      if (!p.packages.includes(name)) p.packages.push(name);
+      added.push(`${name}@${version}`);
+    }
+    pkg.dependencies = Object.fromEntries(Object.entries(pkg.dependencies).sort(([a], [b]) => a.localeCompare(b)));
+    p.files['package.json'] = `${JSON.stringify(pkg, null, 2)}\n`;
+    return done(SIMULATED, ...added.map((a) => PG(`added ${a} to package.json`)));
+  }
+
+  // npx rayfin …
+  const rayfin = cmd === 'npx' && w[1] === 'rayfin' ? w.slice(2) : cmd === 'rayfin' ? w.slice(1) : null;
+  if (rayfin) {
+    if (!p.appDir) return fail(...NO_PROJECT);
+    if (!inApp()) return fail(PG(`Run Rayfin commands from the project folder. Move into it first: cd ${p.appDir}`));
+    const [sub, sub2] = rayfin;
+    if (sub === 'login') {
+      return done(PG('Sign-in skipped. A real `npx rayfin login` opens your browser for Microsoft Entra ID sign-in.'));
+    }
+    if (sub === 'dev') return runDev(p, done);
+    if (sub === 'up') {
+      return done(
+        SIMULATED,
+        PG('A real `npx rayfin up` builds the app and deploys it to your Fabric workspace, connectors included,'),
+        PG('then `npx rayfin up status` prints its address. Nothing is deployed from here, and there is no address.'),
+      );
+    }
+    if (sub === 'connector' && sub2 === 'add') return connectorAdd(p, flags(rayfin.slice(2)), done, fail);
+    if (sub === 'connector' && sub2 === 'list') {
+      const names = connectorNames(p);
+      return done(...(names.length ? names.map((n) => PG(`${n}  (fabric-semanticmodel)`)) : [PG('No connectors yet.')]));
+    }
+    if (sub === 'connector' && sub2 === 'invoke') return connectorInvoke(p, rayfin.slice(2), answer, done, fail);
+    return fail(PG(`\`rayfin ${rayfin.join(' ')}\` is not simulated here. Try \`help\`.`));
+  }
+  if (cmd === 'npm' && w[1] === 'run' && w[2] === 'dev') {
+    if (!p.appDir) return fail(...NO_PROJECT);
+    if (!inApp()) return fail(PG(`No package.json here. Move into the project first: cd ${p.appDir}`));
+    return runDev(p, done);
+  }
+  return fail(PG(`Not simulated here: ${text}. Try \`help\`.`));
+}
+
+function runDev(p, done) {
+  if (!p.packages.includes('@microsoft/rayfin-client')) {
+    return { project: p, lines: [PG('Run `npm install` first: the dev server needs the template\'s packages.')], ok: false };
+  }
+  p.dev = true;
+  return done(
+    SIMULATED,
+    PG('A real `rayfin dev` provisions (or reuses) the app\'s Fabric backend, writes RAYFIN_PUBLIC_* values to'),
+    PG('rayfin/.env and VITE_* values to .env.local, and serves the page on http://localhost:5173. It keeps'),
+    PG('running, so real projects open a second terminal for the next commands.'),
+    PG('Two things differ in a real project: rayfin dev does not wire connectors (connector queries work'),
+    PG('once the app is deployed with `npx rayfin up`), and the dataapp template\'s README has you view the page through the Fabric portal (&devUri=http://localhost:5173).'),
+    PG('Here: the page runs in the preview on the right, its queries answered from saved results.'),
+  );
+}
+
+/** Connector names in rayfin.yml. */
+export function connectorNames(p) {
+  const yml = p.files['rayfin/rayfin.yml'] ?? '';
+  const block = yml.split(/^connectors:\s*$/m)[1] ?? '';
+  return [...block.matchAll(/^  - name: (\S+)$/gm)].map((m) => m[1]);
+}
+
+// `npx rayfin connector add` (rayfin.ai: Adding a connector, Semantic models; Microsoft Learn: Connect Fabric Apps)
+function connectorAdd(p, f, done, fail) {
+  if (!f.type) return fail(PG('Give --type: here, --type fabric-semanticmodel.'));
+  if (f.type !== 'fabric-semanticmodel') return fail(PG(`Only fabric-semanticmodel connectors are simulated here (you asked for ${f.type}).`));
+  if (f.auth === 'application') return fail('Invalid --auth "application" for connector type "fabric-semanticmodel". Allowed: [delegated].');
+  if (f.auth && f.auth !== 'delegated') return fail(PG('--auth takes delegated or application; semantic models allow only delegated.'));
+  if (!f['workspace-id'] || !f['item-id'] || f['workspace-id'] === true || f['item-id'] === true) {
+    return fail(PG('Give both --workspace-id and --item-id. In a real project they come from `npx rayfin connector search` or the model\'s address in the Fabric portal.'));
+  }
+  if (!f.name || f.name === true) {
+    return fail(PG('Give --name. Without it, the real CLI names the connector after the Fabric item\'s display name, which the playground can\'t see.'));
+  }
+  if (!/^[a-zA-Z0-9\-_]+$/.test(f.name)) return fail(PG('A connector name may only use letters, digits, - and _.'));
+  if (f.operations && f.operations !== 'executeQuery') return fail(PG('A semantic model connector has one operation: executeQuery.'));
+  const name = String(f.name).toLowerCase();
+  if (connectorNames(p).includes(name) && !f.yes) {
+    return fail(PG(`A connector named ${name} exists. The real CLI asks before replacing it; add --yes to replace it.`));
+  }
+  const entry = [
+    `  - name: ${name}`,
+    '    type: fabric-semanticmodel',
+    '    config:',
+    `      workspaceId: ${f['workspace-id']}`,
+    `      itemId: ${f['item-id']}`,
+    '    auth:',
+    '      type: delegated',
+    '    version: "1"',
+    '    operations:',
+    '      - name: executeQuery',
+  ].join('\n');
+  let yml = p.files['rayfin/rayfin.yml'];
+  if (connectorNames(p).includes(name)) {
+    yml = yml.replace(new RegExp(`  - name: ${name}\\n(    .*\\n?)*`), `${entry}\n`);
+  } else {
+    yml = /^connectors:\s*$/m.test(yml) ? `${yml.trimEnd()}\n${entry}\n` : `${yml.trimEnd()}\nconnectors:\n${entry}\n`;
+  }
+  p.files['rayfin/rayfin.yml'] = yml;
+  const Type = `${name.charAt(0).toUpperCase()}${name.slice(1).replace(/[-_](\w)/g, (_, c) => c.toUpperCase())}Schema`;
+  p.files[`rayfin/connectors/${name}/schema.ts`] = [
+    '// @generated — do not edit.',
+    '// Playground: Shortened: the real file also has comments describing the connector.',
+    "import type { ConnectorConfig } from '@microsoft/rayfin-connectors';",
+    "import type { FabricSemanticModel } from '@microsoft/rayfin-connector-fabric-semanticmodel';",
+    '',
+    `export type ${Type} = FabricSemanticModel<'executeQuery'>;`,
+    '',
+    'export const connectorConfig = {',
+    "  connector: 'fabric-semanticmodel',",
+    '} as const satisfies ConnectorConfig;',
+    '',
+  ].join('\n');
+  return done(
+    SIMULATED,
+    PG(`Added connector ${name} to rayfin/rayfin.yml.`),
+    PG(`Wrote rayfin/connectors/${name}/schema.ts (generated: do not edit).`),
+    '📦 Install the packages this connector needs:',
+    '   npm install @microsoft/rayfin-connector-fabric-semanticmodel@2.0.0 @microsoft/rayfin-connectors@2.0.0',
+    PG('The real CLI also reports whether it wired the connector into the app. This template has no generated'),
+    PG(`wiring file, so nothing is wired: we register it in the client ourselves (client.connectors.${name}).`),
+  );
+}
+
+// `npx rayfin connector invoke <name> executeQuery --input '<json>'` (rayfin.ai: CLI reference, connector)
+function connectorInvoke(p, args, answer, done, fail) {
+  const f = flags(args);
+  const [name, op] = f._;
+  if (!name || !connectorNames(p).includes(String(name).toLowerCase())) return fail(PG(`No connector named ${name ?? '(none)'} in rayfin/rayfin.yml.`));
+  if (op !== 'executeQuery') return fail(PG('A semantic model connector has one operation: executeQuery.'));
+  if (typeof f.input !== 'string') return fail(PG('Give the payload with --input \'{"query":"<DAX>"}\'.'));
+  let payload;
+  try {
+    payload = JSON.parse(f.input);
+  } catch {
+    return fail(PG('--input must be JSON, such as \'{"query":"EVALUATE ROW(\\"Revenue\\", [Revenue])"}\'.'));
+  }
+  if (typeof payload?.query !== 'string') return fail(PG('The payload needs a "query" with the DAX text.'));
+  const result = answer ? answer(payload.query) : undefined;
+  if (!result) return fail(PG('No saved answer for that query.'));
+  // A failed query: the docs give a non-zero exit and a JSON result, but not its exact outer shape.
+  if (result.status !== 'success') {
+    return fail(PG('The query failed. The real CLI exits with an error and prints the result; its error part:'), ...JSON.stringify(result.error, null, 2).split('\n').map((l) => PG(l)));
+  }
+  // rayfin.ai (CLI reference, invoke): with --json, success emits { status: 'ok', connector, operation, output }.
+  // Rows are cut outside the JSON, never inside it (the real CLI spills large output to a file).
+  const cut = result.table.rows.length > 5;
+  const output = cut ? { ...result, table: { ...result.table, rows: result.table.rows.slice(0, 5) } } : result;
+  const envelope = { status: 'ok', connector: String(name).toLowerCase(), operation: 'executeQuery', output };
+  return {
+    project: p,
+    lines: [
+      SIMULATED,
+      PG('Shown in the shape `--json` prints; without it, the real layout may differ.'),
+      ...JSON.stringify(envelope, null, 2).split('\n'),
+      ...(cut ? [PG(`First 5 of ${result.table.rows.length} rows shown.`)] : []),
+    ],
+    ok: true,
+  };
+}
+
+// ---------------------------------------------------------------- steps
+/**
+ * Apply a step's file edits. Each edit is { file?, from, to, all? }; file defaults to the page file.
+ * An edit with `from: ''` on a file that doesn't exist yet (or is empty) writes the file.
+ * Returns { project } or { error }.
+ */
+export function applyFileEdits(start, edits = []) {
+  const p = clone(start);
+  for (const e of edits) {
+    const file = e.file ?? PAGE_FILE;
+    const text = p.files[file];
+    if (e.from === '') {
+      if (text === undefined || text.trim() === '') {
+        p.files[file] = e.to;
+        continue;
+      }
+      if (text.includes(e.to)) continue;
+      return { error: `${file} is not empty` };
+    }
+    if (text === undefined) return { error: `${file} does not exist` };
+    if (text.includes(e.from)) {
+      p.files[file] = e.all ? text.split(e.from).join(e.to) : text.replace(e.from, e.to);
+    } else if (e.to && text.includes(e.to)) {
+      continue; // already done
+    } else {
+      return { error: `${file}: text not found: ${e.from.slice(0, 60)}` };
+    }
+  }
+  return { project: p };
+}
+
+const squash = (s) => s.replace(/\s+/g, ' ').trim();
+
+/** Is a step done in this project? Commands: run before (however spaced). Edits: their result is there. */
+export function stepIsDone(p, step) {
+  if (step.run) return p.history.some((h) => normCommand(h) === normCommand(step.run));
+  if (!step.edits) return false;
+  if (step.done?.absent) return !(p.files[step.done.file ?? PAGE_FILE] ?? '').includes(step.done.absent);
+  if (step.done?.before) {
+    const text = p.files[step.done.file ?? PAGE_FILE] ?? '';
+    const [a, b] = step.done.before;
+    return text.includes(a) && text.includes(b) && text.indexOf(a) < text.indexOf(b);
+  }
+  return step.edits.every((e) => {
+    const text = squash(p.files[e.file ?? PAGE_FILE] ?? '');
+    const to = squash(e.to);
+    const from = squash(e.from);
+    if (e.from === '') return to === '' || text.includes(to);
+    return (!to || text.includes(to)) && (!from || to.includes(from) || !text.includes(from));
+  });
+}
+
+/** Do a step to a project, as "Do it for me" would. */
+export function doStep(p, step, answer) {
+  if (step.run) {
+    const r = runCommand(p, step.run, answer);
+    return r.ok ? { project: r.project, lines: r.lines } : { error: r.lines.join('\n'), project: r.project, lines: r.lines };
+  }
+  if (step.edits) return applyFileEdits(p, step.edits);
+  return { project: p };
+}
+
+/** The project at the start of a lesson: every step of every earlier lesson done, from empty. */
+export function checkpoint(order, lessonIndex, answer) {
+  let p = emptyProject();
+  for (const lesson of order.slice(0, lessonIndex)) {
+    for (const step of lesson.steps) {
+      const r = doStep(p, step, answer);
+      if (r.error) throw new Error(`${lesson.id}: ${r.error}`);
+      p = r.project;
+    }
+  }
+  return p;
+}

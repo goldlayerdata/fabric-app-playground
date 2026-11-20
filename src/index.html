@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Page playground · Gold Layer</title>
+    <meta name="description" content="Script a report-style page in TypeScript and React, with simulated data from a Contoso model. A Gold Layer playground for Power BI developers. Unofficial, not affiliated with Microsoft." />
+    <link rel="stylesheet" href="assets/app.css" />
+  </head>
+  <body>
+    <header class="top">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-name">Gold Layer</span>
+        <span class="brand-sep">/</span>
+        <span class="brand-page">Page playground</span>
+      </div>
+      <button type="button" class="course-btn" id="btn-course" aria-expanded="false" aria-controls="course">
+        <span class="burger" aria-hidden="true">☰</span>
+        <span class="course-label">Course</span>
+        <span class="course-where" id="course-where"></span>
+        <span class="course-bar" id="course-bar" aria-hidden="true"><i></i></span>
+        <span class="course-count" id="course-count"></span>
+      </button>
+      <span class="top-gap"></span>
+      <button type="button" class="sim-chip" id="btn-version" title="Nothing here talks to Fabric or Power BI. Results are saved snapshots from a Contoso model. Click for the About tab.">
+        Simulated connector · mirrors Rayfin 2.0 · unofficial
+      </button>
+    </header>
+    <div class="drawer-backdrop" id="course-backdrop" hidden></div>
+    <aside class="drawer" id="course" aria-label="Course" hidden>
+      <div class="drawer-head">
+        <h2>Course</h2>
+        <button type="button" id="btn-course-close">Close</button>
+      </div>
+      <div class="drawer-body" id="course-body"></div>
+    </aside>
+    <p class="narrow-note">Made for a desktop browser: the editor and the 16:9 page need room side by side.</p>
+    <main class="layout">
+      <section class="left">
+        <article class="lesson" id="lesson"></article>
+        <div class="split split-h" id="split-lesson" role="separator" aria-orientation="horizontal" title="Drag to resize. Double-click to reset."></div>
+        <div class="editor-wrap">
+          <div class="files" id="files" aria-label="Files in the project"></div>
+          <div class="undo-bar" id="undo-bar" hidden></div>
+          <div class="editor" id="editor"><p class="editor-loading">Loading the editor…</p></div>
+          <div class="status" id="status">
+            <span id="type-status">Checking types…</span>
+            <span class="status-hint">Runs when you pause typing · Ctrl+S runs now</span>
+          </div>
+        </div>
+      </section>
+      <div class="split split-v" id="split-main" role="separator" aria-orientation="vertical" title="Drag to resize. Double-click to reset."></div>
+      <section class="right">
+        <div class="toolbar">
+          <span class="run-state" id="run-state">Starting…</span>
+          <span class="toolbar-gap"></span>
+          <label class="check"><input type="checkbox" id="outline" /> Outline cells</label>
+          <button type="button" id="btn-run" title="Ctrl+S">Run</button>
+          <button type="button" id="btn-stop" title="Stop the page, for example if it keeps querying">Stop</button>
+          <button type="button" id="btn-answer" title="The project with every step of this lesson done (Undo is offered)">Finish the lesson for me</button>
+          <button type="button" id="btn-reset" title="Back to the start of this lesson (Undo is offered)">Reset</button>
+        </div>
+        <div class="preview" id="preview">
+          <div class="preview-idle" id="preview-idle" hidden></div>
+          <div class="preview-error" id="preview-error" hidden></div>
+          <div class="preview-stopped" id="preview-stopped" hidden>
+            <p id="stopped-text">Stopped.</p>
+            <button type="button" id="btn-restart">Run again</button>
+          </div>
+        </div>
+        <div class="split split-h" id="split-panel" role="separator" aria-orientation="horizontal" title="Drag to resize. Double-click to reset."></div>
+        <div class="panel" id="panel">
+          <div class="panel-tabs" role="tablist">
+            <button type="button" role="tab" data-tab="terminal" aria-selected="true">Terminal</button>
+            <button type="button" role="tab" data-tab="log" aria-selected="false">Log <span class="count" id="log-count">0</span></button>
+            <button type="button" role="tab" data-tab="queries" aria-selected="false">Queries</button>
+            <button type="button" role="tab" data-tab="terms" aria-selected="false">Terms</button>
+            <button type="button" role="tab" data-tab="help" aria-selected="false">Help</button>
+            <button type="button" role="tab" data-tab="about" aria-selected="false">About</button>
+            <button type="button" class="pop-btn" id="btn-panel-pop" title="Show this panel large, for comfortable reading (Esc closes)">Pop out</button>
+          </div>
+          <div class="panel-body terminal" id="tab-terminal" role="tabpanel"></div>
+          <div class="panel-body" id="tab-log" role="tabpanel" hidden></div>
+          <div class="panel-body" id="tab-queries" role="tabpanel" hidden></div>
+          <div class="panel-body" id="tab-terms" role="tabpanel" hidden></div>
+          <div class="panel-body" id="tab-help" role="tabpanel" hidden></div>
+          <div class="panel-body" id="tab-about" role="tabpanel" hidden></div>
+        </div>
+      </section>
+    </main>
+    <div class="pop-backdrop" id="pop-backdrop" hidden></div>
+    <script type="module" src="assets/app.js"></script>
+  </body>
+</html>

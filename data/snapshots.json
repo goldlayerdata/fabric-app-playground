@@ -1,0 +1,4576 @@
+{
+  "source": "Contoso sample model (SQLBI Contoso Data Generator V2, MIT), queried in Power BI Desktop",
+  "takenAt": "2026-11-20",
+  "snapshots": {
+    "revenue": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            150632573.6073
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-country": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "store[CountryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "United States",
+            60466772.1529
+          ],
+          [
+            "Online",
+            41916444.7117
+          ],
+          [
+            "Canada",
+            10574832.6324
+          ],
+          [
+            "United Kingdom",
+            10507646.9103
+          ],
+          [
+            "Germany",
+            10441312.2866
+          ],
+          [
+            "Australia",
+            6416751.5216
+          ],
+          [
+            "Netherlands",
+            4296204.4391
+          ],
+          [
+            "Italy",
+            3203527.8765
+          ],
+          [
+            "France",
+            2809081.0762
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-country-with-orders": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "store[CountryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "United States",
+            22824,
+            60466772.1529
+          ],
+          [
+            "Online",
+            16615,
+            41916444.7117
+          ],
+          [
+            "Canada",
+            4130,
+            10574832.6324
+          ],
+          [
+            "United Kingdom",
+            3953,
+            10507646.9103
+          ],
+          [
+            "Germany",
+            4091,
+            10441312.2866
+          ],
+          [
+            "Australia",
+            2374,
+            6416751.5216
+          ],
+          [
+            "Netherlands",
+            1583,
+            4296204.4391
+          ],
+          [
+            "Italy",
+            1138,
+            3203527.8765
+          ],
+          [
+            "France",
+            1036,
+            2809081.0762
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            150632573.6073,
+            57744,
+            7297
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            69403437.8359
+          ],
+          [
+            "Cell phones",
+            22474278.116
+          ],
+          [
+            "Home Appliances",
+            17196810.4833
+          ],
+          [
+            "Cameras and camcorders",
+            15986316.4798
+          ],
+          [
+            "TV and Video",
+            13253691.5424
+          ],
+          [
+            "Music, Movies and Audio Books",
+            6890236.3199
+          ],
+          [
+            "Audio",
+            4196985.9686
+          ],
+          [
+            "Games and Toys",
+            1230816.8614
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-year": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "date[Year]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            2023,
+            16963890.2173,
+            6207
+          ],
+          [
+            2024,
+            34958422.9949,
+            12613
+          ],
+          [
+            2025,
+            49019740.2715,
+            18750
+          ],
+          [
+            2026,
+            49690520.1236,
+            20174
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-month": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "date[YearMonthNumber]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "date[YearMonthShort]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            24277,
+            "Jan 2023",
+            1234396.8366
+          ],
+          [
+            24278,
+            "Feb 2023",
+            1837056.4511
+          ],
+          [
+            24279,
+            "Mar 2023",
+            1262921.4938
+          ],
+          [
+            24280,
+            "Apr 2023",
+            1315230.768
+          ],
+          [
+            24281,
+            "May 2023",
+            1375787.0426
+          ],
+          [
+            24282,
+            "Jun 2023",
+            1377520.8474
+          ],
+          [
+            24283,
+            "Jul 2023",
+            1371665.77
+          ],
+          [
+            24284,
+            "Aug 2023",
+            762235.3084
+          ],
+          [
+            24285,
+            "Sep 2023",
+            1424530.2386
+          ],
+          [
+            24286,
+            "Oct 2023",
+            1648378.422
+          ],
+          [
+            24287,
+            "Nov 2023",
+            1288358.8671
+          ],
+          [
+            24288,
+            "Dec 2023",
+            2065808.1717
+          ],
+          [
+            24289,
+            "Jan 2024",
+            2443101.7731
+          ],
+          [
+            24290,
+            "Feb 2024",
+            3028368.8717
+          ],
+          [
+            24291,
+            "Mar 2024",
+            1936536.2872
+          ],
+          [
+            24292,
+            "Apr 2024",
+            1892058.3348
+          ],
+          [
+            24293,
+            "May 2024",
+            2493209.8119
+          ],
+          [
+            24294,
+            "Jun 2024",
+            2330952.498
+          ],
+          [
+            24295,
+            "Jul 2024",
+            2449036.7152
+          ],
+          [
+            24296,
+            "Aug 2024",
+            1897313.9425
+          ],
+          [
+            24297,
+            "Sep 2024",
+            3235425.8286
+          ],
+          [
+            24298,
+            "Oct 2024",
+            3947929.0261
+          ],
+          [
+            24299,
+            "Nov 2024",
+            3903509.1153
+          ],
+          [
+            24300,
+            "Dec 2024",
+            5400980.7905
+          ],
+          [
+            24301,
+            "Jan 2025",
+            6906745.7712
+          ],
+          [
+            24302,
+            "Feb 2025",
+            7680039.9889
+          ],
+          [
+            24303,
+            "Mar 2025",
+            4601549.7309
+          ],
+          [
+            24304,
+            "Apr 2025",
+            4619421.4036
+          ],
+          [
+            24305,
+            "May 2025",
+            4573526.5067
+          ],
+          [
+            24306,
+            "Jun 2025",
+            4199032.2299
+          ],
+          [
+            24307,
+            "Jul 2025",
+            3309477.1906
+          ],
+          [
+            24308,
+            "Aug 2025",
+            1705430.8468
+          ],
+          [
+            24309,
+            "Sep 2025",
+            2586887.2797
+          ],
+          [
+            24310,
+            "Oct 2025",
+            2927808.7076
+          ],
+          [
+            24311,
+            "Nov 2025",
+            2603192.4516
+          ],
+          [
+            24312,
+            "Dec 2025",
+            3306628.164
+          ],
+          [
+            24313,
+            "Jan 2026",
+            4352002.0909
+          ],
+          [
+            24314,
+            "Feb 2026",
+            4549540.4774
+          ],
+          [
+            24315,
+            "Mar 2026",
+            3057666.6439
+          ],
+          [
+            24316,
+            "Apr 2026",
+            3613942.5177
+          ],
+          [
+            24317,
+            "May 2026",
+            4381191.5342
+          ],
+          [
+            24318,
+            "Jun 2026",
+            4892785.9665
+          ],
+          [
+            24319,
+            "Jul 2026",
+            5507037.8944
+          ],
+          [
+            24320,
+            "Aug 2026",
+            3904531.8548
+          ],
+          [
+            24321,
+            "Sep 2026",
+            6722104.3273
+          ],
+          [
+            24322,
+            "Oct 2026",
+            6862174.2518
+          ],
+          [
+            24323,
+            "Nov 2026",
+            1847542.5647
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-country-2023": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "store[CountryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "United States",
+            7629551.5315
+          ],
+          [
+            "Online",
+            2494480.5125
+          ],
+          [
+            "United Kingdom",
+            1919506.8643
+          ],
+          [
+            "Germany",
+            1319745.8634
+          ],
+          [
+            "Canada",
+            1318240.6896
+          ],
+          [
+            "Australia",
+            777905.2136
+          ],
+          [
+            "Italy",
+            698114.4567
+          ],
+          [
+            "Netherlands",
+            437315.9189
+          ],
+          [
+            "France",
+            369029.1668
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-country-2024": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "store[CountryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "United States",
+            16125872.2897
+          ],
+          [
+            "Online",
+            5799117.9818
+          ],
+          [
+            "United Kingdom",
+            3242578.6611
+          ],
+          [
+            "Canada",
+            2859879.829
+          ],
+          [
+            "Germany",
+            2755402.991
+          ],
+          [
+            "Australia",
+            1399842.602
+          ],
+          [
+            "Italy",
+            1072483.1557
+          ],
+          [
+            "Netherlands",
+            1017583.8719
+          ],
+          [
+            "France",
+            685661.6127
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-country-2025": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "store[CountryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "United States",
+            21410382.3611
+          ],
+          [
+            "Online",
+            11302937.8022
+          ],
+          [
+            "Canada",
+            3528378.4632
+          ],
+          [
+            "United Kingdom",
+            3491283.6809
+          ],
+          [
+            "Germany",
+            3482017.2585
+          ],
+          [
+            "Australia",
+            2254106.0101
+          ],
+          [
+            "Netherlands",
+            1528844.8798
+          ],
+          [
+            "Italy",
+            1013350.9258
+          ],
+          [
+            "France",
+            1008438.8899
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-country-2026": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "store[CountryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Online",
+            22319908.4152
+          ],
+          [
+            "United States",
+            15300965.9706
+          ],
+          [
+            "Germany",
+            2884146.1737
+          ],
+          [
+            "Canada",
+            2868333.6506
+          ],
+          [
+            "Australia",
+            1984897.6959
+          ],
+          [
+            "United Kingdom",
+            1854277.704
+          ],
+          [
+            "Netherlands",
+            1312459.7685
+          ],
+          [
+            "France",
+            745951.4068
+          ],
+          [
+            "Italy",
+            419579.3383
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2023": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            16963890.2173,
+            6207,
+            3910
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2024": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            34958422.9949,
+            12613,
+            5404
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2025": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            49019740.2715,
+            18750,
+            6020
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2026": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            49690520.1236,
+            20174,
+            5878
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-australia": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            6416751.5216,
+            2374,
+            646
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-canada": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            10574832.6324,
+            4130,
+            668
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-france": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            2809081.0762,
+            1036,
+            303
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-germany": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            10441312.2866,
+            4091,
+            682
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-italy": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            3203527.8765,
+            1138,
+            289
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-netherlands": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            4296204.4391,
+            1583,
+            314
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-online": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            41916444.7117,
+            16615,
+            5798
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-united-kingdom": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            10507646.9103,
+            3953,
+            955
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-united-states": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            60466772.1529,
+            22824,
+            3189
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2023-australia": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            777905.2136,
+            277,
+            225
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2023-canada": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            1318240.6896,
+            527,
+            352
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2023-france": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            369029.1668,
+            135,
+            106
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2023-germany": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            1319745.8634,
+            492,
+            330
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2023-italy": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            698114.4567,
+            235,
+            154
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2023-netherlands": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            437315.9189,
+            163,
+            124
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2023-online": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            2494480.5125,
+            886,
+            830
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2023-united-kingdom": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            1919506.8643,
+            746,
+            489
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2023-united-states": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            7629551.5315,
+            2746,
+            1743
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2024-australia": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            1399842.602,
+            538,
+            367
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2024-canada": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            2859879.829,
+            1066,
+            496
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2024-france": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            685661.6127,
+            238,
+            156
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2024-germany": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            2755402.991,
+            1002,
+            486
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2024-italy": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            1072483.1557,
+            358,
+            193
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2024-netherlands": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            1017583.8719,
+            379,
+            212
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2024-online": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            5799117.9818,
+            2257,
+            1859
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2024-united-kingdom": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            3242578.6611,
+            1148,
+            635
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2024-united-states": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            16125872.2897,
+            5627,
+            2465
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2025-australia": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            2254106.0101,
+            848,
+            465
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2025-canada": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            3528378.4632,
+            1387,
+            550
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2025-france": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            1008438.8899,
+            356,
+            199
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2025-germany": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            3482017.2585,
+            1394,
+            545
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2025-italy": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            1013350.9258,
+            372,
+            188
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2025-netherlands": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            1528844.8798,
+            569,
+            249
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2025-online": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            11302937.8022,
+            4284,
+            3014
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2025-united-kingdom": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            3491283.6809,
+            1291,
+            666
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2025-united-states": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            21410382.3611,
+            8249,
+            2711
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2026-australia": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            1984897.6959,
+            711,
+            422
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2026-canada": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            2868333.6506,
+            1150,
+            508
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2026-france": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            745951.4068,
+            307,
+            180
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2026-germany": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            2884146.1737,
+            1203,
+            496
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2026-italy": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            419579.3383,
+            173,
+            117
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2026-netherlands": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            1312459.7685,
+            472,
+            236
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2026-online": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            22319908.4152,
+            9188,
+            4526
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2026-united-kingdom": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            1854277.704,
+            768,
+            500
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "totals-2026-united-states": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Orders]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Customers]",
+            "dataType": "Int64"
+          }
+        ],
+        "rows": [
+          [
+            15300965.9706,
+            6202,
+            2420
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2023": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            6025128.3171
+          ],
+          [
+            "Cameras and camcorders",
+            3430459.3871
+          ],
+          [
+            "Home Appliances",
+            2962096.2293
+          ],
+          [
+            "TV and Video",
+            2016205.0529
+          ],
+          [
+            "Cell phones",
+            1465123.2592
+          ],
+          [
+            "Music, Movies and Audio Books",
+            482288.604
+          ],
+          [
+            "Audio",
+            477614.5394
+          ],
+          [
+            "Games and Toys",
+            104974.8283
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2024": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            17068394.8508
+          ],
+          [
+            "Home Appliances",
+            4653673.7771
+          ],
+          [
+            "Cell phones",
+            4535923.6075
+          ],
+          [
+            "Cameras and camcorders",
+            3658798.4167
+          ],
+          [
+            "TV and Video",
+            2404259.233
+          ],
+          [
+            "Audio",
+            1326796.2893
+          ],
+          [
+            "Music, Movies and Audio Books",
+            1069295.7137
+          ],
+          [
+            "Games and Toys",
+            241281.1068
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2025": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            24731898.0253
+          ],
+          [
+            "Cell phones",
+            7530649.8189
+          ],
+          [
+            "Cameras and camcorders",
+            5749459.5541
+          ],
+          [
+            "Home Appliances",
+            3711953.2877
+          ],
+          [
+            "TV and Video",
+            3063590.9502
+          ],
+          [
+            "Music, Movies and Audio Books",
+            2201558.2068
+          ],
+          [
+            "Audio",
+            1512581.7328
+          ],
+          [
+            "Games and Toys",
+            518048.6957
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2026": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            21578016.6427
+          ],
+          [
+            "Cell phones",
+            8942581.4304
+          ],
+          [
+            "Home Appliances",
+            5869087.1892
+          ],
+          [
+            "TV and Video",
+            5769636.3063
+          ],
+          [
+            "Cameras and camcorders",
+            3147599.1219
+          ],
+          [
+            "Music, Movies and Audio Books",
+            3137093.7954
+          ],
+          [
+            "Audio",
+            879993.4071
+          ],
+          [
+            "Games and Toys",
+            366512.2306
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-australia": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            2919364.9909
+          ],
+          [
+            "Cell phones",
+            943411.1066
+          ],
+          [
+            "Cameras and camcorders",
+            781227.1312
+          ],
+          [
+            "Home Appliances",
+            744868.4924
+          ],
+          [
+            "TV and Video",
+            531892.0015
+          ],
+          [
+            "Music, Movies and Audio Books",
+            262554.579
+          ],
+          [
+            "Audio",
+            181976.1336
+          ],
+          [
+            "Games and Toys",
+            51457.0864
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-canada": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            5143863.3595
+          ],
+          [
+            "Cell phones",
+            1505878.0777
+          ],
+          [
+            "Home Appliances",
+            1187532.7119
+          ],
+          [
+            "Cameras and camcorders",
+            1089817.1551
+          ],
+          [
+            "TV and Video",
+            820274.1204
+          ],
+          [
+            "Music, Movies and Audio Books",
+            436503.7831
+          ],
+          [
+            "Audio",
+            297101.3958
+          ],
+          [
+            "Games and Toys",
+            93862.0289
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-france": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            1359639.9502
+          ],
+          [
+            "Cell phones",
+            396874.2829
+          ],
+          [
+            "Home Appliances",
+            345917.6874
+          ],
+          [
+            "Cameras and camcorders",
+            298425.5376
+          ],
+          [
+            "TV and Video",
+            183021.4165
+          ],
+          [
+            "Music, Movies and Audio Books",
+            125109.3931
+          ],
+          [
+            "Audio",
+            75869.8164
+          ],
+          [
+            "Games and Toys",
+            24222.9921
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-germany": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            4623624.8647
+          ],
+          [
+            "Cell phones",
+            1601307.4248
+          ],
+          [
+            "Cameras and camcorders",
+            1245039.5144
+          ],
+          [
+            "Home Appliances",
+            1154673.6727
+          ],
+          [
+            "TV and Video",
+            921011.5912
+          ],
+          [
+            "Music, Movies and Audio Books",
+            493643.3986
+          ],
+          [
+            "Audio",
+            316430.8486
+          ],
+          [
+            "Games and Toys",
+            85580.9716
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-italy": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            1506789.1378
+          ],
+          [
+            "Home Appliances",
+            466850.9281
+          ],
+          [
+            "Cell phones",
+            422469.7127
+          ],
+          [
+            "Cameras and camcorders",
+            401023.6258
+          ],
+          [
+            "TV and Video",
+            170963.6579
+          ],
+          [
+            "Audio",
+            109349.2085
+          ],
+          [
+            "Music, Movies and Audio Books",
+            107086.1829
+          ],
+          [
+            "Games and Toys",
+            18995.4228
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-netherlands": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            2024933.9957
+          ],
+          [
+            "Cell phones",
+            631081.1066
+          ],
+          [
+            "Home Appliances",
+            556223.0637
+          ],
+          [
+            "Cameras and camcorders",
+            466951.3011
+          ],
+          [
+            "TV and Video",
+            276799.4294
+          ],
+          [
+            "Music, Movies and Audio Books",
+            185883.2791
+          ],
+          [
+            "Audio",
+            118304.8207
+          ],
+          [
+            "Games and Toys",
+            36027.4428
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-online": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            19151172.5302
+          ],
+          [
+            "Cell phones",
+            6730933.3347
+          ],
+          [
+            "Home Appliances",
+            4602706.5531
+          ],
+          [
+            "TV and Video",
+            4129597.5269
+          ],
+          [
+            "Cameras and camcorders",
+            3604806.0981
+          ],
+          [
+            "Music, Movies and Audio Books",
+            2274444.5533
+          ],
+          [
+            "Audio",
+            1072455.6771
+          ],
+          [
+            "Games and Toys",
+            350328.4383
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-united-kingdom": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            4936202.937
+          ],
+          [
+            "Cell phones",
+            1382831.81
+          ],
+          [
+            "Home Appliances",
+            1262751.7911
+          ],
+          [
+            "Cameras and camcorders",
+            1224182.8809
+          ],
+          [
+            "TV and Video",
+            867147.9708
+          ],
+          [
+            "Music, Movies and Audio Books",
+            433817.9473
+          ],
+          [
+            "Audio",
+            321994.2063
+          ],
+          [
+            "Games and Toys",
+            78717.3669
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-united-states": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            27737846.0699
+          ],
+          [
+            "Cell phones",
+            8859491.26
+          ],
+          [
+            "Home Appliances",
+            6875285.5829
+          ],
+          [
+            "Cameras and camcorders",
+            6874843.2356
+          ],
+          [
+            "TV and Video",
+            5352983.8278
+          ],
+          [
+            "Music, Movies and Audio Books",
+            2571193.2035
+          ],
+          [
+            "Audio",
+            1703503.8616
+          ],
+          [
+            "Games and Toys",
+            491625.1116
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2023-australia": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            305245.8202
+          ],
+          [
+            "Cameras and camcorders",
+            156905.6886
+          ],
+          [
+            "Home Appliances",
+            131877.724
+          ],
+          [
+            "TV and Video",
+            85307.0053
+          ],
+          [
+            "Cell phones",
+            57407.2041
+          ],
+          [
+            "Audio",
+            18867.4561
+          ],
+          [
+            "Music, Movies and Audio Books",
+            17774.8462
+          ],
+          [
+            "Games and Toys",
+            4519.4691
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2023-canada": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            458920.16
+          ],
+          [
+            "Home Appliances",
+            245197.4551
+          ],
+          [
+            "Cameras and camcorders",
+            218505.0525
+          ],
+          [
+            "TV and Video",
+            164008.8003
+          ],
+          [
+            "Cell phones",
+            144679.6079
+          ],
+          [
+            "Audio",
+            41183.7749
+          ],
+          [
+            "Music, Movies and Audio Books",
+            37887.9503
+          ],
+          [
+            "Games and Toys",
+            7857.8886
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2023-france": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            125951.9825
+          ],
+          [
+            "Cameras and camcorders",
+            86794.0
+          ],
+          [
+            "Home Appliances",
+            79453.8382
+          ],
+          [
+            "TV and Video",
+            29900.9667
+          ],
+          [
+            "Cell phones",
+            27577.4356
+          ],
+          [
+            "Music, Movies and Audio Books",
+            9437.5305
+          ],
+          [
+            "Audio",
+            8636.652
+          ],
+          [
+            "Games and Toys",
+            1276.7613
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2023-germany": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            410897.6825
+          ],
+          [
+            "Cameras and camcorders",
+            304788.228
+          ],
+          [
+            "Home Appliances",
+            225672.6375
+          ],
+          [
+            "TV and Video",
+            154484.152
+          ],
+          [
+            "Cell phones",
+            136838.2913
+          ],
+          [
+            "Audio",
+            41102.4417
+          ],
+          [
+            "Music, Movies and Audio Books",
+            39114.3173
+          ],
+          [
+            "Games and Toys",
+            6848.1131
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2023-italy": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            212476.6051
+          ],
+          [
+            "Home Appliances",
+            200003.2366
+          ],
+          [
+            "Cameras and camcorders",
+            131675.2815
+          ],
+          [
+            "TV and Video",
+            59090.4058
+          ],
+          [
+            "Cell phones",
+            55373.9717
+          ],
+          [
+            "Audio",
+            20340.6182
+          ],
+          [
+            "Music, Movies and Audio Books",
+            16528.3125
+          ],
+          [
+            "Games and Toys",
+            2626.0253
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2023-netherlands": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            131474.4011
+          ],
+          [
+            "Home Appliances",
+            106101.1707
+          ],
+          [
+            "Cameras and camcorders",
+            72169.5894
+          ],
+          [
+            "Cell phones",
+            48156.6773
+          ],
+          [
+            "TV and Video",
+            46592.5905
+          ],
+          [
+            "Music, Movies and Audio Books",
+            18377.4865
+          ],
+          [
+            "Audio",
+            11684.0466
+          ],
+          [
+            "Games and Toys",
+            2759.9568
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2023-online": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            972121.7385
+          ],
+          [
+            "Cameras and camcorders",
+            514508.0911
+          ],
+          [
+            "Home Appliances",
+            380438.2696
+          ],
+          [
+            "TV and Video",
+            262228.6082
+          ],
+          [
+            "Cell phones",
+            208091.7328
+          ],
+          [
+            "Audio",
+            76812.9319
+          ],
+          [
+            "Music, Movies and Audio Books",
+            67185.4447
+          ],
+          [
+            "Games and Toys",
+            13093.6957
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2023-united-kingdom": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            716861.2574
+          ],
+          [
+            "Cameras and camcorders",
+            391861.297
+          ],
+          [
+            "Home Appliances",
+            321637.8938
+          ],
+          [
+            "TV and Video",
+            209126.1734
+          ],
+          [
+            "Cell phones",
+            163401.4895
+          ],
+          [
+            "Music, Movies and Audio Books",
+            57602.8696
+          ],
+          [
+            "Audio",
+            46371.928
+          ],
+          [
+            "Games and Toys",
+            12643.9556
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2023-united-states": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            2691178.6698
+          ],
+          [
+            "Cameras and camcorders",
+            1553252.159
+          ],
+          [
+            "Home Appliances",
+            1271714.0038
+          ],
+          [
+            "TV and Video",
+            1005466.3507
+          ],
+          [
+            "Cell phones",
+            623596.849
+          ],
+          [
+            "Music, Movies and Audio Books",
+            218379.8464
+          ],
+          [
+            "Audio",
+            212614.69
+          ],
+          [
+            "Games and Toys",
+            53348.9628
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2024-australia": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            638403.1887
+          ],
+          [
+            "Home Appliances",
+            220846.7626
+          ],
+          [
+            "Cell phones",
+            197535.0119
+          ],
+          [
+            "Cameras and camcorders",
+            140826.5248
+          ],
+          [
+            "TV and Video",
+            81428.8099
+          ],
+          [
+            "Audio",
+            57489.9826
+          ],
+          [
+            "Music, Movies and Audio Books",
+            54809.6597
+          ],
+          [
+            "Games and Toys",
+            8502.6618
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2024-canada": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            1456688.6886
+          ],
+          [
+            "Cell phones",
+            385944.243
+          ],
+          [
+            "Home Appliances",
+            379823.9179
+          ],
+          [
+            "Cameras and camcorders",
+            254449.9091
+          ],
+          [
+            "TV and Video",
+            181589.0714
+          ],
+          [
+            "Audio",
+            105030.3732
+          ],
+          [
+            "Music, Movies and Audio Books",
+            79740.3308
+          ],
+          [
+            "Games and Toys",
+            16613.295
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2024-france": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            333826.523
+          ],
+          [
+            "Cell phones",
+            98315.5719
+          ],
+          [
+            "Cameras and camcorders",
+            94628.0813
+          ],
+          [
+            "Home Appliances",
+            74373.1572
+          ],
+          [
+            "TV and Video",
+            29665.604
+          ],
+          [
+            "Audio",
+            27029.1554
+          ],
+          [
+            "Music, Movies and Audio Books",
+            22412.3736
+          ],
+          [
+            "Games and Toys",
+            5411.1463
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2024-germany": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            1323769.1149
+          ],
+          [
+            "Cell phones",
+            391484.0072
+          ],
+          [
+            "Home Appliances",
+            343067.7384
+          ],
+          [
+            "Cameras and camcorders",
+            257352.1747
+          ],
+          [
+            "TV and Video",
+            207972.5142
+          ],
+          [
+            "Audio",
+            107710.5647
+          ],
+          [
+            "Music, Movies and Audio Books",
+            104492.4265
+          ],
+          [
+            "Games and Toys",
+            19554.4504
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2024-italy": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            580132.6021
+          ],
+          [
+            "Home Appliances",
+            141220.7488
+          ],
+          [
+            "Cell phones",
+            131324.6075
+          ],
+          [
+            "Cameras and camcorders",
+            106281.9083
+          ],
+          [
+            "Audio",
+            49706.3749
+          ],
+          [
+            "Music, Movies and Audio Books",
+            30428.096
+          ],
+          [
+            "TV and Video",
+            27886.5393
+          ],
+          [
+            "Games and Toys",
+            5502.2788
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2024-netherlands": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            488310.8998
+          ],
+          [
+            "Home Appliances",
+            160995.5313
+          ],
+          [
+            "Cell phones",
+            129441.7097
+          ],
+          [
+            "Cameras and camcorders",
+            108490.1202
+          ],
+          [
+            "TV and Video",
+            54400.9619
+          ],
+          [
+            "Audio",
+            38187.4276
+          ],
+          [
+            "Music, Movies and Audio Books",
+            29865.7965
+          ],
+          [
+            "Games and Toys",
+            7891.4249
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2024-online": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            2772480.497
+          ],
+          [
+            "Cell phones",
+            766705.4092
+          ],
+          [
+            "Home Appliances",
+            720685.457
+          ],
+          [
+            "Cameras and camcorders",
+            612755.573
+          ],
+          [
+            "TV and Video",
+            436636.3986
+          ],
+          [
+            "Audio",
+            246888.8741
+          ],
+          [
+            "Music, Movies and Audio Books",
+            191853.1503
+          ],
+          [
+            "Games and Toys",
+            51112.6226
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2024-united-kingdom": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            1611134.5921
+          ],
+          [
+            "Home Appliances",
+            490273.3587
+          ],
+          [
+            "Cell phones",
+            405533.7205
+          ],
+          [
+            "Cameras and camcorders",
+            284386.5904
+          ],
+          [
+            "TV and Video",
+            215672.0481
+          ],
+          [
+            "Audio",
+            123193.3592
+          ],
+          [
+            "Music, Movies and Audio Books",
+            92001.3956
+          ],
+          [
+            "Games and Toys",
+            20383.5965
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2024-united-states": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            7863648.7446
+          ],
+          [
+            "Home Appliances",
+            2122387.1052
+          ],
+          [
+            "Cell phones",
+            2029639.3266
+          ],
+          [
+            "Cameras and camcorders",
+            1799627.5349
+          ],
+          [
+            "TV and Video",
+            1169007.2856
+          ],
+          [
+            "Audio",
+            571560.1776
+          ],
+          [
+            "Music, Movies and Audio Books",
+            463692.4847
+          ],
+          [
+            "Games and Toys",
+            106309.6305
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2025-australia": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            1115278.8098
+          ],
+          [
+            "Cell phones",
+            349921.7548
+          ],
+          [
+            "Cameras and camcorders",
+            328270.7284
+          ],
+          [
+            "Home Appliances",
+            152504.9472
+          ],
+          [
+            "TV and Video",
+            116736.2574
+          ],
+          [
+            "Music, Movies and Audio Books",
+            92331.594
+          ],
+          [
+            "Audio",
+            73564.8417
+          ],
+          [
+            "Games and Toys",
+            25497.0768
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2025-canada": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            1869262.8013
+          ],
+          [
+            "Cell phones",
+            483345.7606
+          ],
+          [
+            "Cameras and camcorders",
+            439533.4
+          ],
+          [
+            "Home Appliances",
+            251011.1746
+          ],
+          [
+            "TV and Video",
+            186738.92
+          ],
+          [
+            "Music, Movies and Audio Books",
+            146087.3996
+          ],
+          [
+            "Audio",
+            106811.5074
+          ],
+          [
+            "Games and Toys",
+            45587.4997
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2025-france": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            510598.6622
+          ],
+          [
+            "Cell phones",
+            150296.0903
+          ],
+          [
+            "Home Appliances",
+            114489.8794
+          ],
+          [
+            "Cameras and camcorders",
+            92187.4123
+          ],
+          [
+            "TV and Video",
+            55922.8225
+          ],
+          [
+            "Music, Movies and Audio Books",
+            46860.7438
+          ],
+          [
+            "Audio",
+            27262.9716
+          ],
+          [
+            "Games and Toys",
+            10820.3078
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2025-germany": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            1641253.2692
+          ],
+          [
+            "Cell phones",
+            568682.7774
+          ],
+          [
+            "Cameras and camcorders",
+            460448.9321
+          ],
+          [
+            "Home Appliances",
+            308291.4188
+          ],
+          [
+            "TV and Video",
+            185384.457
+          ],
+          [
+            "Music, Movies and Audio Books",
+            161138.9674
+          ],
+          [
+            "Audio",
+            118968.0059
+          ],
+          [
+            "Games and Toys",
+            37849.4307
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2025-italy": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            528586.1121
+          ],
+          [
+            "Cell phones",
+            150233.4668
+          ],
+          [
+            "Cameras and camcorders",
+            125268.0206
+          ],
+          [
+            "Home Appliances",
+            84172.6553
+          ],
+          [
+            "TV and Video",
+            48795.4192
+          ],
+          [
+            "Music, Movies and Audio Books",
+            35379.6242
+          ],
+          [
+            "Audio",
+            32612.7146
+          ],
+          [
+            "Games and Toys",
+            8302.913
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2025-netherlands": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            778599.7118
+          ],
+          [
+            "Cell phones",
+            238445.2645
+          ],
+          [
+            "Cameras and camcorders",
+            202960.372
+          ],
+          [
+            "Home Appliances",
+            123489.3262
+          ],
+          [
+            "Music, Movies and Audio Books",
+            64324.6536
+          ],
+          [
+            "TV and Video",
+            55553.7877
+          ],
+          [
+            "Audio",
+            47777.7795
+          ],
+          [
+            "Games and Toys",
+            17693.9845
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2025-online": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            5784012.2292
+          ],
+          [
+            "Cell phones",
+            1703705.4787
+          ],
+          [
+            "Cameras and camcorders",
+            1208467.3773
+          ],
+          [
+            "TV and Video",
+            809539.7811
+          ],
+          [
+            "Home Appliances",
+            784147.2587
+          ],
+          [
+            "Music, Movies and Audio Books",
+            552837.8508
+          ],
+          [
+            "Audio",
+            334184.4148
+          ],
+          [
+            "Games and Toys",
+            126043.4116
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2025-united-kingdom": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            1810886.0115
+          ],
+          [
+            "Cell phones",
+            491367.776
+          ],
+          [
+            "Cameras and camcorders",
+            420572.4614
+          ],
+          [
+            "Home Appliances",
+            253794.7598
+          ],
+          [
+            "TV and Video",
+            209682.5008
+          ],
+          [
+            "Music, Movies and Audio Books",
+            157002.2313
+          ],
+          [
+            "Audio",
+            117944.6976
+          ],
+          [
+            "Games and Toys",
+            30033.2425
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2025-united-states": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            10693420.4182
+          ],
+          [
+            "Cell phones",
+            3394651.4498
+          ],
+          [
+            "Cameras and camcorders",
+            2471750.85
+          ],
+          [
+            "Home Appliances",
+            1640051.8677
+          ],
+          [
+            "TV and Video",
+            1395237.0045
+          ],
+          [
+            "Music, Movies and Audio Books",
+            945595.1421
+          ],
+          [
+            "Audio",
+            653454.7997
+          ],
+          [
+            "Games and Toys",
+            216220.8291
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2026-australia": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            860437.1722
+          ],
+          [
+            "Cell phones",
+            338547.1358
+          ],
+          [
+            "TV and Video",
+            248419.9289
+          ],
+          [
+            "Home Appliances",
+            239639.0586
+          ],
+          [
+            "Cameras and camcorders",
+            155224.1894
+          ],
+          [
+            "Music, Movies and Audio Books",
+            97638.4791
+          ],
+          [
+            "Audio",
+            32053.8532
+          ],
+          [
+            "Games and Toys",
+            12937.8787
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2026-canada": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            1358991.7096
+          ],
+          [
+            "Cell phones",
+            491908.4662
+          ],
+          [
+            "Home Appliances",
+            311500.1643
+          ],
+          [
+            "TV and Video",
+            287937.3287
+          ],
+          [
+            "Cameras and camcorders",
+            177328.7935
+          ],
+          [
+            "Music, Movies and Audio Books",
+            172788.1024
+          ],
+          [
+            "Audio",
+            44075.7403
+          ],
+          [
+            "Games and Toys",
+            23803.3456
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2026-france": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            389262.7825
+          ],
+          [
+            "Cell phones",
+            120685.1851
+          ],
+          [
+            "Home Appliances",
+            77600.8126
+          ],
+          [
+            "TV and Video",
+            67532.0233
+          ],
+          [
+            "Music, Movies and Audio Books",
+            46398.7452
+          ],
+          [
+            "Cameras and camcorders",
+            24816.044
+          ],
+          [
+            "Audio",
+            12941.0374
+          ],
+          [
+            "Games and Toys",
+            6714.7767
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2026-germany": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            1247704.7981
+          ],
+          [
+            "Cell phones",
+            504302.3489
+          ],
+          [
+            "TV and Video",
+            373170.468
+          ],
+          [
+            "Home Appliances",
+            277641.878
+          ],
+          [
+            "Cameras and camcorders",
+            222450.1796
+          ],
+          [
+            "Music, Movies and Audio Books",
+            188897.6874
+          ],
+          [
+            "Audio",
+            48649.8363
+          ],
+          [
+            "Games and Toys",
+            21328.9774
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2026-italy": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            185593.8185
+          ],
+          [
+            "Cell phones",
+            85537.6667
+          ],
+          [
+            "Home Appliances",
+            41454.2874
+          ],
+          [
+            "Cameras and camcorders",
+            37798.4154
+          ],
+          [
+            "TV and Video",
+            35191.2936
+          ],
+          [
+            "Music, Movies and Audio Books",
+            24750.1502
+          ],
+          [
+            "Audio",
+            6689.5008
+          ],
+          [
+            "Games and Toys",
+            2564.2057
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2026-netherlands": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            626548.983
+          ],
+          [
+            "Cell phones",
+            215037.4551
+          ],
+          [
+            "Home Appliances",
+            165637.0355
+          ],
+          [
+            "TV and Video",
+            120252.0893
+          ],
+          [
+            "Cameras and camcorders",
+            83331.2195
+          ],
+          [
+            "Music, Movies and Audio Books",
+            73315.3425
+          ],
+          [
+            "Audio",
+            20655.567
+          ],
+          [
+            "Games and Toys",
+            7682.0766
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2026-online": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            9622558.0655
+          ],
+          [
+            "Cell phones",
+            4052430.714
+          ],
+          [
+            "Home Appliances",
+            2717435.5678
+          ],
+          [
+            "TV and Video",
+            2621192.739
+          ],
+          [
+            "Music, Movies and Audio Books",
+            1462568.1075
+          ],
+          [
+            "Cameras and camcorders",
+            1269075.0567
+          ],
+          [
+            "Audio",
+            414569.4563
+          ],
+          [
+            "Games and Toys",
+            160078.7084
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2026-united-kingdom": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            797321.076
+          ],
+          [
+            "Cell phones",
+            322528.824
+          ],
+          [
+            "TV and Video",
+            232667.2485
+          ],
+          [
+            "Home Appliances",
+            197045.7788
+          ],
+          [
+            "Cameras and camcorders",
+            127362.5321
+          ],
+          [
+            "Music, Movies and Audio Books",
+            127211.4508
+          ],
+          [
+            "Audio",
+            34484.2215
+          ],
+          [
+            "Games and Toys",
+            15656.5723
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "sales-by-category-2026-united-states": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            6489598.2373
+          ],
+          [
+            "Cell phones",
+            2811603.6346
+          ],
+          [
+            "Home Appliances",
+            1841132.6062
+          ],
+          [
+            "TV and Video",
+            1783273.187
+          ],
+          [
+            "Cameras and camcorders",
+            1050212.6917
+          ],
+          [
+            "Music, Movies and Audio Books",
+            943525.7303
+          ],
+          [
+            "Audio",
+            265874.1943
+          ],
+          [
+            "Games and Toys",
+            115745.6892
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "margin-from-model": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Margin %]",
+            "dataType": "Double"
+          }
+        ],
+        "rows": [
+          [
+            0.5586023665921234
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "margin-in-query": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Margin %]",
+            "dataType": "Double"
+          }
+        ],
+        "rows": [
+          [
+            0.5586023665921234
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "margin-in-query-list-price": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Margin %]",
+            "dataType": "Double"
+          }
+        ],
+        "rows": [
+          [
+            0.6212321944797802
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "typo-store-country": {
+      "status": "error",
+      "error": {
+        "category": "query",
+        "message": "Query (3, 5) Column 'Country' in table 'store' cannot be found or may not be used in this expression."
+      },
+      "requestId": ""
+    },
+    "typo-margin-measure": {
+      "status": "error",
+      "error": {
+        "category": "query",
+        "message": "Query (2, 19) The value for 'Margin Pct' cannot be determined. Either the column doesn't exist, or there is no current row for this column."
+      },
+      "requestId": ""
+    }
+  }
+}
