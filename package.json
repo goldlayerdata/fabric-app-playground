@@ -2,7 +2,7 @@
   "name": "gold-layer-page-playground",
   "private": true,
   "version": "0.1.0",
-  "description": "Gold Layer page playground: script a report-style page in TypeScript and React, with simulated data from the Contoso model. Unofficial, not affiliated with Microsoft.",
+  "description": "Gold Layer Fabric app playground: build a Fabric app one step at a time in TypeScript and React, with simulated data from the Contoso model. Unofficial, not affiliated with Microsoft.",
   "license": "MIT",
   "type": "module",
   "scripts": {

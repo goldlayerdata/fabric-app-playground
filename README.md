@@ -1,4 +1,4 @@
-# Page playground
+# Fabric app playground
 
 A Gold Layer playground where Power BI developers build a Fabric app from an empty folder: create the project, add a semantic model connector, wire the client, then build a report-style 16:9 page in TypeScript and React, make it interactive, and review a page "an agent" wrote. Unofficial, and not affiliated with Microsoft.
 
