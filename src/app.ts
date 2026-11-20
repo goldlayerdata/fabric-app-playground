@@ -331,6 +331,9 @@ function setPopped(el: HTMLElement | null) {
     b.setAttribute('aria-pressed', String(on));
   }
   if (el?.id === 'panel') termOut.scrollTop = termOut.scrollHeight;
+  // The code shown large is easier to read in a larger font, too.
+  const big = el?.id === 'editor-wrap';
+  editor.updateOptions({ fontSize: big ? 16 : 13.5, lineHeight: big ? 25 : 21 });
 }
 
 function popButton(target: HTMLElement) {
@@ -767,7 +770,9 @@ function doStepNow(step: Step, button: HTMLElement) {
   }
   const r = applyFileEdits(project, step.edits);
   if ('error' in r && r.error) {
-    button.textContent = 'Your code differs here: do it by hand, or Reset';
+    button.textContent = project.appDir
+      ? 'Your code differs here: do it by hand, or Reset'
+      : 'No project yet: Reset loads the start of this lesson';
     return;
   }
   const next = r.project as Project;
@@ -995,9 +1000,10 @@ function renderFiles() {
   add.addEventListener('click', newFile);
   if (!project.appDir) add.setAttribute('disabled', '');
   bar.replaceChildren(
-    paths.length ? h('span', { class: 'folder' }, `${project.appDir}/`) : h('span', { class: 'muted' }, 'No project yet'),
+    project.appDir ? h('span', { class: 'folder' }, `${project.appDir}/`) : h('span', { class: 'muted' }, 'No project yet'),
     ...items,
     add,
+    popButton($('editor-wrap')),
   );
 }
 

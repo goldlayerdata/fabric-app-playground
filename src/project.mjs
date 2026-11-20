@@ -447,6 +447,8 @@ function connectorInvoke(p, args, answer, done, fail) {
  */
 export function applyFileEdits(start, edits = []) {
   const p = clone(start);
+  // Files belong to the app: with no project yet, there is nowhere to write them.
+  if (edits.length && !p.appDir) return { error: 'There is no project yet' };
   for (const e of edits) {
     const file = e.file ?? PAGE_FILE;
     const text = p.files[file];

@@ -307,6 +307,8 @@ a:focus-visible, .brand-here:focus-visible { outline: 2px solid var(--accent); o
   flex-shrink: 0;
   font-size: 12.5px;
 }
+/* Pop out stays in view at the right edge, however many files there are */
+.files .pop-btn { position: sticky; right: -10px; margin-left: auto; flex-shrink: 0; white-space: nowrap; background: var(--navy); box-shadow: -10px 0 10px var(--navy); }
 .files .folder { color: var(--muted); font-family: var(--mono); margin-right: 4px; white-space: nowrap; }
 .files .file { font-family: var(--mono); font-size: 12px; padding: 2px 8px; white-space: nowrap; color: var(--muted); background: none; }
 .files .file.on { color: var(--text); background: var(--navy-3); border-color: var(--accent); }
@@ -510,6 +512,9 @@ table.ref tr.flash { animation: flash 1.6s ease-out; }
 .lesson.popped .snippet pre { font-size: 15px; }
 .lesson.popped button, .lesson.popped .lesson-nav .next { font-size: 16px; }
 .panel.popped { height: 90vh !important; }
+.editor-wrap.popped { height: 90vh; width: min(1200px, 94vw); overflow: hidden; }
+.editor-wrap.popped .files .file { font-size: 14px; }
+.editor-wrap.popped .status { font-size: 14px; }
 .panel.popped .panel-body { font-size: 16px; }
 .panel.popped .term-out, .panel.popped .term-prompt, .panel.popped .term-input { font-size: 15px; }
 .panel.popped table.ref { font-size: 16px; }
