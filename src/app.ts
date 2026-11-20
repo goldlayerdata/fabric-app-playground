@@ -1661,7 +1661,8 @@ function showSplash() {
   $('splash-restart').hidden = !started;
   el.classList.remove('leaving');
   el.hidden = false;
-  go.focus();
+  go.focus({ preventScroll: true });
+  el.scrollTop = 0;
 }
 
 $('splash-go').addEventListener('click', hideSplash);
