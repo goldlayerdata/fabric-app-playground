@@ -5,8 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Preview</title>
     <style>
-      html, body { margin: 0; background: #d9e1ee; color: #111827; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
-      #page { min-height: 100vh; }
+      /* The report page sits on a dark surround, like a page in Power BI Desktop: only the 16:9 canvas is light. */
+      html, body { margin: 0; background: #111c38; color: #e8ecf5; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
+      .aspect-video { background: #e3e8f0; color: #111827; border-radius: 10px; box-shadow: 0 6px 24px rgb(0 0 0 / 0.35); }
+      /* In a layer, so the page's own Tailwind classes (text-*, bg-*) still win: buttons get dark text by default. */
+      @layer base { #page button { color: #111827; } }
+      #page { min-height: 100vh; box-sizing: border-box; padding: 14px; }
       .outline-cells .grid > * { outline: 1.5px dashed #d29e00; outline-offset: -1px; }
     </style>
     <script src="tailwind.js"></script>
