@@ -599,11 +599,14 @@ function renderCourseButton() {
 function renderCourse() {
   const resume = order.find((l) => !progress.done(l));
   const body = $('course-body');
-  const startOver = h('button', { type: 'button', class: 'link-btn' }, 'Start the project over');
+  const startOver = h(
+    'button',
+    { type: 'button', class: 'link-btn', title: 'Empties the project and clears progress and quiz answers. Undo is offered.' },
+    'Restart the whole course',
+  );
   startOver.addEventListener('click', () => {
     closeCourse();
-    replaceProject(emptyProject() as Project, 'The project is empty again.');
-    location.hash = `#${order[0].id}`;
+    restartCourse();
   });
   body.replaceChildren(
     h(
@@ -1583,6 +1586,74 @@ $('pop-backdrop').addEventListener('click', () => setPopped(null));
   initSplit('split-panel', '--panel-h', 'sized-panel', (e) => pct(right.getBoundingClientRect().bottom - e.clientY, right.clientHeight), 10, 75);
 }
 
+// ---------------------------------------------------------------- restart, and the splash screen
+/** Everything the course keeps in this browser, except the layout sizes. */
+const courseKeys = () => {
+  try {
+    return Object.keys(localStorage).filter((k) => k.startsWith('page-playground:') && !k.startsWith('page-playground:size:'));
+  } catch {
+    return [];
+  }
+};
+
+/** Back to the very start: empty project, no progress, no quiz answers, a clean terminal. Undo puts it all back. */
+function restartCourse() {
+  const backup = courseKeys().map((k) => [k, localStorage.getItem(k)] as const);
+  const before = project;
+  for (const [k] of backup) localStorage.removeItem(k);
+  termOut.replaceChildren();
+  termPrint(['Playground: A simulated terminal. Type `help` for the commands it knows.']);
+  mode = 'normal';
+  const normal = document.getElementById('mode-normal') as HTMLInputElement | null;
+  if (normal) normal.checked = true;
+  setPopped(null);
+  replaceProject(emptyProject() as Project, 'The course is back at its very start.');
+  check = undefined;
+  lesson = order[0];
+  mismatch = undefined;
+  goTo(0);
+  showUndo('The course is back at its very start: empty project, no progress.', () => {
+    clearTimeout(saveTimer);
+    for (const k of courseKeys()) localStorage.removeItem(k);
+    for (const [k, v] of backup) if (v !== null) localStorage.setItem(k, v);
+    store.set('project', JSON.stringify(before));
+    // Back to the lesson we were on, not the tour the restart opened.
+    const was = backup.find(([k]) => k === 'page-playground:lesson')?.[1];
+    history.replaceState(null, '', was ? `#${was}` : location.pathname + location.search);
+    location.reload();
+  });
+}
+
+function hideSplash() {
+  const el = $('splash');
+  el.classList.add('leaving');
+  window.setTimeout(() => (el.hidden = true), 350);
+}
+
+function showSplash() {
+  const el = $('splash');
+  const started = !!project.appDir || order.some((l) => progress.started(l));
+  const done = order.filter(progress.done).length;
+  $('splash-modules').replaceChildren(
+    ...course.map((m, i) => h('li', {}, h('span', { class: 'n' }, String(i)), h('span', { class: 't' }, m.title), h('span', { class: 'g' }, m.goal))),
+  );
+  const go = $('splash-go') as HTMLButtonElement;
+  go.disabled = false;
+  go.textContent = started ? `Continue: ${check ? 'Check your knowledge' : `${num(lesson)} ${lesson.title}`} →` : 'Start the course →';
+  $('splash-progress').textContent = started ? `${done} of ${order.length} lessons done. Your project and progress are kept in this browser.` : `${order.length} lessons in ${course.length} modules, one step at a time.`;
+  $('splash-restart').hidden = !started;
+  el.classList.remove('leaving');
+  el.hidden = false;
+  go.focus();
+}
+
+$('splash-go').addEventListener('click', hideSplash);
+$('splash-restart').addEventListener('click', () => {
+  restartCourse();
+  hideSplash();
+});
+$('brand').addEventListener('click', showSplash);
+
 initTerminal();
 renderQueries();
 renderTerms();
@@ -1592,6 +1663,10 @@ syncModels();
 if (project.files[PAGE_FILE] !== undefined) openFile(PAGE_FILE);
 else if (Object.keys(project.files).length) openFile(Object.keys(project.files)[0]);
 else showNoFiles();
+// A link to one step or quiz question (for example from a trainer) goes straight in; otherwise, the splash.
+const deepLink = /^#(check\/|[\w-]+\/\d)/.test(location.hash);
 openRoute(parseHash() ?? { lesson: byId.get(store.get('lesson') ?? '') ?? order[0] });
+if (deepLink) $('splash').hidden = true;
+else showSplash();
 showTypeStatus();
 runNow();

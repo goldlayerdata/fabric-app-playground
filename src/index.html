@@ -8,8 +8,23 @@
     <link rel="stylesheet" href="assets/app.css" />
   </head>
   <body>
+    <div class="splash" id="splash" role="dialog" aria-modal="true" aria-labelledby="splash-title">
+      <div class="splash-card">
+        <p class="splash-brand"><span class="brand-mark" aria-hidden="true"></span> Gold Layer</p>
+        <h1 id="splash-title">Page playground</h1>
+        <p class="splash-lead">Build a Fabric app from an empty folder, one step at a time.</p>
+        <p class="splash-sub">For Power BI developers who know DAX and have never written TypeScript. We create the project, connect a semantic model, build a report page, and review a page an agent wrote.</p>
+        <ol class="splash-modules" id="splash-modules" start="0"></ol>
+        <div class="splash-actions">
+          <button type="button" class="splash-go" id="splash-go" disabled>Loading the editor…</button>
+          <button type="button" class="link-btn" id="splash-restart" hidden title="Empties the project and clears progress. Undo is offered.">Restart the whole course</button>
+        </div>
+        <p class="splash-progress" id="splash-progress"></p>
+        <p class="splash-note">Simulated: nothing here connects to Fabric or Power BI. Unofficial, and not affiliated with Microsoft. Made for a desktop browser.</p>
+      </div>
+    </div>
     <header class="top">
-      <div class="brand">
+      <div class="brand" id="brand" role="button" tabindex="0" title="Show the start screen">
         <span class="brand-mark" aria-hidden="true"></span>
         <span class="brand-name">Gold Layer</span>
         <span class="brand-sep">/</span>

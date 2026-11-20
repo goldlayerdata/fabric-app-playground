@@ -505,3 +505,49 @@ table.ref tr.flash { animation: flash 1.6s ease-out; }
 .panel.popped table.ref { font-size: 16px; }
 body.resizing { user-select: none; }
 body.resizing iframe, body.resizing .monaco-editor { pointer-events: none; }
+
+/* ---------------------------------------------------------------- splash screen */
+.brand { cursor: pointer; }
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow: auto;
+  background:
+    radial-gradient(900px 500px at 15% 10%, rgb(95 227 240 / 0.10), transparent 60%),
+    radial-gradient(800px 480px at 90% 95%, rgb(242 200 17 / 0.10), transparent 60%),
+    var(--navy);
+  transition: opacity 0.3s ease;
+}
+.splash.leaving { opacity: 0; pointer-events: none; }
+.splash-card { width: min(760px, 100%); }
+.splash-brand { display: flex; align-items: center; gap: 8px; margin: 0 0 18px; font-weight: 700; }
+.splash-brand .lab { color: var(--lab); }
+.splash h1 { margin: 0; font-size: clamp(40px, 6vw, 64px); line-height: 1.05; letter-spacing: -0.01em; }
+.splash-lead { margin: 14px 0 6px; font-size: 22px; color: var(--gold); font-weight: 600; }
+.splash-sub { margin: 0 0 22px; font-size: 16px; color: var(--muted); max-width: 62ch; }
+.splash-modules { list-style: none; margin: 0 0 26px; padding: 0; border-top: 1px solid var(--line); }
+.splash-modules li { display: grid; grid-template-columns: 28px 230px 1fr; gap: 10px; align-items: baseline; padding: 7px 0; border-bottom: 1px solid var(--line); }
+.splash-modules .n { color: var(--lab); font-family: var(--mono); font-size: 13px; }
+.splash-modules .t { font-weight: 600; }
+.splash-modules .g { color: var(--muted); font-size: 13.5px; }
+.splash-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.splash-go {
+  background: var(--gold);
+  color: var(--navy);
+  border: 1px solid var(--gold);
+  border-radius: 8px;
+  padding: 11px 24px;
+  font-size: 17px;
+  font-weight: 700;
+}
+.splash-go:hover:not(:disabled) { filter: brightness(1.08); }
+.splash-go:disabled { opacity: 0.6; cursor: default; }
+.splash-progress { margin: 14px 0 0; font-size: 13.5px; color: var(--lab); }
+.splash-note { margin: 18px 0 0; font-size: 12.5px; color: var(--muted); }
+@media (max-width: 700px) { .splash-modules li { grid-template-columns: 24px 1fr; } .splash-modules .g { grid-column: 2; } }
+@media (prefers-reduced-motion: reduce) { .splash { transition: none; } }

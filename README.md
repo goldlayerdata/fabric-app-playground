@@ -74,7 +74,9 @@ There are no start files. A lesson's starting point (its checkpoint) is every ea
 - the **✓ Done** tick: the command was run, or the files contain the result, however the learner typed it;
 - `npm run check`: builds the whole course from empty and type-checks the project after every step, against the error count the step expects (`errors`).
 
-Opening a lesson on a project that isn't at that lesson's start offers the course's version (with Undo). **Reset** takes a lesson back to its start; **Finish the lesson for me** applies all its steps; the course drawer can start the project over. All offer Undo.
+Opening a lesson on a project that isn't at that lesson's start offers the course's version (with Undo). **Reset** takes a lesson back to its start; **Finish the lesson for me** applies all its steps; **Restart the whole course** (course drawer and start screen) empties the project and clears progress. All offer Undo.
+
+The playground opens on a start screen with the modules and a Start or Continue button; a link to a single step skips it, and clicking the brand in the header shows it again.
 
 When a step card opens, its spot in the code is marked in gold and its file opens; **Show me in the code** selects it. A step can also point at a part of the playground (`point`), which gets a gold outline.
 
