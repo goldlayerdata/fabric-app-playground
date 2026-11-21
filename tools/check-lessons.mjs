@@ -21,7 +21,7 @@ import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import ts from 'typescript';
 import { lessons } from '../src/lesson-list.mjs';
-import { chapters, modules } from '../src/course.mjs';
+import { chapters, modules, parts } from '../src/course.mjs';
 import { terms, help } from '../src/terms.mjs';
 import { emptyProject, doStep, numberRuns, stepIsDone, PAGE_FILE } from '../src/project.mjs';
 import { createConnectorsApi, rawPayload } from '../src/connectors-sim.mjs';
@@ -62,6 +62,9 @@ const fail = (msg) => {
   if (live.some((c, i) => chapters.indexOf(c) !== i)) fail('course.mjs: live chapters come first, then the coming ones');
   const inChapters = live.flatMap((c) => c.modules);
   if (inChapters.join('|') !== modules.map((m) => m.id).join('|')) fail('course.mjs: the chapters must hold every module once, in the order of `modules`');
+  // Parts: each has a title, level and goal, and together they hold every chapter once, in order.
+  for (const p of parts) if (!p.id || !p.title || !p.level || !p.goal || !p.chapters?.length) fail(`part ${p.id}: id, title, level, goal and chapters needed`);
+  if (parts.flatMap((p) => p.chapters).join('|') !== ids.join('|')) fail('course.mjs: the parts must hold every chapter once, in the order of `chapters`');
 }
 const byId = new Map(lessons.map((l) => [l.id, l]));
 const placed = modules.flatMap((m) => m.lessons);

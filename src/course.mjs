@@ -15,6 +15,8 @@
 //   builds   ids of earlier chapters it starts from (its project starts where they end)
 //   modules  a live chapter: module ids, in order (every module is in exactly one chapter, in order)
 //   coming   a chapter not built yet: planned lesson titles, shown muted with no numbers or links
+//
+// Parts group the chapters in three steps up (see `parts` below the chapters).
 export const chapters = [
   {
     id: 'model-app',
@@ -78,6 +80,37 @@ export const chapters = [
     goal: 'Environments, deployment pipelines, and tests that run without Fabric.',
     builds: ['approvals'],
     coming: ['Dev, test and prod', 'Promote with a pipeline', 'Tests without Fabric', 'Ready to share'],
+  },
+];
+
+// Parts group the chapters, in order: every chapter is in exactly one part. Chapter numbers run on
+// across parts. Everyone taking the course knows Power BI; the level is about building the app.
+//   id        stable
+//   title     short, sentence case
+//   level     how far into building an app it is
+//   goal      one line, what the part is about
+//   chapters  chapter ids, in course order
+export const parts = [
+  {
+    id: 'read',
+    title: 'Read your data',
+    level: 'First steps',
+    goal: 'Report pages on semantic models and a lakehouse: data the app reads but doesn\'t own.',
+    chapters: ['model-app', 'two-models', 'lakehouse'],
+  },
+  {
+    id: 'store',
+    title: 'Store and protect data',
+    level: 'Building on it',
+    goal: 'Data the app keeps itself, who may see and change it, and changes someone approves.',
+    chapters: ['own-data', 'who', 'approvals'],
+  },
+  {
+    id: 'further',
+    title: 'Extend and ship',
+    level: 'Going further',
+    goal: 'Files, questions in plain words, and shipping the app to other people.',
+    chapters: ['files', 'ask', 'ship'],
   },
 ];
 

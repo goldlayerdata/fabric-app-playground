@@ -1,7 +1,7 @@
 import './app.css';
 import * as monaco from './monaco.js';
 import { lessons } from './lesson-list.mjs';
-import { chapters, modules } from './course.mjs';
+import { chapters, modules, parts } from './course.mjs';
 import { terms, help } from './terms.mjs';
 import editorLibs from 'virtual:editor-libs';
 import { answer, entries, readLakehouse, savedResult, snapshotsTakenAt, type Answer, type Mode, type ReadAnswer, type ReadRequest } from './stand-in';
@@ -66,6 +66,7 @@ type Lesson = {
 type Question = { q: string; options: string[]; answer: number; why: string; lesson: string; step: number };
 type Module = { id: string; title: string; goal: string; lessons: string[]; check?: Question[] };
 type Chapter = { id: string; title: string; goal: string; builds: string[]; modules?: string[]; coming?: string[] };
+type Part = { id: string; title: string; level: string; goal: string; chapters: string[] };
 // The app's own database, as src/app-data.mjs keeps it (simulated, in this browser).
 type AppColumn = { kind: string; optional: boolean; max?: number | 'MAX'; min?: number; maxValue?: number; precision?: number; scale?: number; values?: string[] };
 type AppRule = { role: string; actions: string[]; source: string };
@@ -100,6 +101,10 @@ const chapterOf = (l: Lesson) => chapterList.find((c) => c.modules?.includes(mod
 const chapterNum = (c: Chapter) => chapterList.indexOf(c) + 1;
 const modulesOf = (c: Chapter) => (c.modules ?? []).map((id) => course.find((m) => m.id === id)!);
 const lessonsOf = (c: Chapter) => modulesOf(c).flatMap((m) => m.lessons.map((id) => byId.get(id)!));
+// Parts group the chapters (see course.mjs); every chapter is in exactly one.
+const partList = parts as Part[];
+const partNum = (p: Part) => partList.indexOf(p) + 1;
+const chaptersOf = (p: Part) => p.chapters.map((id) => chapterList.find((c) => c.id === id)!);
 
 // ---------------------------------------------------------------- small helpers
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -702,6 +707,8 @@ function renderCourse() {
       : h('p', { class: 'ok' }, 'Every lesson done.'),
   );
   for (const c of chapterList) {
+    const p = partList.find((x) => x.chapters[0] === c.id);
+    if (p) body.append(h('div', { class: 'part-head' }, h('h2', {}, `Part ${partNum(p)} · ${p.title}`), h('span', { class: 'level' }, p.level)));
     const state = chapterState(c);
     const head = h(
       'div',
@@ -2250,8 +2257,7 @@ function showSplash() {
   const started = !!project.appDir || order.some((l) => progress.started(l));
   const current = chapterOf(lesson);
   const currentDone = lessonsOf(current).filter(progress.done).length;
-  $('splash-chapters').replaceChildren(
-    ...chapterList.map((c) => {
+  const chapterItem = (c: Chapter) => {
       const state = chapterState(c);
       // Every chapter folds open and shut; the one you are working in starts open.
       const body = h('div', { class: 'body' }, h('p', { class: 'g' }, c.goal));
@@ -2275,7 +2281,17 @@ function showSplash() {
       ) as HTMLDetailsElement;
       fold.open = c === current;
       return h('li', { class: `chapter ${state.key}${c === current ? ' current' : ''}` }, fold);
-    }),
+  };
+  $('splash-chapters').replaceChildren(
+    ...partList.map((p) =>
+      h(
+        'section',
+        { class: 'part' },
+        h('div', { class: 'part-head' }, h('h2', {}, `Part ${partNum(p)} · ${p.title}`), h('span', { class: 'level' }, p.level)),
+        h('p', { class: 'part-goal' }, p.goal),
+        h('ol', { class: 'chapters' }, ...chaptersOf(p).map(chapterItem)),
+      ),
+    ),
   );
   const go = $('splash-go') as HTMLButtonElement;
   go.disabled = false;

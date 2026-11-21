@@ -60,7 +60,7 @@ Queries match on the connector and the text, ignoring spacing and letter case: `
 
 One app, built from an empty folder. Structured the way Microsoft Learn builds training (modules of short units, a knowledge check at the end of a module, summaries) and the way the Rayfin docs teach (numbered steps, then what to read next). Only the structure is borrowed.
 
-Chapters group the modules (`chapters` in `src/course.mjs`). Module numbers run on across chapters: Chapter 1 is modules 0 to 5, Chapter 2 starts at module 6. A chapter added at the end moves no number; one put between others moves the numbers after it. Progress is kept by lesson and module id. Chapters not built yet are listed as Coming soon, with their planned lesson titles. The start screen shows each chapter's state (done, in progress, not started, coming soon); **Start this chapter** builds the project as that chapter begins, with Undo.
+Chapters group the modules (`chapters` in `src/course.mjs`), and parts group the chapters (`parts`): Read your data (first steps), Store and protect data (building on it), Extend and ship (going further). Every chapter is in exactly one part, in order; `npm run check` verifies it. Module numbers run on across chapters: Chapter 1 is modules 0 to 5, Chapter 2 starts at module 6. A chapter added at the end moves no number; one put between others moves the numbers after it. Progress is kept by lesson and module id. Chapters not built yet are listed as Coming soon, with their planned lesson titles. The start screen shows each chapter's state (done, in progress, not started, coming soon); **Start this chapter** builds the project as that chapter begins, with Undo.
 
 **Chapter 1: An app on a semantic model**
 
