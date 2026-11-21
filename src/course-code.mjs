@@ -774,7 +774,7 @@ export default function LinesPage() {
     <div className="mx-auto aspect-video w-full max-w-6xl grid grid-cols-12 grid-rows-6 gap-4 p-4">
       <header className="col-span-12 row-span-1">
         <h1 className="text-2xl font-bold">Order lines: {country}</h1>
-        <p className="text-sm text-gray-500">From the lakehouse, which holds 2023 only.</p>
+        <p className="text-sm text-gray-500">From the lakehouse, which holds France's 2023 lines only.</p>
       </header>
       <section className="col-span-8 row-span-5 overflow-auto rounded-lg border border-gray-200 bg-white p-4">
         <table className="w-full text-sm">

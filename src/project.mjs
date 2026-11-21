@@ -404,7 +404,7 @@ export function connectorAuth(p, name) {
   return entry.match(/^ {4}auth:\n {6}type: (\S+)$/m)?.[1];
 }
 
-/** The connector-type catalog of Rayfin CLI 2.0.0, for the two types simulated here (rayfin-tools-common config/connectors.js). */
+/** The connector-type catalog of Rayfin CLI 2.0.0, for the entity connector type simulated here (rayfin-tools-common config/connectors.js). */
 const CATALOG = {
   'fabric-sqlanalytics': { allowedOperations: ['read'], defaultAuth: 'application', allowedAuthTypes: ['delegated', 'application'] },
 };
@@ -563,9 +563,6 @@ function connectorInspect(p, f, done, fail) {
   const n = f.rows === undefined ? 10 : Number(f.rows);
   if (!Number.isInteger(n) || n < 1 || n > 100) return fail(PG('--rows takes a whole number from 1 to 100.'));
   const data = lakehouse.rows[entity.split('.')[1]];
-  if (!data) {
-    return done(SIMULATED, PG(`SELECT TOP(${n}) * FROM ${entity}`), PG('The playground keeps rows for the sales table only.'));
-  }
   const rows = data.rows.slice(0, n).map((r) => r.map(String));
   const widths = data.columns.map((c, i) => Math.max(c.length, ...rows.map((r) => r[i].length)));
   const line = (cells) => `  ${cells.map((c, i) => c.padEnd(widths[i])).join('  ')}`;
@@ -650,7 +647,7 @@ function connectorInvoke(p, args, answer, done, fail) {
   if (connectorType(p, String(name).toLowerCase()) !== 'fabric-semanticmodel') {
     return fail(
       PG('`connector invoke` is simulated for semantic model connectors only. For an entity connector, such as a lakehouse,'),
-      PG(`the Rayfin docs prove rows come back with: npx rayfin connector inspect --name ${name} --entity <schema.table> --rows 1`),
+      PG(`the Rayfin docs suggest proving rows come back with: npx rayfin connector inspect --name ${name} --entity <schema.table> --rows 1`),
     );
   }
   if (op !== 'executeQuery') return fail(PG('A semantic model connector has one operation: executeQuery.'));
@@ -743,10 +740,6 @@ export function stepIsDone(p, step) {
 export function doStep(p, step, answer) {
   if (step.run) {
     const r = runCommand(p, step.run, answer);
-    // A command that fails on purpose (`commandFails`) must fail, and changes nothing but the history.
-    if (step.commandFails) {
-      return r.ok ? { error: `expected this command to fail: ${step.run}`, project: r.project, lines: r.lines } : { project: r.project, lines: r.lines };
-    }
     return r.ok ? { project: r.project, lines: r.lines } : { error: r.lines.join('\n'), project: r.project, lines: r.lines };
   }
   if (step.edits) return applyFileEdits(p, step.edits);

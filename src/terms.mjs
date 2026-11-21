@@ -20,7 +20,7 @@ export const terms = [
   { id: 'connector', term: 'Connector', means: 'How a Fabric app reaches existing data in other Fabric items. Added with `npx rayfin connector add`; the page calls it as `rayfinClient.connectors.contoso`.', pbi: 'A connection to a semantic model (or another Fabric item, such as a warehouse).', lesson: 'connector' },
   { id: 'metadata', term: 'metadata.json', means: 'The tables and columns `connector add` found in a SQL source (schema discovery): names, types, keys. Regenerated, never edited by hand.', pbi: "What the Navigator shows in Get data: a source's tables and columns.", lesson: 'lakehouse-connector' },
   { id: 'entity', term: 'Entity', means: "A TypeScript class that stands for a table: one property per column, with decorators (`@int`, `@text`…) saying each column's type.", pbi: 'A table in the model, with its columns and data types.', lesson: 'lakehouse-entities' },
-  { id: 'page-of-rows', term: 'Page of rows', means: "What one read returns: 100 rows by default, or `first(n)`. `execute()` returns one page and doesn't say there are more; `executePaginated()` gives a cursor for the next.", pbi: "No direct match: a visual's query returns its whole result.", lesson: 'rows-or-measures' },
+  { id: 'page-of-rows', term: 'Page of rows', means: "What one read returns: 100 rows by default, or `first(n)`. `execute()` returns one page and doesn't say there are more; `executePaginated()` gives a cursor for the next.", pbi: 'Like a table visual, which fetches 500 rows at a time and loads more as you scroll. Here nothing fetches the next page unless the code asks for it.', lesson: 'rows-or-measures' },
 ];
 
 export const help = [

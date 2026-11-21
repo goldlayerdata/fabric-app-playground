@@ -4,7 +4,7 @@ A Gold Layer playground where Power BI developers build a Fabric app from an emp
 
 There is no Fabric and no model behind it:
 
-- **The terminal** simulates the Rayfin 2.0 commands the course uses (`npm create @microsoft/rayfin@latest … --template dataapp`, `npm install`, `npx rayfin connector add`, `connector invoke`, `npm run dev`, `npx rayfin up`). What they write (`package.json`, `rayfin/rayfin.yml`, the connector's `schema.ts`) follows the Rayfin docs and the data app template as installed by the Rayfin CLI 2.0.0. Lines we could not check against the real output start with `Playground:`. Sign-in is skipped.
+- **The terminal** simulates the Rayfin 2.0 commands the course uses (`npm create @microsoft/rayfin@latest … --template dataapp`, `npm install`, `npx rayfin connector add`, `connector invoke`, `connector search`, `connector inspect`, `npm run dev`, `npx rayfin up`, `npx rayfin up connector apply`). What they write (`package.json`, `rayfin/rayfin.yml`, the connector's `schema.ts`) follows the Rayfin docs and the data app template as installed by the Rayfin CLI 2.0.0. Lines we could not check against the real output start with `Playground:`. Sign-in is skipped.
 - **The lakehouse** (Chapter 2) is simulated too. `connector add --type fabric-sqlanalytics` writes what the Rayfin CLI 2.0.0 writes (its placeholder `schema.ts` and messages are taken from its code); `metadata.json` has the documented shape, with the playground's own types and values. Reads (`select`, `where`, `orderBy`, `first`, `after`, `execute`, `executePaginated`) are answered in the browser from `data/lakehouse.json`, one page of 100 rows unless `first` says otherwise, as rayfin.ai describes; cursors are made up. The Log's "runs as" line comes from each connector's `auth` in `rayfin.yml`.
 - **The Rayfin packages** are simulated. The editor checks the learner's code against their real 2.0 signatures (a subset, MIT: `src/editor-types/packages/`), and only once the project has "installed" them. In the page, `executeQuery` matches the query text against saved results from a Contoso model and returns them in the connector's result shape.
 
@@ -79,7 +79,7 @@ Chapters group the modules (`chapters` in `src/course.mjs`). Module numbers run 
 
 Lesson numbers come from positions in `src/course.mjs` and are never written anywhere else: lesson text refers to lessons and chapters by title, and `npm run check` fails on "lesson 4" or "chapter 2"-style references.
 
-Each lesson is the same set of cards: the idea in Power BI terms with "You'll be able to" and "Builds on", then one card per step, then a summary with an **In a real Fabric app** note linking to Microsoft Learn or rayfin.ai. Modules 1 to 5 end with three or four questions; each answer links to the step that taught it. Mistakes the course is about (a wrong column, a query loop, a mistyped measure) are made on purpose by the learner, then undone; the review lesson is the one place an "agent" drops a ready-made file into the project.
+Each lesson is the same set of cards: the idea in Power BI terms with "You'll be able to" and "Builds on", then one card per step, then a summary with an **In a real Fabric app** note linking to Microsoft Learn or rayfin.ai. Modules 1 to 7 end with three or four questions; each answer links to the step that taught it. Mistakes the course is about (a wrong column, a query loop, a mistyped measure) are made on purpose by the learner, then undone; the review lesson is the one place an "agent" drops a ready-made file into the project.
 
 ## One project, step by step
 

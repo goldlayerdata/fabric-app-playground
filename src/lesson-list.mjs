@@ -1438,7 +1438,7 @@ export const lessons = [
         do: 'Add it, named `lake`, for reading:',
         run: LAKE_ADD,
         see: '`rayfin.yml` changed, a new folder `rayfin/connectors/lake/` with `metadata.json` and `schema.ts`, an install line, and a line saying nothing was wired into the app.',
-        why: 'For a SQL source, the command reads the tables and columns (schema discovery) and saves them. It writes no code for them: that is the next lesson. Nothing was wired because we wrote our client by hand, in **Wire the client**. `--operations read` is how Microsoft Learn\'s example adds a lakehouse; `read` is all a lakehouse allows anyway.',
+        why: 'For a SQL source, the command reads the tables and columns (schema discovery) and saves them. It writes no code for them: that is the next lesson. Nothing was wired because the project has no `src/lib/connectors.ts` for the CLI to update: our client is the one from **Wire the client**, so we register `lake` there. `--operations read` is how Microsoft Learn\'s example adds a lakehouse; `read` is all a lakehouse allows anyway.',
       },
       {
         do: 'Open `rayfin/rayfin.yml` and find the marked `- name: lake`.',
@@ -1506,7 +1506,14 @@ export const lessons = [
         code: C.STORE_CLASS.trimStart(),
         edits: [{ file: LAKE_STORE, from: C.STORE_IMPORTS, to: C.STORE_IMPORTS + C.STORE_CLASS }],
         see: 'No red lines.',
-        why: '`@entity()` makes the class an [[entity]]. `Source` names the physical table. Each property gets a decorator for its column\'s SQL type (`int` → `@int`, `varchar` → `@text`), and `column:` maps the SQL name (`StoreKey`) to a camelCase property (`storeKey`). `max` is the column\'s `maxLength`. `@role(\'authenticated\', [\'read\'])`: signed-in people may read; its actions must fit the connector\'s operations. We keep only the columns the app needs.',
+        why: '`@entity()` makes the class an [[entity]]. `Source` names the physical table. Each property gets a decorator for its column\'s SQL type (`int` → `@int`, `varchar` → `@text`), and `column:` maps the SQL name (`StoreKey`) to a camelCase property (`storeKey`). `max` is the column\'s `maxLength`. We keep only the columns the app needs.',
+      },
+      {
+        do: 'Look at the marked `@role(\'authenticated\', [\'read\'])`.',
+        file: LAKE_STORE,
+        find: "@role('authenticated', ['read'])",
+        see: 'A second decorator on the class, above `@entity()`.',
+        why: 'Signed-in people may read. Its actions must fit the connector\'s operations (here, `read`).',
       },
       {
         do: 'Look at the marked `primaryKey: []`.',
@@ -1572,10 +1579,12 @@ export const lessons = [
         why: 'The `configs` map must have every connector in the schema, under the same name. TypeScript points at the gap.',
       },
       {
-        do: 'In `configs`, add the lakehouse: `configs: { contoso: contosoConfig, lake: lakeConfig },`',
+        do: 'In `configs`, add the lakehouse, so the marked line reads:',
+        code: 'configs: { contoso: contosoConfig, lake: lakeConfig },',
+        find: 'configs: { contoso: contosoConfig },',
         edits: [{ file: CLIENT, from: 'configs: { contoso: contosoConfig },', to: 'configs: { contoso: contosoConfig, lake: lakeConfig },' }],
         see: 'The red line goes.',
-        why: 'No `runtime` entry this time: that is for connectors that run a request on the server, such as `fabricSemanticModel()`. A lakehouse connector needs its configuration only.',
+        why: 'No `runtime` entry this time: `runtime` is for function-style connectors such as the semantic model, whose `fabricSemanticModel()` decodes the answer. An entity connector, such as a lakehouse, needs its configuration only.',
       },
       {
         do: 'Create `src/lake.ts` (**+ New file**) with a hook that waits for any promise:',
@@ -1585,14 +1594,21 @@ export const lessons = [
         why: 'A lakehouse call doesn\'t return a `status`, as `executeQuery` does: it gives the rows, or it throws. So the hook catches the error and turns it into a state, as **Failure** taught. `key` plays the part of the dependency list from **The redraw trap**.',
       },
       {
+        do: 'Look at the marked `let live = true;` in `useLoad`.',
+        file: LAKE_TS,
+        find: 'let live = true;',
+        see: '`live` is checked before every `setState`.',
+        why: '`Loaded<T>` is the three states from **Failure** for any kind of value. `live` ignores an answer that arrives after the page has moved on (React runs the returned function when `key` changes or the page closes).',
+      },
+      {
         do: 'At the end of `src/lake.ts`, add the two queries:',
         code: C.LAKE_QUERIES.trimStart(),
         edits: [{ file: LAKE_TS, from: C.LAKE_HOOK, to: C.LAKE_HOOK + C.LAKE_QUERIES }],
         see: 'No red lines.',
-        why: 'The chain reads like a query: `select` the columns, `where` to filter, `orderBy`, `first` for the row count, then `execute`. Two calls, because the tables have no relationship: the first finds France\'s store keys, the second the lines in those stores.',
+        why: 'The chain reads like a query: `select` the columns, `where` to filter, `orderBy`, `first` for the row count, then `execute`. Two calls, because the tables have no relationship: the first finds France\'s store keys, the second the lines in those stores. (The `import` may sit halfway down the file: imports count wherever they are, though most files keep them at the top.)',
       },
       {
-        do: 'Add the page: **Do it for me** writes `src/LinesPage.tsx` and adds it to the report as **Order lines** (page id, `PAGES` entry and import).',
+        do: 'Add the page as **Order lines**: **Do it for me** writes `src/LinesPage.tsx` and adds the page to the report (page id, import and `PAGES` entry); this is the line it adds to `PAGES`:',
         code: "lines: { title: 'Order lines', Component: LinesPage },",
         edits: [
           { file: LINES, from: '', to: C.LINES_PAGE },
@@ -1683,9 +1699,9 @@ export const lessons = [
         why: 'The lakehouse holds France\'s 2023 lines only, so this is the same slice. The model\'s `[Revenue]` is `SUMX ( sales, sales[Quantity] * sales[NetPrice] )`: the same formula the page used.',
       },
       {
-        do: 'Open the **Log** and click the newest lakehouse read, the one behind the card.',
+        do: 'Open the **Log** and click the `lake.Sales` read with 100 rows (it selects `quantity` and `netPrice`: the one behind the card).',
         point: 'log',
-        see: 'It returned exactly 100 rows.',
+        see: 'It returned exactly 100 rows, though France has more lines.',
         why: '`execute()` returns one [[page of rows|page-of-rows]], 100 by default, and doesn\'t say there are more. No red line, no error: just a wrong total.',
       },
       {
@@ -1693,7 +1709,7 @@ export const lessons = [
         code: C.REVENUE_PAGED.trimStart(),
         file: LAKE_TS,
         edits: [{ file: LAKE_TS, from: C.REVENUE_ONE_PAGE, to: C.REVENUE_PAGED }],
-        see: 'Open **Order lines** again: 369K, as on **Overview**. In the Log: three reads, of 100, 100 and 83 rows.',
+        see: 'Open **Order lines** again: 369K, as on **Overview**. In the Log: three `lake.Sales` reads for the card, of 100, 100 and 83 rows.',
         why: '`executePaginated()` returns a page with `hasNextPage` and `endCursor`; `after(endCursor)` asks for the next one, with the same `select`, `where` and a stable `orderBy`. Now the numbers match, because the page copies the model\'s formula: a second copy, which can drift without a warning.',
       },
       {
@@ -1727,7 +1743,7 @@ export const lessons = [
     goal: 'say whose permissions a lakehouse query runs with, and how to change it safely',
     builds: ['rows-or-measures', 'to-fabric'],
     pbi: 'Like a data source with stored credentials versus single sign-on. With stored credentials, every viewer sees what that one account sees. With single sign-on, each viewer\'s own access counts.',
-    idea: 'Our two connectors run as two different identities. We look at both, try a write, then change the lakehouse\'s identity, with a slip on the way.',
+    idea: 'Our two connectors run as two different identities. We look at both, try a write, then see what re-adding it as `delegated` would do, with a slip on the way, and keep `application`.',
     steps: [
       {
         do: 'Open `rayfin/rayfin.yml` and look at the `lake` connector\'s `auth`.',
@@ -1744,7 +1760,7 @@ export const lessons = [
         why: 'Semantic model connectors only run as the person using the app, so each person needs Read and Build permission on the model.',
       },
       {
-        do: 'Open the **Log**, and compare a `contoso` query with a `lake` read.',
+        do: 'Open the **Log**, then click a `contoso` query and a `lake` read to open them.',
         point: 'log',
         see: '`runs as: the signed-in user (delegated)` and `runs as: the app owner (application)`.',
         why: 'The playground prints this line; a real app doesn\'t. `connector add` and `inspect` ran as you, the developer: discovery and the running app use different identities.',
@@ -1766,7 +1782,7 @@ export const lessons = [
         do: 'A slip on purpose: re-add the connector as delegated, accepting every prompt:',
         run: LAKE_READD,
         point: 'terminal',
-        see: '`type: delegated` for `lake` in `rayfin.yml`, and red lines in `src/services/rayfinClient.ts`: `schema.ts` is a placeholder again.',
+        see: '`type: delegated` for `lake` in `rayfin.yml`, and red lines in `src/services/rayfinClient.ts`, `src/lake.ts` and `src/LinesPage.tsx`: `schema.ts` is a placeholder again.',
         why: 'Re-adding keeps the entity files, but `--yes` replaces a hand-written `schema.ts` with a fresh placeholder. Without `--auth`, re-adding would also have set `auth` back to `application`.',
       },
       {
@@ -1781,7 +1797,7 @@ export const lessons = [
       {
         do: 'Which to choose? Read this card.',
         see: '`application`: one shared view, and the app\'s owner needs access to the lakehouse. `delegated`: each person sees what they may see at the source, and each needs their own access.',
-        why: 'Rayfin\'s docs: don\'t choose `application` for per-user access control. **Who is using it**, a later chapter, comes back to identities for every part of the app.',
+        why: 'Rayfin\'s docs: don\'t choose `application` for per-user access control. For shared sales lines that everyone may see, `application` is a fair choice; we keep it. **Who is using it**, a later chapter, comes back to identities for every part of the app.',
       },
     ],
     summary: [
