@@ -108,7 +108,7 @@ copyStatic();
 if (serve) {
   const contexts = await Promise.all(configs.map((c) => esbuild.context(c)));
   await Promise.all(contexts.map((c) => c.watch()));
-  const { port } = await contexts[0].serve({ servedir: dist, port: 5180 });
+  const { port } = await contexts[0].serve({ servedir: dist, port: 5180, host: '127.0.0.1' });
   console.log(`\n  page playground: http://localhost:${port}/\n`);
 } else {
   await Promise.all(configs.map((c) => esbuild.build(c)));
