@@ -2281,42 +2281,75 @@ function showSplash() {
   const started = !!project.appDir || order.some((l) => progress.started(l));
   const current = chapterOf(lesson);
   const currentDone = lessonsOf(current).filter(progress.done).length;
-  const chapterItem = (c: Chapter) => {
-      const state = chapterState(c);
-      // Every chapter folds open and shut; the one you are working in starts open.
-      const body = h('div', { class: 'body' }, h('p', { class: 'g' }, c.goal));
-      if (c.modules) {
-        body.append(
-          h(
-            'ol',
-            { class: 'splash-modules' },
-            ...modulesOf(c).map((m) => h('li', {}, h('span', { class: 'n' }, String(course.indexOf(m))), h('span', { class: 't' }, m.title), h('span', { class: 'g' }, m.goal))),
-          ),
-        );
-        if (c !== current) body.append(h('p', { class: 'go' }, chapterButton(c)));
-      } else {
-        body.append(h('p', { class: 'planned-head' }, 'Lessons planned:'), h('ul', { class: 'planned' }, ...c.coming!.map((t) => h('li', {}, t))));
-      }
-      const fold = h(
-        'details',
-        {},
-        h('summary', {}, h('span', { class: 'n' }, `Chapter ${chapterNum(c)}`), h('span', { class: 't' }, c.title), h('span', { class: `chip ${state.key}` }, state.label)),
-        body,
-      ) as HTMLDetailsElement;
-      fold.open = c === current;
-      return h('li', { class: `chapter ${state.key}${c === current ? ' current' : ''}` }, fold);
+  // The parts side by side, one column each; a chapter is a compact row. The chapter you pick opens in one
+  // panel under the columns (the one you are working in starts open); picking it again closes it.
+  let picked: Chapter | undefined = current;
+  const detail = h('div', { class: 'chapter-detail', id: 'splash-chapter-detail' });
+  const rows = new Map<Chapter, HTMLButtonElement>();
+  const renderDetail = () => {
+    for (const [c, btn] of rows) {
+      btn.setAttribute('aria-expanded', String(c === picked));
+      btn.classList.toggle('picked', c === picked);
+    }
+    if (!picked) {
+      detail.hidden = true;
+      detail.replaceChildren();
+      return;
+    }
+    const c = picked;
+    const state = chapterState(c);
+    const body = h('div', { class: 'body' }, h('p', { class: 'g' }, c.goal));
+    if (c.modules) {
+      body.append(
+        h(
+          'ol',
+          { class: 'splash-modules' },
+          ...modulesOf(c).map((m) => h('li', {}, h('span', { class: 'n' }, String(course.indexOf(m))), h('span', { class: 't' }, m.title), h('span', { class: 'g' }, m.goal))),
+        ),
+      );
+      if (c !== current) body.append(h('p', { class: 'go' }, chapterButton(c)));
+    } else {
+      body.append(h('p', { class: 'planned-head' }, 'Lessons planned:'), h('ul', { class: 'planned' }, ...c.coming!.map((t) => h('li', {}, t))));
+    }
+    detail.hidden = false;
+    detail.replaceChildren(
+      h('div', { class: 'detail-head' }, h('span', { class: 'n' }, `Chapter ${chapterNum(c)}`), h('h3', { class: 't' }, c.title), h('span', { class: `chip ${state.key}` }, state.label)),
+      body,
+    );
+  };
+  const chapterRow = (c: Chapter) => {
+    const state = chapterState(c);
+    const btn = h(
+      'button',
+      { type: 'button', class: `chapter-row ${state.key}${c === current ? ' current' : ''}`, 'aria-controls': 'splash-chapter-detail' },
+      h('span', { class: 'n' }, String(chapterNum(c))),
+      h('span', { class: 't' }, c.title),
+      h('span', { class: `chip ${state.key}` }, state.label),
+    ) as HTMLButtonElement;
+    btn.addEventListener('click', () => {
+      picked = picked === c ? undefined : c;
+      renderDetail();
+    });
+    rows.set(c, btn);
+    return h('li', {}, btn);
   };
   $('splash-chapters').replaceChildren(
-    ...partList.map((p) =>
-      h(
-        'section',
-        { class: 'part' },
-        h('div', { class: 'part-head' }, h('h2', {}, `Part ${partNum(p)} · ${p.title}`), h('span', { class: 'level' }, p.level)),
-        h('p', { class: 'part-goal' }, p.goal),
-        h('ol', { class: 'chapters' }, ...chaptersOf(p).map(chapterItem)),
+    h(
+      'div',
+      { class: 'parts' },
+      ...partList.map((p) =>
+        h(
+          'section',
+          { class: 'part' },
+          h('div', { class: 'part-head' }, h('span', { class: 'level' }, `Part ${partNum(p)} · ${p.level}`), h('h2', {}, p.title)),
+          h('p', { class: 'part-goal' }, p.goal),
+          h('ol', { class: 'chapters' }, ...chaptersOf(p).map(chapterRow)),
+        ),
       ),
     ),
+    detail,
   );
+  renderDetail();
   const go = $('splash-go') as HTMLButtonElement;
   go.disabled = false;
   go.textContent = started ? `Continue: ${check ? 'Check your knowledge' : `${num(lesson)} ${lesson.title}`} →` : 'Start the course →';
