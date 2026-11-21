@@ -617,7 +617,7 @@ body.resizing iframe, body.resizing .monaco-editor { pointer-events: none; }
 .drawer .chapter[open] > summary .chapter-head h3::before { transform: rotate(90deg); }
 .drawer .chapter-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .drawer .chapter-head h3 { font-size: 16px; margin: 0; display: flex; gap: 8px; align-items: baseline; }
-.drawer .chapter-head .num { color: var(--accent); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.drawer .chapter-head .num { color: var(--accent); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; flex-shrink: 0; }
 .drawer .chapter-head.coming h3 { color: var(--muted); }
 .drawer .chapter > .muted { font-size: 12.5px; margin: 2px 0 4px; }
 
