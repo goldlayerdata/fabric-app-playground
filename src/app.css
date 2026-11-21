@@ -569,26 +569,36 @@ body.resizing iframe, body.resizing .monaco-editor { pointer-events: none; }
 
 /* ---------------------------------------------------------------- chapters (splash and course drawer) */
 .splash-chapters { list-style: none; margin: 26px 0 0; padding: 0; border-top: 1px solid var(--line); }
-.splash-chapters > li { display: grid; grid-template-columns: 92px 1fr auto; gap: 2px 12px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--line); }
-.splash-chapters > li > .n { color: var(--muted); font-family: var(--mono); font-size: 13px; }
-.splash-chapters > li.current > .n { color: var(--accent); }
-.splash-chapters > li > .t { font-weight: 600; }
-.splash-chapters > li > .g, .splash-chapters > li > .go, .splash-chapters > li > .planned, .splash-chapters > li > .splash-modules { grid-column: 2 / 4; }
-.splash-chapters > li > .g { color: var(--muted); font-size: 13.5px; }
-.splash-chapters > li.coming > .n, .splash-chapters > li.coming > .t { color: var(--muted); }
-.splash-chapters .splash-modules { margin: 8px 0 0; }
-.splash-chapters .planned summary { cursor: pointer; color: var(--muted); font-size: 13px; }
-.splash-chapters .planned ul { margin: 4px 0 0; padding-left: 18px; color: var(--muted); font-size: 13px; }
+.splash-chapters > li { border-bottom: 1px solid var(--line); }
+.splash-chapters summary { display: grid; grid-template-columns: 18px 84px 1fr auto; gap: 12px; align-items: baseline; padding: 10px 0; cursor: pointer; list-style: none; }
+.splash-chapters summary::-webkit-details-marker { display: none; }
+.splash-chapters summary::before { content: '▸'; color: var(--muted); transition: transform 0.15s; }
+.splash-chapters details[open] > summary::before { transform: rotate(90deg); }
+.splash-chapters summary:hover .t { color: var(--accent); }
+.splash-chapters summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.splash-chapters summary .n { color: var(--muted); font-family: var(--mono); font-size: 13px; }
+.splash-chapters li.current summary .n { color: var(--accent); }
+.splash-chapters summary .t { font-weight: 600; }
+.splash-chapters li.coming summary .t { color: var(--muted); }
+.splash-chapters .body { padding: 0 0 12px 114px; }
+.splash-chapters .body .g { color: var(--muted); font-size: 13.5px; margin: 0 0 6px; }
+.splash-chapters .body .go { margin: 8px 0 0; }
+.splash-chapters .planned-head { color: var(--muted); font-size: 13px; margin: 6px 0 2px; }
+.splash-chapters .planned { margin: 0; padding-left: 18px; color: var(--muted); font-size: 13px; }
 .chip { font-size: 12px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
 .chip.progress, .chip.done { color: var(--accent); border-color: var(--accent); }
 .chip.coming { border-style: dashed; }
-.drawer .chapter { margin-top: 22px; padding-top: 10px; border-top: 1px solid var(--line); }
+.drawer .chapter { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line); }
+.drawer .chapter > summary { cursor: pointer; list-style: none; }
+.drawer .chapter > summary::-webkit-details-marker { display: none; }
+.drawer .chapter > summary .chapter-head h3::before { content: '▸'; color: var(--muted); transition: transform 0.15s; }
+.drawer .chapter[open] > summary .chapter-head h3::before { transform: rotate(90deg); }
 .drawer .chapter-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .drawer .chapter-head h3 { font-size: 16px; margin: 0; display: flex; gap: 8px; align-items: baseline; }
 .drawer .chapter-head .num { color: var(--accent); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
 .drawer .chapter-head.coming h3 { color: var(--muted); }
 .drawer .chapter > .muted { font-size: 12.5px; margin: 2px 0 4px; }
-@media (max-width: 700px) { .splash-chapters > li { grid-template-columns: 1fr auto; } .splash-chapters > li > .n { grid-column: 1 / 3; } .splash-chapters > li > .g, .splash-chapters > li > .go, .splash-chapters > li > .planned, .splash-chapters > li > .splash-modules { grid-column: 1 / 3; } }
+@media (max-width: 700px) { .splash-chapters summary { grid-template-columns: 18px 1fr auto; } .splash-chapters summary .n { grid-column: 2 / 4; } .splash-chapters .body { padding-left: 30px; } }
 
 /* ---------------------------------------------------------------- sign-in switch (simulated) and the Data tab */
 .signin { position: relative; display: flex; align-items: center; gap: 8px; }

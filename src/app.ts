@@ -708,12 +708,14 @@ function renderCourse() {
       h('h3', {}, h('span', { class: 'num' }, `Chapter ${chapterNum(c)}`), c.title),
       h('span', { class: `chip ${state.key}` }, state.label),
     );
-    if (!c.modules) {
-      body.append(h('section', { class: 'chapter coming' }, head, h('p', { class: 'muted' }, c.goal)));
-      continue;
-    }
-    body.append(h('section', { class: 'chapter' }, head, h('p', { class: 'muted' }, c.goal), c !== chapterOf(lesson) ? h('p', {}, chapterButton(c)) : null));
-    for (const m of modulesOf(c)) renderModule(body, m, course.indexOf(m));
+    // Each chapter folds open and shut; the one you are working in starts open.
+    const fold = h('details', { class: `chapter${c.modules ? '' : ' coming'}` }, h('summary', {}, head)) as HTMLDetailsElement;
+    fold.open = c === chapterOf(lesson);
+    fold.append(h('p', { class: 'muted' }, c.goal));
+    body.append(fold);
+    if (!c.modules) continue;
+    if (c !== chapterOf(lesson)) fold.append(h('p', {}, chapterButton(c)));
+    for (const m of modulesOf(c)) renderModule(fold, m, course.indexOf(m));
   }
   body.append(h('p', { class: 'start-over' }, startOver));
 }
@@ -2216,35 +2218,28 @@ function showSplash() {
   $('splash-chapters').replaceChildren(
     ...chapterList.map((c) => {
       const state = chapterState(c);
-      const item = h(
-        'li',
-        { class: `chapter ${state.key}${c === current ? ' current' : ''}` },
-        h('span', { class: 'n' }, `Chapter ${chapterNum(c)}`),
-        h('span', { class: 't' }, c.title),
-        h('span', { class: `chip ${state.key}` }, state.label),
-        h('span', { class: 'g' }, c.goal),
-      );
-      if (c === current) {
-        item.append(
+      // Every chapter folds open and shut; the one you are working in starts open.
+      const body = h('div', { class: 'body' }, h('p', { class: 'g' }, c.goal));
+      if (c.modules) {
+        body.append(
           h(
             'ol',
             { class: 'splash-modules' },
             ...modulesOf(c).map((m) => h('li', {}, h('span', { class: 'n' }, String(course.indexOf(m))), h('span', { class: 't' }, m.title), h('span', { class: 'g' }, m.goal))),
           ),
         );
-      } else if (c.modules) {
-        item.append(h('span', { class: 'go' }, chapterButton(c)));
+        if (c !== current) body.append(h('p', { class: 'go' }, chapterButton(c)));
       } else {
-        item.append(
-          h(
-            'details',
-            { class: 'planned' },
-            h('summary', {}, `${c.coming!.length} lessons planned`),
-            h('ul', {}, ...c.coming!.map((t) => h('li', {}, t))),
-          ),
-        );
+        body.append(h('p', { class: 'planned-head' }, 'Lessons planned:'), h('ul', { class: 'planned' }, ...c.coming!.map((t) => h('li', {}, t))));
       }
-      return item;
+      const fold = h(
+        'details',
+        {},
+        h('summary', {}, h('span', { class: 'n' }, `Chapter ${chapterNum(c)}`), h('span', { class: 't' }, c.title), h('span', { class: `chip ${state.key}` }, state.label)),
+        body,
+      ) as HTMLDetailsElement;
+      fold.open = c === current;
+      return h('li', { class: `chapter ${state.key}${c === current ? ' current' : ''}` }, fold);
     }),
   );
   const go = $('splash-go') as HTMLButtonElement;
