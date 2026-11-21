@@ -5,6 +5,7 @@ import { chapters, modules } from './course.mjs';
 import { terms, help } from './terms.mjs';
 import editorLibs from 'virtual:editor-libs';
 import { answer, entries, readLakehouse, savedResult, snapshotsTakenAt, type Answer, type Mode, type ReadAnswer, type ReadRequest } from './stand-in';
+import { rawPayload } from './connectors-sim.mjs';
 import {
   CLAIMS_TYPES,
   FUNCTION_APP,
@@ -188,7 +189,7 @@ const progress = {
 };
 
 const fmtTime = (d: Date) => d.toTimeString().slice(0, 8);
-const terminalAnswer = (query: string) => answer(query, undefined, 'normal').result;
+const terminalAnswer = (connector: string, query: string) => answer(connector, query, undefined, 'normal').result;
 
 // ---------------------------------------------------------------- the project
 function loadProject(): Project {
@@ -1335,7 +1336,7 @@ window.addEventListener('message', (e: MessageEvent) => {
   if (msg.type === 'runtimeError' && msg.runId !== undefined && msg.runId !== runId) return;
   if (msg.type === 'runtimeError') showError(`The page threw an error:\n${msg.message}`);
   if (msg.type === 'empty') showIdle('No page yet: `src/App.tsx` is empty.');
-  if (msg.type === 'query' && msg.runId === runId) onQuery(msg.runId, msg.id, String(msg.query), msg.limit);
+  if (msg.type === 'query' && msg.runId === runId) onQuery(msg.runId, msg.id, String(msg.connector), msg.decoded !== false, String(msg.query), msg.limit);
   if (msg.type === 'read' && msg.runId === runId) onRead(msg.runId, msg.id, msg as ReadRequest);
   if (msg.type === 'data' && msg.runId === runId) {
     // Only what the page asked for: the message's own fields (its id, its run) stay out of the request.
@@ -1384,16 +1385,22 @@ function onRead(forRun: number, id: number, req: ReadRequest) {
   }, delay);
 }
 
-function onQuery(forRun: number, id: number, query: string, limit: unknown) {
+/**
+ * A query from a semantic model connector, answered from the saved results of that connector's model.
+ * `decoded`: the connector has its runtime (`fabricSemanticModel()`). Without it, the page gets the raw
+ * payload instead of a result, as in Rayfin 2.0 (src/connectors-sim.mjs, rawPayload).
+ */
+function onQuery(forRun: number, id: number, connector: string, decoded: boolean, query: string, limit: unknown) {
   const started = new Date();
-  const result = answer(query, limit, mode);
-  const row = logQuery(started, query, result);
+  const result = answer(connector, query, limit, mode);
+  const raw = !decoded && !result.thrown ? rawPayload(connector) : undefined;
+  const row = logQuery(started, connector, query, result, raw);
   if (!countQuery()) return;
   const delay = QUERY_DELAY_MS[0] + Math.random() * (QUERY_DELAY_MS[1] - QUERY_DELAY_MS[0]);
   window.setTimeout(() => {
     if (forRun !== runId) return;
     row.setDuration(Math.round(delay));
-    toFrame({ type: 'queryResult', runId: forRun, id, result: result.result, thrown: result.thrown });
+    toFrame({ type: 'queryResult', runId: forRun, id, result: raw ?? result.result, thrown: result.thrown });
   }, delay);
 }
 
@@ -1504,16 +1511,17 @@ function trimLog() {
   while (logEl.children.length > 300) logEl.lastElementChild?.remove();
 }
 
-function logQuery(at: Date, query: string, a: Answer) {
+function logQuery(at: Date, connector: string, query: string, a: Answer, raw?: ArrayBuffer) {
   logCount++;
   $('log-count').textContent = String(logCount);
   const r = a.result;
   let status: HTMLElement;
   let cols = '';
-  if (a.thrown) status = h('span', { class: 'err' }, 'threw: network');
-  else if (r?.status === 'error') status = h('span', { class: 'err' }, `error: ${r.error.category}`);
+  if (a.thrown) status = h('span', { class: 'err' }, `${connector} · threw: network`);
+  else if (raw) status = h('span', { class: 'raw' }, `${connector} · raw bytes, not decoded`);
+  else if (r?.status === 'error') status = h('span', { class: 'err' }, `${connector} · error: ${r.error.category}`);
   else {
-    status = h('span', { class: 'ok' }, a.entry!.id);
+    status = h('span', { class: 'ok' }, `${connector} · ${a.entry!.id}`);
     cols = r!.status === 'success' ? r!.table.columns.map((c) => c.name).join(', ') : '';
   }
   const ms = h('span', { class: 't' }, '…');
@@ -1532,14 +1540,27 @@ function logQuery(at: Date, query: string, a: Answer) {
   details.addEventListener('toggle', () => {
     if (details.querySelector('.log-detail')) return;
     const shown = a.thrown ? { thrown: a.thrown } : clip(r);
+    const sentTo = `Query sent to ${connector}${runsAs(connector) ? ` · ${runsAs(connector)}` : ''}`;
     details.append(
       h(
         'div',
         { class: 'log-detail' },
-        h('div', { class: 'muted' }, `Query sent${runsAs('contoso') ? ` · ${runsAs('contoso')}` : ''}`),
+        h('div', { class: 'muted' }, sentTo),
         h('pre', { class: 'dax' }, query.trim()),
-        h('div', { class: 'muted' }, a.thrown ? 'The call threw' : 'Result (what executeQuery returned)'),
-        h('pre', { class: 'json' }, JSON.stringify(shown, null, 2)),
+        ...(raw
+          ? [
+              h('div', { class: 'muted' }, `What executeQuery returned: an ArrayBuffer of ${raw.byteLength} bytes, with no status`),
+              h(
+                'p',
+                { class: 'muted' },
+                `Playground: no runtime is registered under the name "${connector}", so the connector hands the page the raw payload it received, undecoded, as Rayfin 2.0 does. ` +
+                  'Rayfin asks the model for Apache Arrow, and an Arrow reply comes back as an ArrayBuffer. These bytes are a placeholder; the deployed reply format is not documented.',
+              ),
+            ]
+          : [
+              h('div', { class: 'muted' }, a.thrown ? 'The call threw' : 'Result (what executeQuery returned)'),
+              h('pre', { class: 'json' }, JSON.stringify(shown, null, 2)),
+            ]),
       ),
     );
   });
@@ -1612,8 +1633,8 @@ function renderQueries() {
     h(
       'p',
       {},
-      'These are the only queries the simulated connector can answer: saved results from the Contoso model. ',
-      'Send one of them, word for word (spacing and letter case don\'t matter), and you get its result. ',
+      'These are the only queries the simulated semantic model connectors can answer: saved results from the Contoso measures model (contoso) and, from Two semantic models on, the Pareto model (pareto). ',
+      'Send one of them through the connector it names, word for word (spacing and letter case don\'t matter), and you get its result. ',
       'Anything else comes back as an error result. ',
       'Reads from the lakehouse (from Read a lakehouse on) are not listed here: they are answered from a small table of Contoso rows, the sales lines of the stores in France in 2023.',
     ),
@@ -1623,7 +1644,7 @@ function renderQueries() {
   for (const g of groups) {
     const box = h('div', { class: 'q-group' }, h('h3', {}, g));
     for (const e of entries.filter((x) => x.group === g)) {
-      const item = h('details', { class: 'q-item' }, h('summary', {}, h('span', {}, e.title), h('span', { class: 'id' }, e.id)));
+      const item = h('details', { class: 'q-item' }, h('summary', {}, h('span', {}, e.title), h('span', { class: 'id' }, `${e.connector} · ${e.id}`)));
       item.addEventListener('toggle', () => {
         if (item.querySelector('pre')) return;
         const saved = savedResult(e.id)!;
@@ -1755,9 +1776,10 @@ function renderAbout() {
     ),
     p(
       h('b', {}, 'Data. '),
-      `Snapshots taken ${snapshotsTakenAt} from the Contoso measures model (gold-layer-examples), built with the `,
+      `Snapshots taken ${snapshotsTakenAt} from the Contoso measures model and the Pareto model (gold-layer-examples), both built with the `,
       a('https://github.com/sql-bi/Contoso-Data-Generator-V2', 'SQLBI Contoso Data Generator V2'),
       ' (MIT). Sales lines from January 2023 to 9 November 2026, so 2026 is a part year. The queries use the model\'s own measures, as a real app does, such as [Revenue] (quantity × net price, in USD), [# Orders], [# Customers] and [Margin %]. Only Measure or query and the review lesson write one into a query, to compare.',
+      ' The Pareto model has the same tables and data, with its own measures for the vital few categories; both models have [Revenue], with the same formula.',
       ' The lakehouse holds every store and the sales lines of the stores in France in 2023, from the same Contoso files: they add up to the model\'s [Revenue] for France in 2023.',
     ),
     p(

@@ -1,10 +1,11 @@
-// The simulated connector. Answers a query with a saved result (snapshot) from the Contoso model,
-// in the shape the Rayfin 2.0 semantic model connector returns. No DAX runs here.
+// The simulated semantic model connectors. Answer a query with a saved result (snapshot) from the model
+// the connector names (contoso or pareto), in the shape the Rayfin 2.0 semantic model connector returns.
+// No DAX runs here.
 import catalog from '../data/catalog.json';
 import snapshotFile from '../data/snapshots.json';
 import lakehouse from '../data/lakehouse.json';
 
-export type CatalogEntry = { id: string; group: string; title: string; query: string };
+export type CatalogEntry = { id: string; connector: string; group: string; title: string; query: string };
 type Column = { name: string; dataType: string };
 type Table = { columns: Column[]; rows: unknown[][] };
 export type Result =
@@ -21,12 +22,13 @@ const snapshots = snapshotFile.snapshots as unknown as Record<string, Saved>;
 /** How the simulated connector answers: normally, or as if the network were down. */
 export type Mode = 'normal' | 'network';
 
-/** Queries match when they are the same text, ignoring spacing and letter case. */
+/** Queries match when they go to the same connector with the same text, ignoring spacing and letter case. */
 export const normalize = (q: string) => q.replace(/\s+/g, ' ').trim().toLowerCase();
-const byText = new Map(entries.map((e) => [normalize(e.query), e]));
+const keyOf = (connector: string, query: string) => `${connector.toLowerCase()}|${normalize(query)}`;
+const byKey = new Map(entries.map((e) => [keyOf(e.connector, e.query), e]));
 
-export function findEntry(query: string): CatalogEntry | undefined {
-  return byText.get(normalize(query));
+export function findEntry(connector: string, query: string): CatalogEntry | undefined {
+  return byKey.get(keyOf(connector, query));
 }
 
 export function savedResult(id: string): Saved | undefined {
@@ -37,22 +39,26 @@ const requestId = () => `simulated-${crypto.randomUUID()}`;
 
 export type Answer = { entry?: CatalogEntry; result?: Result; thrown?: string };
 
-export function answer(query: string, limit: unknown, mode: Mode): Answer {
+export function answer(connector: string, query: string, limit: unknown, mode: Mode): Answer {
   if (mode === 'network') {
     // In a browser app (Rayfin 2.0), a request that can't reach the app's backend makes the call
     // throw a NetworkError ("Network error: …", rayfin-lib ApiClient). Only the CLI path
     // (`connector invoke`) turns that into an error result with category 'network'.
     return { thrown: 'Network error: Failed to fetch (simulated: Network down is on)' };
   }
-  const entry = findEntry(query);
+  const entry = findEntry(connector, query);
   if (!entry) {
+    // The same text may be saved for the other model: say so, since the connector decides which model answers.
+    const elsewhere = [...new Set(entries.filter((e) => normalize(e.query) === normalize(query)).map((e) => e.connector))];
     return {
       result: {
         status: 'error',
         error: {
           category: 'query',
           message:
-            'This query is not in the playground\'s saved results. There is no live model here: only the queries in the Queries tab can be answered (compared ignoring spacing and letter case).',
+            `This query is not in the playground's saved results for the ${connector} connector.` +
+            (elsewhere.length ? ` It is saved for ${elsewhere.join(' and ')}.` : '') +
+            ' There is no live model here: only the queries in the Queries tab can be answered, each by its own connector (compared ignoring spacing and letter case).',
         },
         requestId: requestId(),
       },

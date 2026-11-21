@@ -1,6 +1,6 @@
 {
-  "source": "Contoso sample model (SQLBI Contoso Data Generator V2, MIT), queried in Power BI Desktop",
-  "takenAt": "2026-11-20",
+  "source": "Contoso sample model (SQLBI Contoso Data Generator V2, MIT), queried in Power BI Desktop: contoso = gold-layer-data-contoso-measures.pbip, pareto = gold-layer-data-pareto.pbip",
+  "takenAt": "2026-11-20 and 2026-11-21",
   "snapshots": {
     "revenue": {
       "status": "success",
@@ -4569,6 +4569,924 @@
       "error": {
         "category": "query",
         "message": "Query (2, 19) The value for 'Margin Pct' cannot be determined. Either the column doesn't exist, or there is no current row for this column."
+      },
+      "requestId": ""
+    },
+    "pareto-by-category": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Share %]",
+            "dataType": "Double"
+          },
+          {
+            "name": "[Cumulative %]",
+            "dataType": "Double"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            69403437.8359,
+            0.46074654487969624,
+            0.46074654487969624
+          ],
+          [
+            "Cell phones",
+            22474278.116,
+            0.1491993237438177,
+            0.609945868623514
+          ],
+          [
+            "Home Appliances",
+            17196810.4833,
+            0.11416395585281697,
+            0.7241098244763309
+          ],
+          [
+            "Cameras and camcorders",
+            15986316.4798,
+            0.10612788520414197,
+            0.8302377096804728
+          ],
+          [
+            "TV and Video",
+            13253691.5424,
+            0.08798688905729282,
+            0.9182245987377657
+          ],
+          [
+            "Music, Movies and Audio Books",
+            6890236.3199,
+            0.045742007554507344,
+            0.963966606292273
+          ],
+          [
+            "Audio",
+            4196985.9686,
+            0.027862406304904323,
+            0.9918290125971774
+          ],
+          [
+            "Games and Toys",
+            1230816.8614,
+            0.008170987402822624,
+            1.0
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "pareto-by-category-2023": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Share %]",
+            "dataType": "Double"
+          },
+          {
+            "name": "[Cumulative %]",
+            "dataType": "Double"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            6025128.3171,
+            0.35517373903749355,
+            0.35517373903749355
+          ],
+          [
+            "Cameras and camcorders",
+            3430459.3871,
+            0.20222126783168945,
+            0.557395006869183
+          ],
+          [
+            "Home Appliances",
+            2962096.2293,
+            0.17461184854162845,
+            0.7320068554108115
+          ],
+          [
+            "TV and Video",
+            2016205.0529,
+            0.11885275294011555,
+            0.850859608350927
+          ],
+          [
+            "Cell phones",
+            1465123.2592,
+            0.08636717406399198,
+            0.937226782414919
+          ],
+          [
+            "Music, Movies and Audio Books",
+            482288.604,
+            0.02843030683540711,
+            0.9656570892503261
+          ],
+          [
+            "Audio",
+            477614.5394,
+            0.02815477660383126,
+            0.9938118658541574
+          ],
+          [
+            "Games and Toys",
+            104974.8283,
+            0.006188134145842637,
+            1.0
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "pareto-by-category-2024": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Share %]",
+            "dataType": "Double"
+          },
+          {
+            "name": "[Cumulative %]",
+            "dataType": "Double"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            17068394.8508,
+            0.4882484216547774,
+            0.4882484216547774
+          ],
+          [
+            "Home Appliances",
+            4653673.7771,
+            0.13312024337536374,
+            0.6213686650301411
+          ],
+          [
+            "Cell phones",
+            4535923.6075,
+            0.12975195157292235,
+            0.7511206166030634
+          ],
+          [
+            "Cameras and camcorders",
+            3658798.4167,
+            0.10466142643888064,
+            0.855782043041944
+          ],
+          [
+            "TV and Video",
+            2404259.233,
+            0.06877481954351178,
+            0.9245568625854559
+          ],
+          [
+            "Audio",
+            1326796.2893,
+            0.03795355097950394,
+            0.9625104135649598
+          ],
+          [
+            "Music, Movies and Audio Books",
+            1069295.7137,
+            0.030587641606602132,
+            0.9930980551715619
+          ],
+          [
+            "Games and Toys",
+            241281.1068,
+            0.0069019448284380535,
+            1.0
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "pareto-by-category-2025": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Share %]",
+            "dataType": "Double"
+          },
+          {
+            "name": "[Cumulative %]",
+            "dataType": "Double"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            24731898.0253,
+            0.504529356710588,
+            0.504529356710588
+          ],
+          [
+            "Cell phones",
+            7530649.8189,
+            0.15362484128212137,
+            0.6581541979927094
+          ],
+          [
+            "Cameras and camcorders",
+            5749459.5541,
+            0.11728865804380295,
+            0.7754428560365123
+          ],
+          [
+            "Home Appliances",
+            3711953.2877,
+            0.07572364249873685,
+            0.8511664985352492
+          ],
+          [
+            "TV and Video",
+            3063590.9502,
+            0.06249708654578831,
+            0.9136635850810375
+          ],
+          [
+            "Music, Movies and Audio Books",
+            2201558.2068,
+            0.04491166608812047,
+            0.958575251169158
+          ],
+          [
+            "Audio",
+            1512581.7328,
+            0.03085658398886729,
+            0.9894318351580252
+          ],
+          [
+            "Games and Toys",
+            518048.6957,
+            0.010568164841974748,
+            1.0
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "pareto-by-category-2026": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "product[CategoryName]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          },
+          {
+            "name": "[Share %]",
+            "dataType": "Double"
+          },
+          {
+            "name": "[Cumulative %]",
+            "dataType": "Double"
+          }
+        ],
+        "rows": [
+          [
+            "Computers",
+            21578016.6427,
+            0.43424815415549944,
+            0.43424815415549944
+          ],
+          [
+            "Cell phones",
+            8942581.4304,
+            0.1799655428873809,
+            0.6142136970428803
+          ],
+          [
+            "Home Appliances",
+            5869087.1892,
+            0.11811281456908192,
+            0.7323265116119623
+          ],
+          [
+            "TV and Video",
+            5769636.3063,
+            0.11611140901621939,
+            0.8484379206281817
+          ],
+          [
+            "Cameras and camcorders",
+            3147599.1219,
+            0.06334405665448208,
+            0.9117819772826637
+          ],
+          [
+            "Music, Movies and Audio Books",
+            3137093.7954,
+            0.06313264155007445,
+            0.9749146188327382
+          ],
+          [
+            "Audio",
+            879993.4071,
+            0.017709482712418945,
+            0.9926241015451571
+          ],
+          [
+            "Games and Toys",
+            366512.2306,
+            0.007375898454842875,
+            1.0
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "pareto-headline": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Categories to 80%]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Headline]",
+            "dataType": "String"
+          }
+        ],
+        "rows": [
+          [
+            4,
+            "It takes 4 of 8 categories to reach 80% of revenue"
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "pareto-headline-2023": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Categories to 80%]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Headline]",
+            "dataType": "String"
+          }
+        ],
+        "rows": [
+          [
+            4,
+            "It takes 4 of 8 categories to reach 80% of revenue"
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "pareto-headline-2024": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Categories to 80%]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Headline]",
+            "dataType": "String"
+          }
+        ],
+        "rows": [
+          [
+            4,
+            "It takes 4 of 8 categories to reach 80% of revenue"
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "pareto-headline-2025": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Categories to 80%]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Headline]",
+            "dataType": "String"
+          }
+        ],
+        "rows": [
+          [
+            4,
+            "It takes 4 of 8 categories to reach 80% of revenue"
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "pareto-headline-2026": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Categories to 80%]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Headline]",
+            "dataType": "String"
+          }
+        ],
+        "rows": [
+          [
+            4,
+            "It takes 4 of 8 categories to reach 80% of revenue"
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "pareto-cutoff-50": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Categories to cutoff]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Headline]",
+            "dataType": "String"
+          }
+        ],
+        "rows": [
+          [
+            2,
+            "It takes 2 of 8 categories to reach 50% of revenue"
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "pareto-cutoff-60": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Categories to cutoff]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Headline]",
+            "dataType": "String"
+          }
+        ],
+        "rows": [
+          [
+            2,
+            "It takes 2 of 8 categories to reach 60% of revenue"
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "pareto-cutoff-70": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Categories to cutoff]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Headline]",
+            "dataType": "String"
+          }
+        ],
+        "rows": [
+          [
+            3,
+            "It takes 3 of 8 categories to reach 70% of revenue"
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "pareto-cutoff-80": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Categories to cutoff]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Headline]",
+            "dataType": "String"
+          }
+        ],
+        "rows": [
+          [
+            4,
+            "It takes 4 of 8 categories to reach 80% of revenue"
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "pareto-cutoff-90": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Categories to cutoff]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Headline]",
+            "dataType": "String"
+          }
+        ],
+        "rows": [
+          [
+            5,
+            "It takes 5 of 8 categories to reach 90% of revenue"
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "pareto-cutoff-95": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Categories to cutoff]",
+            "dataType": "Int64"
+          },
+          {
+            "name": "[Headline]",
+            "dataType": "String"
+          }
+        ],
+        "rows": [
+          [
+            6,
+            "It takes 6 of 8 categories to reach 95% of revenue"
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "pareto-revenue": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            150632573.6073
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "pareto-revenue-2023": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            16963890.2173
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "pareto-revenue-2024": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            34958422.9949
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "pareto-revenue-2025": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            49019740.2715
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "pareto-revenue-2026": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            49690520.1236
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "pareto-revenue-2024-germany": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            2755402.991
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "pareto-revenue-definition": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Table]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Name]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Expression]",
+            "dataType": "String"
+          }
+        ],
+        "rows": [
+          [
+            "sales",
+            "Revenue",
+            "SUMX ( sales, sales[Quantity] * sales[NetPrice] )"
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "contoso-revenue-2023": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            16963890.2173
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "contoso-revenue-2024": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            34958422.9949
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "contoso-revenue-2025": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            49019740.2715
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "contoso-revenue-2026": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            49690520.1236
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "contoso-revenue-2024-germany": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Revenue]",
+            "dataType": "Decimal"
+          }
+        ],
+        "rows": [
+          [
+            2755402.991
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "contoso-revenue-definition": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Table]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Name]",
+            "dataType": "String"
+          },
+          {
+            "name": "[Expression]",
+            "dataType": "String"
+          }
+        ],
+        "rows": [
+          [
+            "_Measures",
+            "Revenue",
+            "SUMX ( sales, sales[Quantity] * sales[NetPrice] )"
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "contoso-pareto-by-category": {
+      "status": "error",
+      "error": {
+        "category": "query",
+        "message": "Query (4, 73) The value for 'Revenue Cumulative %' cannot be determined. Either the column doesn't exist, or there is no current row for this column."
+      },
+      "requestId": ""
+    },
+    "contoso-pareto-by-category-2023": {
+      "status": "error",
+      "error": {
+        "category": "query",
+        "message": "Query (4, 109) The value for 'Revenue Cumulative %' cannot be determined. Either the column doesn't exist, or there is no current row for this column."
+      },
+      "requestId": ""
+    },
+    "contoso-pareto-by-category-2024": {
+      "status": "error",
+      "error": {
+        "category": "query",
+        "message": "Query (4, 109) The value for 'Revenue Cumulative %' cannot be determined. Either the column doesn't exist, or there is no current row for this column."
+      },
+      "requestId": ""
+    },
+    "contoso-pareto-by-category-2025": {
+      "status": "error",
+      "error": {
+        "category": "query",
+        "message": "Query (4, 109) The value for 'Revenue Cumulative %' cannot be determined. Either the column doesn't exist, or there is no current row for this column."
+      },
+      "requestId": ""
+    },
+    "contoso-pareto-by-category-2026": {
+      "status": "error",
+      "error": {
+        "category": "query",
+        "message": "Query (4, 109) The value for 'Revenue Cumulative %' cannot be determined. Either the column doesn't exist, or there is no current row for this column."
+      },
+      "requestId": ""
+    },
+    "pareto-invoke-headline": {
+      "status": "success",
+      "table": {
+        "columns": [
+          {
+            "name": "[Headline]",
+            "dataType": "String"
+          }
+        ],
+        "rows": [
+          [
+            "It takes 4 of 8 categories to reach 80% of revenue"
+          ]
+        ]
+      },
+      "requestId": ""
+    },
+    "contoso-invoke-headline": {
+      "status": "error",
+      "error": {
+        "category": "query",
+        "message": "Query (1, 28) The value for 'Cutoff Headline' cannot be determined. Either the column doesn't exist, or there is no current row for this column."
       },
       "requestId": ""
     }

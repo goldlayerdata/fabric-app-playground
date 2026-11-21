@@ -18,6 +18,7 @@ export const terms = [
   { id: 'dependency-list', term: 'Dependency list', means: 'The list at the end of `useEffect` (here, of `useDax`). When something in it changes, the effect runs again.', pbi: 'What makes a visual query again: its filters changing.', lesson: 'redraw-trap' },
   { id: 'lifting-state', term: 'Lifting state up', means: 'Keeping a selection in the component that holds all the visuals, and handing it down to them.', pbi: 'What makes cross-filtering work: the page, not one visual, holds the selection.', lesson: 'cross-filter' },
   { id: 'connector', term: 'Connector', means: 'How a Fabric app reaches existing data in other Fabric items. Added with `npx rayfin connector add`; the page calls it as `rayfinClient.connectors.contoso`.', pbi: 'A connection to a semantic model (or another Fabric item, such as a warehouse).', lesson: 'connector' },
+  { id: 'runtime', term: 'runtime', means: 'The per-connector code that turns a semantic model\'s answer into a result the page can read: `fabricSemanticModel()`, registered in `connectorsService` under the connector\'s exact name. Without it, the page gets the raw answer, and shows nothing.', pbi: 'No direct match: Power BI reads a model\'s answer for its visuals without being told how.', lesson: 'second-client' },
   { id: 'metadata', term: 'metadata.json', means: 'The tables and columns `connector add` found in a SQL source (schema discovery): names, types, keys. Regenerated, never edited by hand.', pbi: "What the Navigator shows in Get data: a source's tables and columns.", lesson: 'lakehouse-connector' },
   { id: 'entity', term: 'Entity', means: "A TypeScript class that stands for a table: one property per column, with decorators (`@int`, `@text`…) saying each column's type.", pbi: 'A table in the model, with its columns and data types.', lesson: 'lakehouse-entities' },
   { id: 'page-of-rows', term: 'Page of rows', means: "What one read returns: 100 rows by default, or `first(n)`. `execute()` returns one page and doesn't say there are more; `executePaginated()` gives a cursor for the next.", pbi: 'Like a table visual, which fetches 500 rows at a time and loads more as you scroll. Here nothing fetches the next page unless the code asks for it.', lesson: 'rows-or-measures' },
@@ -88,8 +89,13 @@ export const help = [
   },
   {
     symptom: '"This query is not in the playground\'s saved results"',
-    cause: 'The simulated connector only answers saved queries, word for word. The DAX text was changed.',
-    fix: 'Reset, or copy a query from the **Queries** tab.',
+    cause: 'The simulated connectors only answer saved queries, word for word, each from its own model. The DAX text was changed, or it went to the other connector.',
+    fix: 'Reset, or copy a query from the **Queries** tab, and send it through the connector it names.',
+  },
+  {
+    symptom: 'A semantic model page shows nothing: no numbers, no error, no red line',
+    cause: 'The connector has no `runtime` entry under its exact name, so `executeQuery` returns the raw payload, which has no `status` (the Log says "raw bytes, not decoded").',
+    fix: 'Add `fabricSemanticModel()` to `runtime` under the same name as in `configs`, such as `pareto: fabricSemanticModel()`.',
   },
   {
     symptom: 'A red line, and "N type errors" under the editor',

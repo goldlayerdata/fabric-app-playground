@@ -53,6 +53,8 @@ const learn = {
   applySchema: { href: `${LEARN}/data-models#apply-schema-changes`, label: 'Apply schema changes (Microsoft Learn)' },
   dataPermissions: { href: `${LEARN}/data-permissions`, label: 'Define data permissions (Microsoft Learn)' },
   authentication: { href: `${LEARN}/authentication`, label: 'Authentication (Microsoft Learn)' },
+  modelPermissions: { href: 'https://learn.microsoft.com/power-bi/connect-data/service-datasets-permissions', label: 'Semantic model permissions (Microsoft Learn)' },
+  infoViewMeasures: { href: 'https://learn.microsoft.com/dax/info-view-measures-function-dax#remarks', label: 'INFO.VIEW.MEASURES (Microsoft Learn)' },
 };
 const rayfin = {
   docs: { href: 'https://rayfin.ai/docs', label: 'Rayfin docs overview (rayfin.ai)' },
@@ -125,7 +127,22 @@ const YEAR_STATE = '  const [year, setYear] = useState<number | undefined>(undef
 const LOCAL_RUNDAX = '  const runDax = (query: string) => rayfinClient.connectors.contoso.executeQuery({ query });\n';
 const AGENT_RUNDAX_IN_PAGE = '  // Runs a DAX query against the model.\n  const runDax: RunDax = (query) => rayfinClient.connectors.contoso.executeQuery({ query });\n\n';
 
-// Chapter 2: the lakehouse.
+// Chapter 2: the second semantic model.
+const PARETO_TS = 'src/pareto.ts';
+const PARETO_PAGE = 'src/ParetoPage.tsx';
+const PARETO_SCHEMA_FILE = 'rayfin/connectors/pareto/schema.ts';
+const ADD_PARETO_AS_CONTOSO = `npx rayfin connector add --type fabric-semanticmodel --workspace-id ${PLACEHOLDER.workspaceId} --item-id ${PLACEHOLDER.paretoId} --name Contoso`;
+const ADD_PARETO = `npx rayfin connector add --type fabric-semanticmodel --workspace-id ${PLACEHOLDER.workspaceId} --item-id ${PLACEHOLDER.paretoId} --name pareto`;
+const INVOKE_HEADLINE_PARETO = 'npx rayfin connector invoke pareto executeQuery --input \'{"query":"EVALUATE ROW ( \\"Headline\\", [Cutoff Headline] )"}\'';
+const INVOKE_HEADLINE_CONTOSO = 'npx rayfin connector invoke contoso executeQuery --input \'{"query":"EVALUATE ROW ( \\"Headline\\", [Cutoff Headline] )"}\'';
+const RUNTIME_CASE_SLIP = 'runtime: { contoso: fabricSemanticModel(), Pareto: fabricSemanticModel() },';
+const RUNTIME_BOTH = 'runtime: { contoso: fabricSemanticModel(), pareto: fabricSemanticModel() },';
+const PAGES_AGENT = "  agent: { title: 'Agent page', Component: SalesOverview },\n";
+const PAGES_PARETO = "  pareto: { title: 'Categories', Component: ParetoPage },\n";
+const IMPORT_AGENT = "import SalesOverview from './SalesOverview';\n";
+const IMPORT_PARETO = "import ParetoPage from './ParetoPage';\n";
+
+// Chapter 3: the lakehouse.
 const LAKE_TS = 'src/lake.ts';
 const LINES = 'src/LinesPage.tsx';
 const LAKE_DIR = 'rayfin/connectors/lake';
@@ -139,6 +156,7 @@ const LAKE_READD = `npx rayfin connector add --type fabric-sqlanalytics --worksp
 const LAKE_INSTALL = 'npm install @microsoft/rayfin-connector-fabric-graphql@2.0.0 @microsoft/rayfin-connectors@2.0.0';
 const LAKE_INSPECT = 'npx rayfin connector inspect --name lake --entity dbo.store --rows 1';
 const CONTOSO_CLIENT_IMPORT = "import { connectorConfig as contosoConfig, type ContosoSchema } from '../../rayfin/connectors/contoso/schema';\n";
+const PARETO_CLIENT_IMPORT = "import { connectorConfig as paretoConfig, type ParetoSchema } from '../../rayfin/connectors/pareto/schema';\n";
 const LAKE_CLIENT_IMPORT = "import { connectorConfig as lakeConfig, type LakeSchema } from '../../rayfin/connectors/lake/schema';\n";
 const LATEST_LINES_END = '    .first(20)\n    .execute();\n}\n';
 const LINES_HOOK = '  const lines = useLoad(async () => latestLines(await storeKeysIn(country)), country);\n';
@@ -1465,7 +1483,269 @@ export const lessons = [
       links: [learn.template, rayfin.semanticModels, rayfin.quickstart],
     },
   },
-  // ================================================================== Chapter 2: Read a lakehouse
+  // ================================================================== Chapter 2: Two semantic models
+  // ================================================================== Two models in one app
+  {
+    id: 'second-model',
+    title: 'Add a second model',
+    goal: 'add a second semantic model connector next to the first, under a name of its own',
+    builds: ['connector', 'to-fabric'],
+    pbi: 'A thin report connects live to one semantic model. An app isn\'t limited to one: each model gets its own [[connector]], side by side, each with its own name.',
+    idea: 'The owner keeps a second model next to Contoso measures: the same Contoso data, with Pareto measures (which categories make 80% of revenue). We add it as `pareto`, after one slip with the name.',
+    steps: [
+      {
+        do: 'A slip on purpose: add the Pareto model, named `Contoso` (it is a Contoso model, after all):',
+        run: ADD_PARETO_AS_CONTOSO,
+        point: 'terminal',
+        see: '`Using existing connector name "contoso" (from "Contoso").`, then `Connector "Contoso" already exists as "contoso".` The real CLI asks **Overwrite?** here; the playground answers no, and nothing changes.',
+        why: 'Connector names ignore case: `Contoso` is `contoso`. A yes would have pointed `contoso` at the Pareto model, and the **Overview** page would ask it for `[# Orders]`, a measure that model doesn\'t have.',
+      },
+      {
+        do: 'Add it again, named `pareto`:',
+        run: ADD_PARETO,
+        point: 'terminal',
+        see: '`rayfin.yml` changed, a new `rayfin/connectors/pareto/schema.ts`, the same install line as before, and a note that nothing was wired.',
+        why: 'The name is how our code will reach it: `rayfinClient.connectors.pareto`. Pick one that says which model it is. New names are stored in lower case anyway.',
+      },
+      {
+        do: 'Open `rayfin/rayfin.yml`.',
+        file: YML,
+        find: '  - name: pareto',
+        see: 'Two entries under `connectors:`, each with its own `workspaceId` and `itemId`, and both with `auth` of type `delegated`.',
+        why: 'Each connector carries its own ids, so the two models could even live in different workspaces. Both are delegated: a semantic model connector only runs as the signed-in person.',
+      },
+      {
+        do: 'Open `rayfin/connectors/pareto/schema.ts`.',
+        file: PARETO_SCHEMA_FILE,
+        find: "export type ParetoSchema = FabricSemanticModel<'executeQuery'>;",
+        see: 'The same shape as `ContosoSchema`: a semantic model with one operation, `executeQuery`.',
+        why: 'The type knows what kind of connector it is, not which measures the model has. TypeScript can\'t tell our two models apart: only their names can.',
+      },
+      {
+        do: 'Open `package.json`, and find the package from the install line.',
+        file: 'package.json',
+        find: '"@microsoft/rayfin-connector-fabric-semanticmodel"',
+        see: 'It is already there, since **Add the connector**.',
+        why: 'One package serves every semantic model connector, so there is nothing new to install.',
+      },
+      {
+        do: 'Test it from the terminal with a measure only this model has (copy it rather than type it):',
+        run: INVOKE_HEADLINE_PARETO,
+        point: 'terminal',
+        see: '`"status": "ok"`, and one row: **It takes 4 of 8 categories to reach 80% of revenue**.',
+        why: 'The model writes that sentence itself, from its own measure, `[Cutoff Headline]`.',
+      },
+      {
+        do: 'A slip on purpose: send the same query to `contoso`:',
+        run: INVOKE_HEADLINE_CONTOSO,
+        point: 'terminal',
+        commandFails: true,
+        see: 'The query fails: `The value for \'Cutoff Headline\' cannot be determined. Either the column doesn\'t exist, or there is no current row for this column.`',
+        why: 'The connector name picks the model, and each model knows only its own measures. Nothing to undo: it was only a test.',
+      },
+    ],
+    summary: [
+      'A second model is a second connector, with a name of its own: the connector name decides which model answers.',
+      'Connector names ignore case: a name that differs only by case is the same connector, and the CLI offers to overwrite it.',
+    ],
+    fabric: {
+      text: 'In a real project the ids come from `npx rayfin connector search` or the model\'s address in the Fabric portal, and every user of the app needs access to both models.',
+      links: [rayfin.adding, rayfin.semanticModels, learn.addConnector],
+    },
+  },
+
+  {
+    id: 'second-client',
+    title: 'Register the second model',
+    goal: 'register a second semantic model in the client, and recognise a missing runtime by its silence',
+    builds: ['second-model', 'client'],
+    pbi: 'A model in `rayfin.yml` is like a data source in the workspace: it exists, but no report uses it yet. The client is what our pages use, so `pareto` needs its place there too.',
+    idea: 'The same three places as for `contoso` in **Wire the client**: the schema type, `configs` and the [[runtime]]. We leave the runtime out at first, on purpose, to see what that looks like.',
+    steps: [
+      {
+        do: 'In `src/services/rayfinClient.ts`, add this import on a new line under the marked `contoso` import:',
+        code: PARETO_CLIENT_IMPORT.trim(),
+        edits: [{ file: CLIENT, from: CONTOSO_CLIENT_IMPORT, to: CONTOSO_CLIENT_IMPORT + PARETO_CLIENT_IMPORT }],
+        see: 'Nothing changes.',
+      },
+      {
+        do: 'In `AppConnectorsSchema`, add a line under the marked `contoso: ContosoSchema;`:',
+        code: 'pareto: ParetoSchema;',
+        edits: [{ file: CLIENT, from: '  contoso: ContosoSchema;\n', to: '  contoso: ContosoSchema;\n  pareto: ParetoSchema;\n' }],
+        errors: 1,
+        see: 'A red line under `configs`: `pareto` is missing.',
+        why: '`configs` must have every connector in the schema, under the same name.',
+      },
+      {
+        do: 'A slip on purpose, in part: add `pareto` to `configs`, and leave `runtime` as it is. The marked line becomes:',
+        code: 'configs: { contoso: contosoConfig, pareto: paretoConfig },',
+        find: 'configs: { contoso: contosoConfig },',
+        edits: [{ file: CLIENT, from: 'configs: { contoso: contosoConfig },', to: 'configs: { contoso: contosoConfig, pareto: paretoConfig },' }],
+        see: 'The red line goes. `runtime` still names only `contoso`, and nothing is red.',
+        why: 'TypeScript checks `configs` against the schema, but not `runtime`: it takes any names, or none.',
+      },
+      {
+        do: 'In `src/data.ts`, add `export` in front of the marked `function filters(`:',
+        code: 'export function filters(year?: number, country?: string): string[] {',
+        find: 'function filters(year?: number, country?: string): string[] {',
+        edits: [{ file: DATA, from: '\nfunction filters(year?: number, country?: string): string[] {', to: '\nexport function filters(year?: number, country?: string): string[] {' }],
+        see: 'Nothing changes.',
+        why: 'The Pareto model is built on the same tables, so the same filter text works there: `\'date\'[Year]` is in both. A filter is only DAX text: it works in any model that has that column.',
+      },
+      {
+        do: 'Create `src/pareto.ts` (**+ New file**) with its runner and one query:',
+        code: C.PARETO_V1,
+        edits: [{ file: PARETO_TS, from: '', to: C.PARETO_V1 }],
+        find: 'rayfinClient.connectors.pareto.executeQuery',
+        see: 'No red lines.',
+        why: '`runPareto` has the same type as `runDax`, and is made once, outside any page, for the reason in **The redraw trap**. Only the connector differs.',
+      },
+      {
+        do: 'Add the page as **Categories**: **Do it for me** writes `src/ParetoPage.tsx` (a year slicer and the headline) and adds the page to the report (page id, import and `PAGES` entry); this is the line it adds to `PAGES`:',
+        code: "pareto: { title: 'Categories', Component: ParetoPage },",
+        edits: [
+          { file: PARETO_PAGE, from: '', to: C.PARETO_PAGE_V1 },
+          { from: "type PageId = 'overview' | 'years' | 'agent';", to: "type PageId = 'overview' | 'years' | 'agent' | 'pareto';" },
+          { from: PAGES_AGENT, to: PAGES_AGENT + PAGES_PARETO },
+          { from: IMPORT_AGENT, to: IMPORT_AGENT + IMPORT_PARETO },
+        ],
+        see: '**Categories** in the page list.',
+      },
+      {
+        do: 'Click **Categories**.',
+        point: 'preview',
+        see: 'The page draws, but the headline card is empty: no sentence, no error panel, no red line. The **Log** shows the `pareto` query, answered with raw bytes, not decoded.',
+        why: 'Without a `runtime` entry, `executeQuery` hands the page the raw payload the connector received (the model\'s answer, still in Apache Arrow form), not a result with a `status`. The page finds no `error` to show, and `toHeadline` finds no `success`, so it shows nothing. Rayfin\'s own CLI calls this failing silently.',
+      },
+      {
+        do: 'A slip on purpose: add the runtime, with a capital P. The marked line becomes:',
+        code: 'runtime: { contoso: fabricSemanticModel(), Pareto: fabricSemanticModel() },',
+        file: CLIENT,
+        find: 'runtime: { contoso: fabricSemanticModel() },',
+        edits: [{ file: CLIENT, from: 'runtime: { contoso: fabricSemanticModel() },', to: RUNTIME_CASE_SLIP }],
+        see: 'No red line. The page starts again on **Overview**: open **Categories**, and the headline is still empty.',
+        why: 'The client finds a connector by its name in any case, but then looks up its runtime by the exact name in `configs`: `pareto`. `Pareto` is never found.',
+      },
+      {
+        do: 'Fix the name, so the marked line reads:',
+        code: RUNTIME_BOTH.trim(),
+        file: CLIENT,
+        find: RUNTIME_CASE_SLIP,
+        edits: [{ file: CLIENT, from: RUNTIME_CASE_SLIP, to: RUNTIME_BOTH }],
+        see: 'Open **Categories** again: **It takes 4 of 8 categories to reach 80% of revenue**.',
+        why: 'One runtime per semantic model, under its own connector name: the same name in all three places.',
+      },
+      {
+        do: 'A slip on purpose: in `src/pareto.ts`, change the marked `connectors.pareto` to `connectors.Pareto`.',
+        file: PARETO_TS,
+        find: 'connectors.pareto',
+        edits: [{ file: PARETO_TS, from: 'rayfinClient.connectors.pareto.executeQuery', to: 'rayfinClient.connectors.Pareto.executeQuery' }],
+        errors: 1,
+        see: 'A red line: `Property \'Pareto\' does not exist on type …`, ending `Did you mean \'pareto\'?` Open **Categories**: the headline is still there.',
+        why: 'At run time, a name that differs only by case finds the one connector it matches (two such connectors would throw `AMBIGUOUS_CONNECTOR`). The types want the exact name. As in **Types**, the red line is a check, not a gate: fix it anyway.',
+      },
+      {
+        do: UNDO,
+        edits: [{ file: PARETO_TS, from: 'rayfinClient.connectors.Pareto.executeQuery', to: 'rayfinClient.connectors.pareto.executeQuery' }],
+        see: 'The red line goes.',
+      },
+    ],
+    summary: [
+      'Each semantic model needs its name in the schema type, in `configs` and in `runtime`.',
+      'A missing `configs` entry is a red line. A missing or misspelled `runtime` entry is silent: an empty page.',
+      'Use the exact, lower-case name everywhere: the client forgives the case of a name, but not in `runtime`, and the types never do.',
+    ],
+    fabric: {
+      text: 'In a project made from a template that has `src/lib/connectors.ts`, `connector add` writes these entries for you. The data app template has no such file, so you (or an agent) add them by hand: when you review an agent\'s change, check all three.',
+      links: [rayfin.clientSetup, rayfin.semanticModels],
+    },
+  },
+
+  {
+    id: 'two-models-page',
+    title: 'Two models, one page',
+    goal: 'query two models from one page, and check whether a measure with the same name means the same thing in both',
+    builds: ['second-client', 'slicer', 'measure-or-query'],
+    pbi: 'Two visuals on one page, each on a different model, under one slicer. And a question every BI developer knows from merging two models: is `[Revenue]` here the same `[Revenue]` as there?',
+    idea: 'We grow **Categories** into a Pareto page: bars with the running share, the vital few starred, and two Revenue cards, one per model. Then we check the two Revenue measures properly.',
+    steps: [
+      {
+        do: 'At the end of `src/pareto.ts`, add the other queries and conversions:',
+        code: C.PARETO_MORE.trimStart(),
+        edits: [{ file: PARETO_TS, from: C.PARETO_V1, to: C.PARETO_V1 + C.PARETO_MORE }],
+        see: 'No red lines.',
+        why: '`paretoQuery` names the model\'s own measures (`[Revenue Share %]`, `[Revenue Cumulative %]`): the running share stays in the model, as **Measure or query** advised.',
+      },
+      {
+        do: '**Do it for me** replaces `src/ParetoPage.tsx` with the full page.',
+        code: C.PARETO_PAGE,
+        file: PARETO_PAGE,
+        edits: [{ file: PARETO_PAGE, from: C.PARETO_PAGE_V1, to: C.PARETO_PAGE }],
+        see: 'Open **Categories**: two cards, **Revenue, contoso model** and **Revenue, pareto model**, both 150.6M; the headline; eight bars, the first four starred: `★ Computers (46.1%)`, `★ Cell phones (61%)`, `★ Home Appliances (72.4%)`, `★ Cameras and camcorders (83%)`.',
+      },
+      {
+        do: 'Look at the four `useDax` lines, from the marked one down.',
+        file: PARETO_PAGE,
+        find: 'const paretoResult = useDax(runPareto, paretoQuery(year));',
+        see: 'Three use `runPareto`, one uses `runDax`. All four take the same `year`.',
+        why: '`useDax` doesn\'t care which model answers: the runner decides. One slicer state feeds both models, like a slicer on two visuals.',
+      },
+      {
+        do: 'Pick **2024** in the slicer.',
+        point: 'preview',
+        see: 'Both cards 35M. Still "4 of 8", but now Computers, Home Appliances, Cell phones and Cameras are starred (48.8%, 62.1%, 75.1%, 85.6%).',
+        why: 'The number of vital categories is 4 in every year, but which four changes: try **2023**, where Cameras is second. The stars use the model\'s count, `[# Categories to 80%]`: the page doesn\'t redo the maths.',
+      },
+      {
+        do: 'A slip on purpose: in the marked line, change `runPareto` to `runDax`.',
+        file: PARETO_PAGE,
+        find: 'useDax(runPareto, paretoQuery(year))',
+        edits: [{ file: PARETO_PAGE, from: 'useDax(runPareto, paretoQuery(year))', to: 'useDax(runDax, paretoQuery(year))' }],
+        queryFails: true,
+        see: 'No red line. The page starts again on **Overview**: open **Categories**, and it shows its error panel: `The value for \'Revenue Cumulative %\' cannot be determined. Either the column doesn\'t exist, or there is no current row for this column.`',
+        why: 'The query went to `contoso`, which has no Pareto measures. TypeScript can\'t catch it: both runners have the same type, and the DAX is text. Only the model can.',
+      },
+      {
+        do: UNDO,
+        edits: [{ file: PARETO_PAGE, from: 'useDax(runDax, paretoQuery(year))', to: 'useDax(runPareto, paretoQuery(year))' }],
+        see: 'Open **Categories**: the bars come back.',
+      },
+      {
+        do: 'Compare the two Revenue cards for each choice in the slicer.',
+        point: 'preview',
+        see: 'Equal every time: 150.6M, 17M, 35M, 49M, 49.7M.',
+        why: 'Same name, same number. A good sign, not proof: two different formulas can agree on today\'s data and part ways tomorrow.',
+      },
+      {
+        do: 'Open the **Queries** tab, and find **Where [Revenue] lives**, saved once for each model.',
+        point: 'queries',
+        see: 'In both, the formula is `SUMX ( sales, sales[Quantity] * sales[NetPrice] )`. The home table differs: `_Measures` in contoso, `sales` in pareto.',
+        why: 'These were saved in Power BI Desktop, by the models\' owner. `INFO.VIEW.MEASURES()` shows `[Expression]` only to people with write permission on the model, so a viewer can\'t compare formulas this way (and whether the connector lets `INFO` functions through isn\'t documented). Compare formulas where the models are built.',
+      },
+      {
+        do: 'What else must match before two `[Revenue]` measures are the same? Read this card.',
+        see: 'The formula (it does), the data (the same files and relationships), the refresh (each model cuts its sales at the day it last refreshed) and any RLS roles (neither model has one).',
+        why: 'Same name isn\'t proof of same meaning. Here it holds, and now we know why, instead of hoping.',
+      },
+      {
+        do: 'In the **Log**, open a `contoso` query and a `pareto` query.',
+        point: 'log',
+        see: 'Each names its connector, and both say `runs as: the signed-in user (delegated)`.',
+        why: 'Each query runs as the person, in each model separately: they need access to both models, and each model\'s own RLS applies to its own queries.',
+      },
+    ],
+    summary: [
+      'One page can ask several models: the runner decides which one answers, and a query sent to the wrong model fails only when it runs.',
+      'A measure with the same name in two models is the same only when its formula, data, refresh and roles are.',
+      'Both semantic model connectors run as the signed-in person, each in its own model.',
+    ],
+    fabric: {
+      text: 'In a real app each user needs access to both models, and each delegated connector sets up the user\'s own connection the first time it is used. What a user without access to one of the two models sees isn\'t documented.',
+      links: [rayfin.connectorAuth, learn.modelPermissions, learn.infoViewMeasures],
+    },
+  },
+
+  // ================================================================== Chapter 3: Read a lakehouse
   // ================================================================== Connect a lakehouse
   {
     id: 'lakehouse-connector',
@@ -1613,24 +1893,24 @@ export const lessons = [
     idea: 'We register `lake` in the client, write a small hook that waits for a promise, and add an **Order lines** page.',
     steps: [
       {
-        do: 'In `src/services/rayfinClient.ts`, add this import on a new line under the marked `contoso` import:',
+        do: 'In `src/services/rayfinClient.ts`, add this import on a new line under the marked `pareto` import:',
         code: LAKE_CLIENT_IMPORT.trim(),
-        edits: [{ file: CLIENT, from: CONTOSO_CLIENT_IMPORT, to: CONTOSO_CLIENT_IMPORT + LAKE_CLIENT_IMPORT }],
+        edits: [{ file: CLIENT, from: PARETO_CLIENT_IMPORT, to: PARETO_CLIENT_IMPORT + LAKE_CLIENT_IMPORT }],
         see: 'Nothing changes.',
       },
       {
-        do: 'In `AppConnectorsSchema`, add a line under the marked `contoso: ContosoSchema;`:',
+        do: 'In `AppConnectorsSchema`, add a line under the marked `pareto: ParetoSchema;`:',
         code: 'lake: LakeSchema;',
-        edits: [{ file: CLIENT, from: '  contoso: ContosoSchema;\n', to: '  contoso: ContosoSchema;\n  lake: LakeSchema;\n' }],
+        edits: [{ file: CLIENT, from: '  pareto: ParetoSchema;\n', to: '  pareto: ParetoSchema;\n  lake: LakeSchema;\n' }],
         errors: 1,
         see: 'A red line under `configs`: `lake` is missing.',
         why: 'The `configs` map must have every connector in the schema, under the same name. TypeScript points at the gap.',
       },
       {
         do: 'In `configs`, add the lakehouse, so the marked line reads:',
-        code: 'configs: { contoso: contosoConfig, lake: lakeConfig },',
-        find: 'configs: { contoso: contosoConfig },',
-        edits: [{ file: CLIENT, from: 'configs: { contoso: contosoConfig },', to: 'configs: { contoso: contosoConfig, lake: lakeConfig },' }],
+        code: 'configs: { contoso: contosoConfig, pareto: paretoConfig, lake: lakeConfig },',
+        find: 'configs: { contoso: contosoConfig, pareto: paretoConfig },',
+        edits: [{ file: CLIENT, from: 'configs: { contoso: contosoConfig, pareto: paretoConfig },', to: 'configs: { contoso: contosoConfig, pareto: paretoConfig, lake: lakeConfig },' }],
         see: 'The red line goes.',
         why: 'No `runtime` entry this time: `runtime` is for function-style connectors such as the semantic model, whose `fabricSemanticModel()` decodes the answer. An entity connector, such as a lakehouse, needs its configuration only.',
       },
@@ -1660,9 +1940,9 @@ export const lessons = [
         code: "lines: { title: 'Order lines', Component: LinesPage },",
         edits: [
           { file: LINES, from: '', to: C.LINES_PAGE },
-          { from: "type PageId = 'overview' | 'years' | 'agent';", to: "type PageId = 'overview' | 'years' | 'agent' | 'lines';" },
-          { from: "  agent: { title: 'Agent page', Component: SalesOverview },\n", to: "  agent: { title: 'Agent page', Component: SalesOverview },\n  lines: { title: 'Order lines', Component: LinesPage },\n" },
-          { from: "import SalesOverview from './SalesOverview';\n", to: "import SalesOverview from './SalesOverview';\nimport LinesPage from './LinesPage';\n" },
+          { from: "type PageId = 'overview' | 'years' | 'agent' | 'pareto';", to: "type PageId = 'overview' | 'years' | 'agent' | 'pareto' | 'lines';" },
+          { from: PAGES_PARETO, to: `${PAGES_PARETO}  lines: { title: 'Order lines', Component: LinesPage },\n` },
+          { from: IMPORT_PARETO, to: `${IMPORT_PARETO}import LinesPage from './LinesPage';\n` },
         ],
         see: '**Order lines** in the page list.',
       },
@@ -1791,7 +2071,7 @@ export const lessons = [
     goal: 'say whose permissions a lakehouse query runs with, and how to change it safely',
     builds: ['rows-or-measures', 'to-fabric'],
     pbi: 'Like a data source with stored credentials versus single sign-on. With stored credentials, every viewer sees what that one account sees. With single sign-on, each viewer\'s own access counts.',
-    idea: 'Our two connectors run as two different identities. We look at both, try a write, then see what re-adding it as `delegated` would do, with a slip on the way, and keep `application`.',
+    idea: 'Our semantic models run as the person using the app; the lakehouse runs as the app. We look at both kinds, try a write, then see what re-adding the lakehouse as `delegated` would do, with a slip on the way, and keep `application`.',
     steps: [
       {
         do: 'Open `rayfin/rayfin.yml` and look at the `lake` connector\'s `auth`.',
@@ -1858,7 +2138,7 @@ export const lessons = [
       links: [rayfin.connectorAuth, learn.secureConnector, learn.addConnector],
     },
   },
-  // ================================================================== Chapter 3: Store your own data
+  // ================================================================== Chapter 4: Store your own data
   // ================================================================== Model it
   {
     id: 'data-service',
@@ -2090,7 +2370,7 @@ export const lessons = [
         code: "targets: { title: 'Targets', Component: TargetsPage },",
         edits: [
           { file: TARGETS_PAGE, from: '', to: C.TARGETS_PAGE },
-          { from: "type PageId = 'overview' | 'years' | 'agent' | 'lines';", to: "type PageId = 'overview' | 'years' | 'agent' | 'lines' | 'targets';" },
+          { from: "type PageId = 'overview' | 'years' | 'agent' | 'pareto' | 'lines';", to: "type PageId = 'overview' | 'years' | 'agent' | 'pareto' | 'lines' | 'targets';" },
           { from: "  lines: { title: 'Order lines', Component: LinesPage },\n", to: "  lines: { title: 'Order lines', Component: LinesPage },\n  targets: { title: 'Targets', Component: TargetsPage },\n" },
           { from: "import LinesPage from './LinesPage';\n", to: "import LinesPage from './LinesPage';\nimport TargetsPage from './TargetsPage';\n" },
         ],
@@ -2220,7 +2500,7 @@ export const lessons = [
     },
   },
 
-  // ================================================================== Chapter 4: Who is using it
+  // ================================================================== Chapter 5: Who is using it
   // ================================================================== Sign-in and claims
   {
     id: 'signed-in-as',
@@ -2419,7 +2699,7 @@ export const lessons = [
         do: 'As Alice, open **Overview**, and open a `contoso` query in the **Log**.',
         point: 'log',
         see: '`runs as: the signed-in user (delegated)`, then alice@contoso.example.',
-        why: 'Semantic model queries always run as the person, so Power BI\'s own security applies: Read and Build permission, and the model\'s RLS roles. The Contoso model has none, so everyone gets the same numbers.',
+        why: 'Semantic model queries always run as the person, so Power BI\'s own security applies: Read and Build permission, and each model\'s RLS roles. Neither of our models has any, so everyone gets the same numbers.',
       },
       {
         do: 'Open **Order lines**, and open a `lake` read in the **Log**.',

@@ -635,7 +635,158 @@ EVALUATE
 ROW ( "Margin %", [App Margin %] )
 \`;`;
 
-// ================================================================== Chapter 2: Read a lakehouse
+// ================================================================== Chapter 2: Two semantic models
+
+// src/pareto.ts, first version: its runner and the model's own headline (Register the second model).
+export const PARETO_V1 = `import type { SemanticModelQueryResult } from '@microsoft/rayfin-connector-fabric-semanticmodel';
+import { rayfinClient } from './services/rayfinClient';
+import { filters, type RunDax } from './data';
+
+// Runs a DAX query against the second model. Made once, here, like runDax: only the connector differs.
+export const runPareto: RunDax = (query) => rayfinClient.connectors.pareto.executeQuery({ query });
+
+// ------------------------------------------------------------ the queries
+// The model's own count and sentence, for a headline card.
+export function headlineQuery(year?: number) {
+  const row = \`ROW (
+    "Categories to 80%", [# Categories to 80%],
+    "Headline", [Cutoff Headline]
+)\`;
+  const f = filters(year);
+  if (f.length === 0) return \`EVALUATE \${row}\`;
+  return \`EVALUATE CALCULATETABLE ( \${row}, \${f.join(', ')} )\`;
+}
+
+// ------------------------------------------------------------ reading results
+export type Headline = { count: number; text: string };
+
+export function toHeadline(result: SemanticModelQueryResult): Headline {
+  if (result.status !== 'success' || result.table.rows.length === 0) return { count: 0, text: '' };
+  const { columns, rows } = result.table;
+  const at = (name: string) => columns.findIndex((c) => c.name === name);
+  return { count: Number(rows[0][at('[Categories to 80%]')]), text: String(rows[0][at('[Headline]')]) };
+}
+`;
+
+// The first Categories page: a year slicer and the headline.
+export const PARETO_PAGE_V1 = `import { useState } from 'react';
+import { ErrorPanel, YearSlicer } from './components';
+import { useDax } from './data';
+import { headlineQuery, runPareto, toHeadline } from './pareto';
+
+// A page on the second model: for now, its headline.
+export default function ParetoPage() {
+  const [year, setYear] = useState<number | undefined>(undefined);
+  const headlineResult = useDax(runPareto, headlineQuery(year));
+
+  if (!headlineResult) return <p className="p-4">Loading…</p>;
+  if (headlineResult.status === 'error') return <ErrorPanel message={headlineResult.error.message} />;
+  const headline = toHeadline(headlineResult);
+
+  return (
+    <div className="mx-auto aspect-video w-full max-w-6xl grid grid-cols-12 grid-rows-6 gap-4 p-4">
+      <header className="col-span-12 row-span-1 flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Categories: the vital few</h1>
+        <YearSlicer value={year} onChange={setYear} />
+      </header>
+      <section className="col-span-6 row-span-2 rounded-lg border border-gray-200 bg-white p-4">
+        <p className="text-sm text-gray-500">From the pareto model</p>
+        <p className="text-xl font-bold">{headline.text}</p>
+      </section>
+    </div>
+  );
+}
+`;
+
+// Added at the end of src/pareto.ts (Two models, one page).
+export const PARETO_MORE = `
+// ------------------------------------------------------------ the page's other queries
+// Categories, largest first, with the model's share and running share (its Pareto measures).
+export function paretoQuery(year?: number) {
+  return \`EVALUATE
+SUMMARIZECOLUMNS (
+    'product'[CategoryName],
+    \${[...filters(year), '"Revenue", [Revenue]', '"Share %", [Revenue Share %]', '"Cumulative %", [Revenue Cumulative %]'].join(', ')}
+)
+ORDER BY [Revenue] DESC\`;
+}
+
+// One measure by name. Sent to both models, to compare their [Revenue].
+export function revenueQuery(year?: number) {
+  const row = 'ROW ( "Revenue", [Revenue] )';
+  const f = filters(year);
+  if (f.length === 0) return \`EVALUATE \${row}\`;
+  return \`EVALUATE CALCULATETABLE ( \${row}, \${f.join(', ')} )\`;
+}
+
+// ------------------------------------------------------------ reading them
+export type ParetoRow = { label: string; value: number; cumulative: number };
+
+export function toPareto(result: SemanticModelQueryResult): ParetoRow[] {
+  if (result.status !== 'success') return [];
+  const { columns, rows } = result.table;
+  const at = (name: string) => columns.findIndex((c) => c.name === name);
+  const l = at('product[CategoryName]');
+  const v = at('[Revenue]');
+  const c = at('[Cumulative %]');
+  return rows.map((row) => ({ label: String(row[l]), value: Number(row[v]), cumulative: Number(row[c]) }));
+}
+
+export function toRevenue(result: SemanticModelQueryResult): number {
+  if (result.status !== 'success' || result.table.rows.length === 0) return 0;
+  const at = result.table.columns.findIndex((c) => c.name === '[Revenue]');
+  return Number(result.table.rows[0][at]);
+}
+`;
+
+// The full Categories page: both Revenue cards, the headline and the bars, under one slicer.
+export const PARETO_PAGE = `import { useState } from 'react';
+import { BarList, ErrorPanel, KpiCard, YearSlicer } from './components';
+import { runDax, useDax } from './data';
+import { headlineQuery, paretoQuery, revenueQuery, runPareto, toHeadline, toPareto, toRevenue } from './pareto';
+
+const percent = (n: number) => n.toLocaleString('en-US', { style: 'percent', maximumFractionDigits: 1 });
+
+// A page on two models: the pareto model for the categories, both models for [Revenue].
+export default function ParetoPage() {
+  const [year, setYear] = useState<number | undefined>(undefined);
+  const paretoResult = useDax(runPareto, paretoQuery(year));
+  const headlineResult = useDax(runPareto, headlineQuery(year));
+  const contosoRevenue = useDax(runDax, revenueQuery(year));
+  const paretoRevenue = useDax(runPareto, revenueQuery(year));
+
+  if (!paretoResult || !headlineResult || !contosoRevenue || !paretoRevenue) return <p className="p-4">Loading…</p>;
+  for (const r of [paretoResult, headlineResult, contosoRevenue, paretoRevenue]) if (r.status === 'error') return <ErrorPanel message={r.error.message} />;
+  const rows = toPareto(paretoResult);
+  const headline = toHeadline(headlineResult);
+  if (rows.length === 0) return <p className="p-4">No data for this page.</p>;
+
+  return (
+    <div className="mx-auto aspect-video w-full max-w-6xl grid grid-cols-12 grid-rows-6 gap-4 p-4">
+      <header className="col-span-12 row-span-1 flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Categories: the vital few</h1>
+        <YearSlicer value={year} onChange={setYear} />
+      </header>
+      <div className="col-span-3 row-span-2">
+        <KpiCard title="Revenue, contoso model" value={toRevenue(contosoRevenue)} />
+      </div>
+      <div className="col-span-3 row-span-2">
+        <KpiCard title="Revenue, pareto model" value={toRevenue(paretoRevenue)} />
+      </div>
+      <section className="col-span-6 row-span-2 rounded-lg border border-gray-200 bg-white p-4">
+        <p className="text-sm text-gray-500">From the pareto model</p>
+        <p className="text-xl font-bold">{headline.text}</p>
+      </section>
+      <section className="col-span-12 row-span-3 rounded-lg border border-gray-200 bg-white p-4">
+        <h2 className="mb-2 font-semibold">Revenue by category, with the running share</h2>
+        <BarList rows={rows.map((r, i) => ({ label: \`\${i < headline.count ? '★ ' : ''}\${r.label} (\${percent(r.cumulative)})\`, value: r.value }))} />
+      </section>
+    </div>
+  );
+}
+`;
+
+// ================================================================== Chapter 3: Read a lakehouse
 // ---------------------------------------------------------------- entities and the connector schema
 // Written from metadata.json by the rules on rayfin.ai (Generating entity files): camelCase properties,
 // `column:` when the SQL name differs, the decorator from the SQL type, `max` from maxLength, and
@@ -851,7 +1002,7 @@ export function addLine() {
 }
 `;
 
-// ================================================================== Store your own data
+// ================================================================== Chapter 4: Store your own data
 // ---------------------------------------------------------------- model a sales target
 export const TARGET_IMPORTS = `import { entity, authenticated, uuid, text, int, decimal, date } from '@microsoft/rayfin-core';
 `;
@@ -1068,7 +1219,7 @@ ${TARGETS_ADD_BUTTON}        </div>
 export const NOTE_FIELD = '  @text({ optional: true, max: 500 }) note?: string;\n';
 export const NOTE_FIELD_SLIP = '  @text({ max: 500 }) note?: string;\n';
 
-// ================================================================== Who is using it
+// ================================================================== Chapter 5: Who is using it
 // ---------------------------------------------------------------- signed in as
 export const SESSION_READ = `import { useEffect, useState } from 'react';
 import { rayfinClient } from './services/rayfinClient';

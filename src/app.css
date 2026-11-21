@@ -431,6 +431,7 @@ a:focus-visible, .brand-here:focus-visible { outline: 2px solid var(--accent); o
 .log-row .what { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .log-row .ok { color: var(--green); }
 .log-row .err { color: var(--red); }
+.log-row .raw { color: var(--muted); font-style: italic; }
 .log-row .cols { color: var(--muted); font-family: var(--mono); font-size: 12px; }
 .log-detail { padding: 4px 0 10px 42px; }
 pre.dax, pre.json {

@@ -19,678 +19,791 @@
   "queries": [
     {
       "id": "revenue",
+      "connector": "contoso",
       "group": "Basics",
       "title": "Revenue, one value",
       "query": "EVALUATE\nROW ( \"Revenue\", [Revenue] )"
     },
     {
       "id": "sales-by-country",
+      "connector": "contoso",
       "group": "Basics",
       "title": "Sales by store country",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'store'[CountryName],\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-country-with-orders",
+      "connector": "contoso",
       "group": "Basics",
       "title": "Sales by store country, with orders",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'store'[CountryName],\n    \"Orders\", [# Orders],\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "totals",
+      "connector": "contoso",
       "group": "Basics",
       "title": "Totals: sales, orders, customers",
       "query": "EVALUATE\nROW (\n    \"Revenue\", [Revenue],\n    \"Orders\", [# Orders],\n    \"Customers\", [# Customers]\n)"
     },
     {
       "id": "sales-by-category",
+      "connector": "contoso",
       "group": "Basics",
       "title": "Sales by product category",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-year",
+      "connector": "contoso",
       "group": "Basics",
       "title": "Sales and orders by year",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'date'[Year],\n    \"Revenue\", [Revenue],\n    \"Orders\", [# Orders]\n)\nORDER BY 'date'[Year]"
     },
     {
       "id": "sales-by-month",
+      "connector": "contoso",
       "group": "Basics",
       "title": "Sales by month",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'date'[YearMonthNumber],\n    'date'[YearMonthShort],\n    \"Revenue\", [Revenue]\n)\nORDER BY 'date'[YearMonthNumber]"
     },
     {
       "id": "sales-by-country-2023",
+      "connector": "contoso",
       "group": "Store countries, per year",
       "title": "Sales by store country, 2023",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'store'[CountryName],\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-country-2024",
+      "connector": "contoso",
       "group": "Store countries, per year",
       "title": "Sales by store country, 2024",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'store'[CountryName],\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-country-2025",
+      "connector": "contoso",
       "group": "Store countries, per year",
       "title": "Sales by store country, 2025",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'store'[CountryName],\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-country-2026",
+      "connector": "contoso",
       "group": "Store countries, per year",
       "title": "Sales by store country, 2026",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'store'[CountryName],\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "totals-2023",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2023",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2023 }, 'date'[Year] )\n)"
     },
     {
       "id": "totals-2024",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2024",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2024 }, 'date'[Year] )\n)"
     },
     {
       "id": "totals-2025",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2025",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2025 }, 'date'[Year] )\n)"
     },
     {
       "id": "totals-2026",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2026",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2026 }, 'date'[Year] )\n)"
     },
     {
       "id": "totals-australia",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, Australia",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { \"Australia\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-canada",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, Canada",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { \"Canada\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-france",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, France",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { \"France\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-germany",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, Germany",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { \"Germany\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-italy",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, Italy",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { \"Italy\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-netherlands",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, Netherlands",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { \"Netherlands\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-online",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, Online",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { \"Online\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-united-kingdom",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, United Kingdom",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { \"United Kingdom\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-united-states",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, United States",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { \"United States\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-2023-australia",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2023, Australia",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    TREATAS ( { \"Australia\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-2023-canada",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2023, Canada",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    TREATAS ( { \"Canada\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-2023-france",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2023, France",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    TREATAS ( { \"France\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-2023-germany",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2023, Germany",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    TREATAS ( { \"Germany\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-2023-italy",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2023, Italy",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    TREATAS ( { \"Italy\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-2023-netherlands",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2023, Netherlands",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    TREATAS ( { \"Netherlands\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-2023-online",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2023, Online",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    TREATAS ( { \"Online\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-2023-united-kingdom",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2023, United Kingdom",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    TREATAS ( { \"United Kingdom\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-2023-united-states",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2023, United States",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    TREATAS ( { \"United States\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-2024-australia",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2024, Australia",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    TREATAS ( { \"Australia\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-2024-canada",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2024, Canada",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    TREATAS ( { \"Canada\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-2024-france",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2024, France",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    TREATAS ( { \"France\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-2024-germany",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2024, Germany",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    TREATAS ( { \"Germany\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-2024-italy",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2024, Italy",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    TREATAS ( { \"Italy\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-2024-netherlands",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2024, Netherlands",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    TREATAS ( { \"Netherlands\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-2024-online",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2024, Online",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    TREATAS ( { \"Online\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-2024-united-kingdom",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2024, United Kingdom",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    TREATAS ( { \"United Kingdom\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-2024-united-states",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2024, United States",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    TREATAS ( { \"United States\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-2025-australia",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2025, Australia",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    TREATAS ( { \"Australia\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-2025-canada",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2025, Canada",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    TREATAS ( { \"Canada\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-2025-france",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2025, France",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    TREATAS ( { \"France\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-2025-germany",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2025, Germany",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    TREATAS ( { \"Germany\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-2025-italy",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2025, Italy",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    TREATAS ( { \"Italy\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-2025-netherlands",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2025, Netherlands",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    TREATAS ( { \"Netherlands\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-2025-online",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2025, Online",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    TREATAS ( { \"Online\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-2025-united-kingdom",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2025, United Kingdom",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    TREATAS ( { \"United Kingdom\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-2025-united-states",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2025, United States",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    TREATAS ( { \"United States\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-2026-australia",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2026, Australia",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    TREATAS ( { \"Australia\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-2026-canada",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2026, Canada",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    TREATAS ( { \"Canada\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-2026-france",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2026, France",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    TREATAS ( { \"France\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-2026-germany",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2026, Germany",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    TREATAS ( { \"Germany\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-2026-italy",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2026, Italy",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    TREATAS ( { \"Italy\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-2026-netherlands",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2026, Netherlands",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    TREATAS ( { \"Netherlands\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-2026-online",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2026, Online",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    TREATAS ( { \"Online\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-2026-united-kingdom",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2026, United Kingdom",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    TREATAS ( { \"United Kingdom\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "totals-2026-united-states",
+      "connector": "contoso",
       "group": "Totals, filtered",
       "title": "Totals, 2026, United States",
       "query": "EVALUATE\nCALCULATETABLE (\n    ROW (\n        \"Revenue\", [Revenue],\n        \"Orders\", [# Orders],\n        \"Customers\", [# Customers]\n    ),\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    TREATAS ( { \"United States\" }, 'store'[CountryName] )\n)"
     },
     {
       "id": "sales-by-category-2023",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2023",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2024",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2024",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2025",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2025",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2026",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2026",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-australia",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, Australia",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { \"Australia\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-canada",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, Canada",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { \"Canada\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-france",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, France",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { \"France\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-germany",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, Germany",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { \"Germany\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-italy",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, Italy",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { \"Italy\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-netherlands",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, Netherlands",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { \"Netherlands\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-online",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, Online",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { \"Online\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-united-kingdom",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, United Kingdom",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { \"United Kingdom\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-united-states",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, United States",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { \"United States\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2023-australia",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2023, Australia",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    TREATAS ( { \"Australia\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2023-canada",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2023, Canada",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    TREATAS ( { \"Canada\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2023-france",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2023, France",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    TREATAS ( { \"France\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2023-germany",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2023, Germany",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    TREATAS ( { \"Germany\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2023-italy",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2023, Italy",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    TREATAS ( { \"Italy\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2023-netherlands",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2023, Netherlands",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    TREATAS ( { \"Netherlands\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2023-online",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2023, Online",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    TREATAS ( { \"Online\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2023-united-kingdom",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2023, United Kingdom",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    TREATAS ( { \"United Kingdom\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2023-united-states",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2023, United States",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2023 }, 'date'[Year] ),\n    TREATAS ( { \"United States\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2024-australia",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2024, Australia",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    TREATAS ( { \"Australia\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2024-canada",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2024, Canada",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    TREATAS ( { \"Canada\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2024-france",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2024, France",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    TREATAS ( { \"France\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2024-germany",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2024, Germany",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    TREATAS ( { \"Germany\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2024-italy",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2024, Italy",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    TREATAS ( { \"Italy\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2024-netherlands",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2024, Netherlands",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    TREATAS ( { \"Netherlands\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2024-online",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2024, Online",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    TREATAS ( { \"Online\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2024-united-kingdom",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2024, United Kingdom",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    TREATAS ( { \"United Kingdom\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2024-united-states",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2024, United States",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2024 }, 'date'[Year] ),\n    TREATAS ( { \"United States\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2025-australia",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2025, Australia",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    TREATAS ( { \"Australia\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2025-canada",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2025, Canada",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    TREATAS ( { \"Canada\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2025-france",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2025, France",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    TREATAS ( { \"France\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2025-germany",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2025, Germany",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    TREATAS ( { \"Germany\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2025-italy",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2025, Italy",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    TREATAS ( { \"Italy\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2025-netherlands",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2025, Netherlands",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    TREATAS ( { \"Netherlands\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2025-online",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2025, Online",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    TREATAS ( { \"Online\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2025-united-kingdom",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2025, United Kingdom",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    TREATAS ( { \"United Kingdom\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2025-united-states",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2025, United States",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2025 }, 'date'[Year] ),\n    TREATAS ( { \"United States\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2026-australia",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2026, Australia",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    TREATAS ( { \"Australia\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2026-canada",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2026, Canada",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    TREATAS ( { \"Canada\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2026-france",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2026, France",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    TREATAS ( { \"France\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2026-germany",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2026, Germany",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    TREATAS ( { \"Germany\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2026-italy",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2026, Italy",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    TREATAS ( { \"Italy\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2026-netherlands",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2026, Netherlands",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    TREATAS ( { \"Netherlands\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2026-online",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2026, Online",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    TREATAS ( { \"Online\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2026-united-kingdom",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2026, United Kingdom",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    TREATAS ( { \"United Kingdom\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "sales-by-category-2026-united-states",
+      "connector": "contoso",
       "group": "Categories, filtered",
       "title": "Sales by category, 2026, United States",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2026 }, 'date'[Year] ),\n    TREATAS ( { \"United States\" }, 'store'[CountryName] ),\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC"
     },
     {
       "id": "margin-from-model",
+      "connector": "contoso",
       "group": "Measure or query",
       "title": "Margin %: the model's measure",
       "query": "EVALUATE\nROW ( \"Margin %\", [Margin %] )"
     },
     {
       "id": "margin-in-query",
+      "connector": "contoso",
       "group": "Measure or query",
       "title": "Margin %: written in the query",
       "query": "DEFINE\n    MEASURE '_Measures'[App Margin %] =\n        DIVIDE (\n            SUMX ( sales, sales[Quantity] * ( sales[NetPrice] - sales[UnitCost] ) ),\n            SUMX ( sales, sales[Quantity] * sales[NetPrice] )\n        )\nEVALUATE\nROW ( \"Margin %\", [App Margin %] )"
     },
     {
       "id": "margin-in-query-list-price",
+      "connector": "contoso",
       "group": "Measure or query",
       "title": "Margin %: written in the query, with a slip (list price)",
       "query": "DEFINE\n    MEASURE '_Measures'[App Margin %] =\n        DIVIDE (\n            SUMX ( sales, sales[Quantity] * ( sales[UnitPrice] - sales[UnitCost] ) ),\n            SUMX ( sales, sales[Quantity] * sales[NetPrice] )\n        )\nEVALUATE\nROW ( \"Margin %\", [App Margin %] )"
     },
     {
       "id": "typo-store-country",
+      "connector": "contoso",
       "group": "Saved errors",
       "title": "Sales by 'store'[Country] (no such column)",
       "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'store'[Country],\n    \"Revenue\", [Revenue]\n)\nORDER BY [Revenue] DESC",
@@ -698,9 +811,268 @@
     },
     {
       "id": "typo-margin-measure",
+      "connector": "contoso",
       "group": "Saved errors",
       "title": "Margin % with a mistyped measure name, [Margin Pct]",
       "query": "EVALUATE\nROW ( \"Margin %\", [Margin Pct] )",
+      "expectError": true
+    },
+    {
+      "id": "pareto-by-category",
+      "connector": "pareto",
+      "group": "Pareto, by year",
+      "title": "Categories, share and running share, all years",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    \"Revenue\", [Revenue], \"Share %\", [Revenue Share %], \"Cumulative %\", [Revenue Cumulative %]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "pareto-by-category-2023",
+      "connector": "pareto",
+      "group": "Pareto, by year",
+      "title": "Categories, share and running share, 2023",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2023 }, 'date'[Year] ), \"Revenue\", [Revenue], \"Share %\", [Revenue Share %], \"Cumulative %\", [Revenue Cumulative %]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "pareto-by-category-2024",
+      "connector": "pareto",
+      "group": "Pareto, by year",
+      "title": "Categories, share and running share, 2024",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2024 }, 'date'[Year] ), \"Revenue\", [Revenue], \"Share %\", [Revenue Share %], \"Cumulative %\", [Revenue Cumulative %]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "pareto-by-category-2025",
+      "connector": "pareto",
+      "group": "Pareto, by year",
+      "title": "Categories, share and running share, 2025",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2025 }, 'date'[Year] ), \"Revenue\", [Revenue], \"Share %\", [Revenue Share %], \"Cumulative %\", [Revenue Cumulative %]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "pareto-by-category-2026",
+      "connector": "pareto",
+      "group": "Pareto, by year",
+      "title": "Categories, share and running share, 2026",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2026 }, 'date'[Year] ), \"Revenue\", [Revenue], \"Share %\", [Revenue Share %], \"Cumulative %\", [Revenue Cumulative %]\n)\nORDER BY [Revenue] DESC"
+    },
+    {
+      "id": "pareto-headline",
+      "connector": "pareto",
+      "group": "Pareto, by year",
+      "title": "Categories to 80% and the headline, all years",
+      "query": "EVALUATE ROW (\n    \"Categories to 80%\", [# Categories to 80%],\n    \"Headline\", [Cutoff Headline]\n)"
+    },
+    {
+      "id": "pareto-headline-2023",
+      "connector": "pareto",
+      "group": "Pareto, by year",
+      "title": "Categories to 80% and the headline, 2023",
+      "query": "EVALUATE CALCULATETABLE ( ROW (\n    \"Categories to 80%\", [# Categories to 80%],\n    \"Headline\", [Cutoff Headline]\n), TREATAS ( { 2023 }, 'date'[Year] ) )"
+    },
+    {
+      "id": "pareto-headline-2024",
+      "connector": "pareto",
+      "group": "Pareto, by year",
+      "title": "Categories to 80% and the headline, 2024",
+      "query": "EVALUATE CALCULATETABLE ( ROW (\n    \"Categories to 80%\", [# Categories to 80%],\n    \"Headline\", [Cutoff Headline]\n), TREATAS ( { 2024 }, 'date'[Year] ) )"
+    },
+    {
+      "id": "pareto-headline-2025",
+      "connector": "pareto",
+      "group": "Pareto, by year",
+      "title": "Categories to 80% and the headline, 2025",
+      "query": "EVALUATE CALCULATETABLE ( ROW (\n    \"Categories to 80%\", [# Categories to 80%],\n    \"Headline\", [Cutoff Headline]\n), TREATAS ( { 2025 }, 'date'[Year] ) )"
+    },
+    {
+      "id": "pareto-headline-2026",
+      "connector": "pareto",
+      "group": "Pareto, by year",
+      "title": "Categories to 80% and the headline, 2026",
+      "query": "EVALUATE CALCULATETABLE ( ROW (\n    \"Categories to 80%\", [# Categories to 80%],\n    \"Headline\", [Cutoff Headline]\n), TREATAS ( { 2026 }, 'date'[Year] ) )"
+    },
+    {
+      "id": "pareto-cutoff-50",
+      "connector": "pareto",
+      "group": "Pareto cutoff",
+      "title": "Categories to a 50% cutoff, all years",
+      "query": "EVALUATE CALCULATETABLE ( ROW (\n    \"Categories to cutoff\", [# Categories to Cutoff],\n    \"Headline\", [Cutoff Headline]\n), TREATAS ( { 0.5 }, 'Pareto Cutoff'[Threshold] ) )"
+    },
+    {
+      "id": "pareto-cutoff-60",
+      "connector": "pareto",
+      "group": "Pareto cutoff",
+      "title": "Categories to a 60% cutoff, all years",
+      "query": "EVALUATE CALCULATETABLE ( ROW (\n    \"Categories to cutoff\", [# Categories to Cutoff],\n    \"Headline\", [Cutoff Headline]\n), TREATAS ( { 0.6 }, 'Pareto Cutoff'[Threshold] ) )"
+    },
+    {
+      "id": "pareto-cutoff-70",
+      "connector": "pareto",
+      "group": "Pareto cutoff",
+      "title": "Categories to a 70% cutoff, all years",
+      "query": "EVALUATE CALCULATETABLE ( ROW (\n    \"Categories to cutoff\", [# Categories to Cutoff],\n    \"Headline\", [Cutoff Headline]\n), TREATAS ( { 0.7 }, 'Pareto Cutoff'[Threshold] ) )"
+    },
+    {
+      "id": "pareto-cutoff-80",
+      "connector": "pareto",
+      "group": "Pareto cutoff",
+      "title": "Categories to a 80% cutoff, all years",
+      "query": "EVALUATE CALCULATETABLE ( ROW (\n    \"Categories to cutoff\", [# Categories to Cutoff],\n    \"Headline\", [Cutoff Headline]\n), TREATAS ( { 0.8 }, 'Pareto Cutoff'[Threshold] ) )"
+    },
+    {
+      "id": "pareto-cutoff-90",
+      "connector": "pareto",
+      "group": "Pareto cutoff",
+      "title": "Categories to a 90% cutoff, all years",
+      "query": "EVALUATE CALCULATETABLE ( ROW (\n    \"Categories to cutoff\", [# Categories to Cutoff],\n    \"Headline\", [Cutoff Headline]\n), TREATAS ( { 0.9 }, 'Pareto Cutoff'[Threshold] ) )"
+    },
+    {
+      "id": "pareto-cutoff-95",
+      "connector": "pareto",
+      "group": "Pareto cutoff",
+      "title": "Categories to a 95% cutoff, all years",
+      "query": "EVALUATE CALCULATETABLE ( ROW (\n    \"Categories to cutoff\", [# Categories to Cutoff],\n    \"Headline\", [Cutoff Headline]\n), TREATAS ( { 0.95 }, 'Pareto Cutoff'[Threshold] ) )"
+    },
+    {
+      "id": "pareto-revenue",
+      "connector": "pareto",
+      "group": "Same name, two models",
+      "title": "[Revenue] from pareto, all years",
+      "query": "EVALUATE ROW ( \"Revenue\", [Revenue] )"
+    },
+    {
+      "id": "pareto-revenue-2023",
+      "connector": "pareto",
+      "group": "Same name, two models",
+      "title": "[Revenue] from pareto, 2023",
+      "query": "EVALUATE CALCULATETABLE ( ROW ( \"Revenue\", [Revenue] ), TREATAS ( { 2023 }, 'date'[Year] ) )"
+    },
+    {
+      "id": "pareto-revenue-2024",
+      "connector": "pareto",
+      "group": "Same name, two models",
+      "title": "[Revenue] from pareto, 2024",
+      "query": "EVALUATE CALCULATETABLE ( ROW ( \"Revenue\", [Revenue] ), TREATAS ( { 2024 }, 'date'[Year] ) )"
+    },
+    {
+      "id": "pareto-revenue-2025",
+      "connector": "pareto",
+      "group": "Same name, two models",
+      "title": "[Revenue] from pareto, 2025",
+      "query": "EVALUATE CALCULATETABLE ( ROW ( \"Revenue\", [Revenue] ), TREATAS ( { 2025 }, 'date'[Year] ) )"
+    },
+    {
+      "id": "pareto-revenue-2026",
+      "connector": "pareto",
+      "group": "Same name, two models",
+      "title": "[Revenue] from pareto, 2026",
+      "query": "EVALUATE CALCULATETABLE ( ROW ( \"Revenue\", [Revenue] ), TREATAS ( { 2026 }, 'date'[Year] ) )"
+    },
+    {
+      "id": "pareto-revenue-2024-germany",
+      "connector": "pareto",
+      "group": "Same name, two models",
+      "title": "[Revenue] from pareto, 2024, Germany",
+      "query": "EVALUATE CALCULATETABLE ( ROW ( \"Revenue\", [Revenue] ), TREATAS ( { 2024 }, 'date'[Year] ), TREATAS ( { \"Germany\" }, 'store'[CountryName] ) )"
+    },
+    {
+      "id": "pareto-revenue-definition",
+      "connector": "pareto",
+      "group": "Same name, two models",
+      "title": "Where [Revenue] lives in pareto, and its formula",
+      "query": "EVALUATE\nSELECTCOLUMNS (\n    FILTER ( INFO.VIEW.MEASURES (), [Name] = \"Revenue\" ),\n    \"Table\", [Table],\n    \"Name\", [Name],\n    \"Expression\", [Expression]\n)"
+    },
+    {
+      "id": "contoso-revenue-2023",
+      "connector": "contoso",
+      "group": "Same name, two models",
+      "title": "[Revenue] from contoso, 2023",
+      "query": "EVALUATE CALCULATETABLE ( ROW ( \"Revenue\", [Revenue] ), TREATAS ( { 2023 }, 'date'[Year] ) )"
+    },
+    {
+      "id": "contoso-revenue-2024",
+      "connector": "contoso",
+      "group": "Same name, two models",
+      "title": "[Revenue] from contoso, 2024",
+      "query": "EVALUATE CALCULATETABLE ( ROW ( \"Revenue\", [Revenue] ), TREATAS ( { 2024 }, 'date'[Year] ) )"
+    },
+    {
+      "id": "contoso-revenue-2025",
+      "connector": "contoso",
+      "group": "Same name, two models",
+      "title": "[Revenue] from contoso, 2025",
+      "query": "EVALUATE CALCULATETABLE ( ROW ( \"Revenue\", [Revenue] ), TREATAS ( { 2025 }, 'date'[Year] ) )"
+    },
+    {
+      "id": "contoso-revenue-2026",
+      "connector": "contoso",
+      "group": "Same name, two models",
+      "title": "[Revenue] from contoso, 2026",
+      "query": "EVALUATE CALCULATETABLE ( ROW ( \"Revenue\", [Revenue] ), TREATAS ( { 2026 }, 'date'[Year] ) )"
+    },
+    {
+      "id": "contoso-revenue-2024-germany",
+      "connector": "contoso",
+      "group": "Same name, two models",
+      "title": "[Revenue] from contoso, 2024, Germany",
+      "query": "EVALUATE CALCULATETABLE ( ROW ( \"Revenue\", [Revenue] ), TREATAS ( { 2024 }, 'date'[Year] ), TREATAS ( { \"Germany\" }, 'store'[CountryName] ) )"
+    },
+    {
+      "id": "contoso-revenue-definition",
+      "connector": "contoso",
+      "group": "Same name, two models",
+      "title": "Where [Revenue] lives in contoso, and its formula",
+      "query": "EVALUATE\nSELECTCOLUMNS (\n    FILTER ( INFO.VIEW.MEASURES (), [Name] = \"Revenue\" ),\n    \"Table\", [Table],\n    \"Name\", [Name],\n    \"Expression\", [Expression]\n)"
+    },
+    {
+      "id": "contoso-pareto-by-category",
+      "connector": "contoso",
+      "group": "Saved errors",
+      "title": "The Pareto query sent to the contoso model, all years",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    \"Revenue\", [Revenue], \"Share %\", [Revenue Share %], \"Cumulative %\", [Revenue Cumulative %]\n)\nORDER BY [Revenue] DESC",
+      "expectError": true
+    },
+    {
+      "id": "contoso-pareto-by-category-2023",
+      "connector": "contoso",
+      "group": "Saved errors",
+      "title": "The Pareto query sent to the contoso model, 2023",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2023 }, 'date'[Year] ), \"Revenue\", [Revenue], \"Share %\", [Revenue Share %], \"Cumulative %\", [Revenue Cumulative %]\n)\nORDER BY [Revenue] DESC",
+      "expectError": true
+    },
+    {
+      "id": "contoso-pareto-by-category-2024",
+      "connector": "contoso",
+      "group": "Saved errors",
+      "title": "The Pareto query sent to the contoso model, 2024",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2024 }, 'date'[Year] ), \"Revenue\", [Revenue], \"Share %\", [Revenue Share %], \"Cumulative %\", [Revenue Cumulative %]\n)\nORDER BY [Revenue] DESC",
+      "expectError": true
+    },
+    {
+      "id": "contoso-pareto-by-category-2025",
+      "connector": "contoso",
+      "group": "Saved errors",
+      "title": "The Pareto query sent to the contoso model, 2025",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2025 }, 'date'[Year] ), \"Revenue\", [Revenue], \"Share %\", [Revenue Share %], \"Cumulative %\", [Revenue Cumulative %]\n)\nORDER BY [Revenue] DESC",
+      "expectError": true
+    },
+    {
+      "id": "contoso-pareto-by-category-2026",
+      "connector": "contoso",
+      "group": "Saved errors",
+      "title": "The Pareto query sent to the contoso model, 2026",
+      "query": "EVALUATE\nSUMMARIZECOLUMNS (\n    'product'[CategoryName],\n    TREATAS ( { 2026 }, 'date'[Year] ), \"Revenue\", [Revenue], \"Share %\", [Revenue Share %], \"Cumulative %\", [Revenue Cumulative %]\n)\nORDER BY [Revenue] DESC",
+      "expectError": true
+    },
+    {
+      "id": "pareto-invoke-headline",
+      "connector": "pareto",
+      "group": "Terminal test",
+      "title": "The headline, one value (pareto)",
+      "query": "EVALUATE ROW ( \"Headline\", [Cutoff Headline] )"
+    },
+    {
+      "id": "contoso-invoke-headline",
+      "connector": "contoso",
+      "group": "Saved errors",
+      "title": "The headline sent to the contoso model (it has no [Cutoff Headline])",
+      "query": "EVALUATE ROW ( \"Headline\", [Cutoff Headline] )",
       "expectError": true
     }
   ]

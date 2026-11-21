@@ -3,9 +3,10 @@
 //
 // Numbers come from positions here, so they are never written anywhere else (tools/check-lessons.mjs
 // checks every reference). A chapter's number is its place in `chapters`, from 1. Module numbers run
-// on across chapters, from 0, so a lesson keeps one number for good: Chapter 1 has modules 0 to 5,
-// Chapter 2 starts at module 6 (lesson 6.1). Adding a chapter never moves an earlier number, a link
-// such as #failure/9, or the progress kept in the browser (stored by lesson and module id).
+// on across chapters, from 0: Chapter 1 has modules 0 to 5, Chapter 2 starts at module 6 (lesson 6.1).
+// A chapter added at the end moves no number; one put between others moves the numbers of the chapters
+// after it. Links such as #failure/9 and the progress kept in the browser never move: they are stored
+// by lesson and module id.
 //
 // A chapter:
 //   id       stable, used in links and progress
@@ -23,10 +24,17 @@ export const chapters = [
     modules: ['start', 'setup', 'build', 'data', 'interact', 'own'],
   },
   {
+    id: 'two-models',
+    title: 'Two semantic models',
+    goal: 'Add a second semantic model, register it in the client, and use both on one page without mixing them up.',
+    builds: ['model-app'],
+    modules: ['two-models'],
+  },
+  {
     id: 'lakehouse',
     title: 'Read a lakehouse',
     goal: 'Read typed rows from a lakehouse, and know which numbers belong to the model.',
-    builds: ['model-app'],
+    builds: ['two-models'],
     modules: ['lake-connect', 'lake-rows'],
   },
   {
@@ -256,7 +264,48 @@ export const modules = [
       },
     ],
   },
-  // ================================================================== Chapter 2: Read a lakehouse
+  // ================================================================== Chapter 2: Two semantic models
+  {
+    id: 'two-models',
+    title: 'Two models in one app',
+    goal: 'Add a second semantic model, register it in the client, and ask both from one page.',
+    lessons: ['second-model', 'second-client', 'two-models-page'],
+    check: [
+      {
+        q: '`contoso` exists, and we run `connector add … --name Contoso` for another model. What happens?',
+        options: ['A second connector, `Contoso`, next to `contoso`', 'The CLI says it already exists as `contoso`, and offers to overwrite it', 'A red line in `rayfin.yml`'],
+        answer: 1,
+        why: 'Names ignore case, so `Contoso` is the same connector. A yes would point `contoso` at the other model.',
+        lesson: 'second-model',
+        step: 1,
+      },
+      {
+        q: '`pareto` is in the schema type and in `configs`, but not in `runtime`. What do we see?',
+        options: ['A red line under `runtime`', 'An error panel with the model\'s message', 'An empty headline, with no error at all'],
+        answer: 2,
+        why: 'Without its runtime, `executeQuery` returns the raw payload, which has no `status`, and TypeScript doesn\'t check `runtime`.',
+        lesson: 'second-client',
+        step: 7,
+      },
+      {
+        q: 'The Pareto query is sent with `runDax` instead of `runPareto`. What reports it?',
+        options: ['The contoso model, when the query runs', 'TypeScript, with a red line', 'Nothing: the client picks the right model'],
+        answer: 0,
+        why: 'Both runners have the same type and the DAX is text, so only the model can see that it lacks those measures.',
+        lesson: 'two-models-page',
+        step: 5,
+      },
+      {
+        q: 'Two models both have `[Revenue]`, and the numbers match today. When is it the same measure?',
+        options: ['When the names match', 'When the formula, the data, the refresh and the roles match', 'When the numbers have matched for a year'],
+        answer: 1,
+        why: 'Same name isn\'t proof of same meaning, and matching numbers can be luck. Check the definitions where the models are built.',
+        lesson: 'two-models-page',
+        step: 9,
+      },
+    ],
+  },
+  // ================================================================== Chapter 3: Read a lakehouse
   {
     id: 'lake-connect',
     title: 'Connect a lakehouse',
@@ -329,7 +378,7 @@ export const modules = [
       },
     ],
   },
-  // ================================================================== Chapter 3: Store your own data
+  // ================================================================== Chapter 4: Store your own data
   {
     id: 'data-model',
     title: 'Model it',
@@ -394,7 +443,7 @@ export const modules = [
       },
     ],
   },
-  // ================================================================== Chapter 4: Who is using it
+  // ================================================================== Chapter 5: Who is using it
   {
     id: 'who-signin',
     title: 'Sign-in and claims',

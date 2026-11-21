@@ -1,33 +1,30 @@
-# Runs every query in data/catalog.json against the Contoso model open in Power BI Desktop and
-# saves the results to data/snapshots.json, in the shape the Rayfin 2.0 semantic model connector
-# returns: { status: 'success', table: { columns: [{ name, dataType }], rows: unknown[][] }, requestId }.
+# Runs every query in data/catalog.json against the model its `connector` names, each open in its own
+# Power BI Desktop, and saves the results to data/snapshots.json, in the shape the Rayfin 2.0 semantic
+# model connector returns: { status: 'success', table: { columns: [{ name, dataType }], rows: unknown[][] }, requestId }.
 #
 #   npm run catalog
-#   npm run snapshots                      # finds the open Desktop model by itself
-#   pwsh -File tools/snapshot.ps1 -Port 53973
+#   npm run snapshots -- -ContosoPort 62108 -ParetoPort 49660
 #
-# Reads only. The queries use the model's own measures ([Revenue], [# Orders], [# Customers], [Margin %]):
-# open examples/default_measures/gold-layer-data-contoso-measures.pbip from gold-layer-examples first.
+# Reads only. Open both models from gold-layer-examples first, each in its own Desktop window:
+#   contoso = examples/default_measures/gold-layer-data-contoso-measures.pbip ([Revenue], [# Orders], [# Customers], [Margin %])
+#   pareto  = examples/pareto/gold-layer-data-pareto.pbip (the same tables, with Pareto measures)
+# Each Desktop's port is in its AnalysisServicesWorkspaces\*\Data\msmdsrv.port.txt.
 param(
-  [int]$Port = 0,
+  [Parameter(Mandatory)][int]$ContosoPort,
+  [Parameter(Mandatory)][int]$ParetoPort,
   [string]$AdomdDll = 'C:\Program Files\Microsoft Power BI Desktop\bin\Microsoft.PowerBI.AdomdClient.dll'
 )
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 
-if ($Port -eq 0) {
-  $portFiles = @(
-    Get-ChildItem "$env:LOCALAPPDATA\Microsoft\Power BI Desktop\AnalysisServicesWorkspaces\*\Data\msmdsrv.port.txt" -ErrorAction SilentlyContinue
-    Get-ChildItem "$env:USERPROFILE\Microsoft\Power BI Desktop Store App\AnalysisServicesWorkspaces\*\Data\msmdsrv.port.txt" -ErrorAction SilentlyContinue
-  ) | Sort-Object LastWriteTime -Descending
-  if (-not $portFiles) { throw 'No open Power BI Desktop model found. Open gold-layer-data-contoso-measures.pbip, or pass -Port.' }
-  $Port = [int]((Get-Content $portFiles[0].FullName -Raw -Encoding Unicode).Trim())
-}
-
 Add-Type -Path $AdomdDll
-$conn = New-Object Microsoft.AnalysisServices.AdomdClient.AdomdConnection "Data Source=localhost:$Port"
-$conn.Open()
-Write-Host "connected: localhost:$Port, database $($conn.Database)"
+$conns = @{}
+foreach ($pair in @(@('contoso', $ContosoPort), @('pareto', $ParetoPort))) {
+  $c = New-Object Microsoft.AnalysisServices.AdomdClient.AdomdConnection "Data Source=localhost:$($pair[1])"
+  $c.Open()
+  Write-Host "connected: $($pair[0]) = localhost:$($pair[1]), database $($c.Database)"
+  $conns[$pair[0]] = $c
+}
 
 $typeNames = @{
   'System.String' = 'String'; 'System.Int64' = 'Int64'; 'System.Int32' = 'Int64'
@@ -38,7 +35,7 @@ $typeNames = @{
 $catalog = Get-Content (Join-Path $root 'data\catalog.json') -Raw | ConvertFrom-Json
 $out = [ordered]@{}
 foreach ($entry in $catalog.queries) {
-  $cmd = $conn.CreateCommand()
+  $cmd = $conns[$entry.connector].CreateCommand()
   $cmd.CommandText = $entry.query
   if ($entry.expectError) {
     # Saved on purpose: the error text the model returns for this query.
@@ -49,7 +46,7 @@ foreach ($entry in $catalog.queries) {
         error = [ordered]@{ category = 'query'; message = $_.Exception.Message.Trim() }
         requestId = ''
       }
-      Write-Host ("{0,-36} error saved" -f $entry.id)
+      Write-Host ("{0,-36} {1,-8} error saved" -f $entry.id, $entry.connector)
     }
     continue
   }
@@ -77,12 +74,12 @@ foreach ($entry in $catalog.queries) {
     table = [ordered]@{ columns = $columns; rows = $rows }
     requestId = ''
   }
-  Write-Host ("{0,-36} {1,3} rows" -f $entry.id, $rows.Count)
+  Write-Host ("{0,-36} {1,-8} {2,3} rows" -f $entry.id, $entry.connector, $rows.Count)
 }
-$conn.Close()
+foreach ($c in $conns.Values) { $c.Close() }
 
 $doc = [ordered]@{
-  source = 'Contoso sample model (SQLBI Contoso Data Generator V2, MIT), queried in Power BI Desktop'
+  source = 'Contoso sample model (SQLBI Contoso Data Generator V2, MIT), queried in Power BI Desktop: contoso = gold-layer-data-contoso-measures.pbip, pareto = gold-layer-data-pareto.pbip'
   takenAt = (Get-Date).ToString('yyyy-MM-dd')
   snapshots = $out
 }

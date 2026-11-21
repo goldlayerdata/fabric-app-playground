@@ -121,13 +121,15 @@ export const SIMULATED_ENV = {
 export const PLACEHOLDER = {
   workspaceId: '00000000-0000-0000-0000-00000000c0de',
   itemId: '00000000-0000-0000-0000-0000c0d50000',
+  /** The second semantic model (Two semantic models): the Pareto model. */
+  paretoId: '00000000-0000-0000-0000-00000000a080',
   /** The lakehouse, as `connector search` lists it. */
   lakehouseId: '00000000-0000-0000-0000-00000001a4e0',
   /** Its SQL analytics endpoint: `connector add` writes this id to rayfin.yml instead. */
   lakehouseEndpointId: '00000000-0000-0000-0000-00000001a4e5',
 };
 
-/** The Fabric items `connector search` can find here: the course's two sources. */
+/** The Fabric items `connector search` can find here: the course's three sources. */
 const SOURCES = [
   {
     workspaceId: PLACEHOLDER.workspaceId,
@@ -143,6 +145,14 @@ const SOURCES = [
     itemId: PLACEHOLDER.itemId,
     itemType: 'SemanticModel',
     displayName: 'Contoso measures',
+    connectorType: 'fabric-semanticmodel',
+  },
+  {
+    workspaceId: PLACEHOLDER.workspaceId,
+    workspaceName: 'Contoso',
+    itemId: PLACEHOLDER.paretoId,
+    itemType: 'SemanticModel',
+    displayName: 'Contoso pareto',
     connectorType: 'fabric-semanticmodel',
   },
 ];
@@ -211,7 +221,7 @@ const NO_PROJECT = [
 const SIMULATED = PG('Simulated. The real command prints more; these are the parts that matter here.');
 
 /**
- * Run one command line. `answer(query)` gives a saved query result (for `connector invoke`).
+ * Run one command line. `answer(connector, query)` gives a saved query result (for `connector invoke`).
  * Returns { project, lines, ok }: a new project, the lines to print, and whether it succeeded.
  */
 export function runCommand(start, line, answer) {
@@ -600,9 +610,28 @@ function connectorAdd(p, f, done, fail) {
   }
   if (!/^[a-zA-Z0-9\-_]+$/.test(f.name)) return fail(PG('A connector name may only use letters, digits, - and _.'));
   if (f.operations && f.operations !== 'executeQuery') return fail(PG('A semantic model connector has one operation: executeQuery.'));
-  const name = String(f.name).toLowerCase();
-  if (connectorNames(p).includes(name) && !f.yes) {
-    return fail(PG(`A connector named ${name} exists. The real CLI asks before replacing it; add --yes to replace it.`));
+  const source = SOURCES.find((s) => s.workspaceId === f['workspace-id'] && s.itemId === f['item-id']);
+  if (!source) return fail('Item not found. Verify the workspace ID and artifact ID are correct.');
+  if (source.connectorType !== 'fabric-semanticmodel') {
+    return fail(PG(`That id is the ${source.itemType}. For fabric-semanticmodel, use a semantic model's id from \`connector search\`.`));
+  }
+  // Rayfin CLI 2.0.0 (connector-add.js): names are case-insensitive. A new name is stored lowercase; a name
+  // that matches an existing connector in any casing is that connector, and the CLI asks before overwriting it.
+  const requested = String(f.name);
+  const existing = connectorNames(p).find((n) => n.toLowerCase() === requested.toLowerCase());
+  const name = existing ?? requested.toLowerCase();
+  const naming = [];
+  if (name !== requested) {
+    naming.push(existing ? `Using existing connector name "${name}" (from "${requested}").` : `Using normalized connector name "${name}" (from "${requested}").`);
+  }
+  if (existing && !f.yes) {
+    return done(
+      SIMULATED,
+      ...naming,
+      name === requested ? `Connector "${name}" already exists.` : `Connector "${requested}" already exists as "${name}".`,
+      PG('The real CLI asks "Overwrite?" here (default No). The playground answers No, and the CLI prints:'),
+      'Cancelled.',
+    );
   }
   const entry = [
     `  - name: ${name}`,
@@ -639,6 +668,7 @@ function connectorAdd(p, f, done, fail) {
   ].join('\n');
   return done(
     SIMULATED,
+    ...naming,
     PG(`Added connector ${name} to rayfin/rayfin.yml.`),
     PG(`Wrote rayfin/connectors/${name}/schema.ts (generated: do not edit).`),
     '📦 Install the packages this connector needs:',
@@ -668,7 +698,7 @@ function connectorInvoke(p, args, answer, done, fail) {
     return fail(PG('--input must be JSON, such as \'{"query":"EVALUATE ROW(\\"Revenue\\", [Revenue])"}\'.'));
   }
   if (typeof payload?.query !== 'string') return fail(PG('The payload needs a "query" with the DAX text.'));
-  const result = answer ? answer(payload.query) : undefined;
+  const result = answer ? answer(String(name).toLowerCase(), payload.query) : undefined;
   if (!result) return fail(PG('No saved answer for that query.'));
   // A failed query: the docs give a non-zero exit and a JSON result, but not its exact outer shape.
   if (result.status !== 'success') {

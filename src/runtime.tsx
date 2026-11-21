@@ -2,10 +2,12 @@
 // Receives the project's compiled files (System modules) from the editor, links them, and draws the
 // default export of src/App.tsx with React 19. The Rayfin packages here are simulated: the client is
 // real-shaped, and executeQuery asks the parent page, which holds the saved results and the query log.
+// Connectors are found by name as Rayfin 2.0 finds them (src/connectors-sim.mjs).
 import * as React from 'react';
 import * as jsxRuntime from 'react/jsx-runtime';
 import { createRoot, type Root } from 'react-dom/client';
 import { checkClaimsResult } from './app-data.mjs';
+import { connectorsError, createConnectorsApi } from './connectors-sim.mjs';
 
 type ExecuteQueryInput = { query: string; resultSetRowCountLimit?: number };
 
@@ -64,7 +66,6 @@ function makePackages(run: RunMessage): Record<string, unknown> {
     browserSession: () => () => auth,
   };
 
-  const SEMANTIC_MODEL_RUNTIME = Symbol('fabricSemanticModel');
   const connectorPackage = {
     fabricSemanticModel: () => ({ operations: { executeQuery: {} }, [SEMANTIC_MODEL_RUNTIME]: true }),
   };
@@ -73,49 +74,12 @@ function makePackages(run: RunMessage): Record<string, unknown> {
     // Simulated: the real Source() stores the schema, table and key on the class for @entity() to read.
     Source: () => class {},
     connectorsService(options: { configs?: Record<string, ConnectorConfigLike>; runtime?: Record<string, Record<symbol, unknown>> }) {
-      return () => {
-        const api: Record<string, unknown> = {};
-        for (const [name, config] of Object.entries(options?.configs ?? {})) {
-          if (ENTITY_CONNECTORS.includes(String(config?.connector))) {
-            api[name] = entityConnector(run, name, config);
-            continue;
-          }
-          api[name] = {
-            // Simulated: the course never uses `connection`. A real semantic model connector is
-            // delegated, so its status comes from the signed-in user's connection.
-            connection: {
-              status: async () => ({ connector: name, status: 'NotRequired' }),
-              connect: async () => ({ connector: name, status: 'NotRequired' }),
-            },
-            executeQuery(input: ExecuteQueryInput): Promise<unknown> {
-              if (!run.connectors.includes(name)) {
-                return Promise.reject(simulated(`rayfin/rayfin.yml has no connector named "${name}" (it has: ${run.connectors.join(', ') || 'none'}).`));
-              }
-              if (config?.connector !== 'fabric-semanticmodel') {
-                return Promise.reject(simulated(`The "${name}" config is not a semantic model connector.`));
-              }
-              if (!options.runtime?.[name]?.[SEMANTIC_MODEL_RUNTIME]) {
-                return Promise.reject(
-                  simulated(
-                    `No runtime registered for "${name}". Rayfin 2.0 would then return the raw payload instead of a SemanticModelQueryResult. Add runtime: { ${name}: fabricSemanticModel() }.`,
-                  ),
-                );
-              }
-              // Semantic model connectors run as the signed-in person (delegated only): with no session, no query.
-              if (!session.isAuthenticated) {
-                return Promise.reject(simulated('Nobody is signed in, and a semantic model query runs as the signed-in person (delegated).'));
-              }
-              if (!input || typeof input.query !== 'string') {
-                return Promise.reject(new TypeError('executeQuery expects { query: string }'));
-              }
-              const id = nextQueryId++;
-              post({ type: 'query', runId: currentRun, id, query: input.query, limit: input.resultSetRowCountLimit });
-              return new Promise((resolve, reject) => pending.set(id, { resolve, reject }));
-            },
-          };
-        }
-        return api;
-      };
+      // Each connector's client is made on first use, under its configured key; `runtime` is the entry under
+      // that exact key, or undefined (as in Rayfin 2.0, a key that differs only by case is never found).
+      return () =>
+        createConnectorsApi(options?.configs ?? {}, options?.runtime, (name: string, config: ConnectorConfigLike, runtime?: Record<symbol, unknown>) =>
+          ENTITY_CONNECTORS.includes(String(config?.connector)) ? entityConnector(run, name, config) : semanticConnector(run, name, config, runtime),
+        );
     },
   };
 
@@ -149,6 +113,45 @@ function makePackages(run: RunMessage): Record<string, unknown> {
     '@microsoft/fabric-user-data-functions': userDataFunctions,
     // Types only: the package has no runtime code.
     '@microsoft/rayfin-connector-fabric-graphql': {},
+  };
+}
+
+// ---------------------------------------------------------------- semantic model connectors (Category B)
+const SEMANTIC_MODEL_RUNTIME = Symbol.for('playground:fabricSemanticModel');
+
+/**
+ * `client.connectors.<name>` for a semantic model. With its runtime (`fabricSemanticModel()`), executeQuery
+ * resolves with a result: a `status`, then a table or an error. Without one, it resolves with the raw payload
+ * the transport received, undecoded, and nothing throws: Rayfin 2.0's operation proxy hands the transport's
+ * result back as it is when no decoder is registered (rayfin-connectors SemanticConnectorClient.js).
+ */
+function semanticConnector(run: RunMessage, name: string, config: ConnectorConfigLike, runtime?: Record<symbol, unknown>) {
+  return {
+    // Simulated: the course never uses `connection`. A real semantic model connector is
+    // delegated, so its status comes from the signed-in user's connection.
+    connection: {
+      status: async () => ({ connector: name, status: 'NotRequired' }),
+      connect: async () => ({ connector: name, status: 'NotRequired' }),
+    },
+    executeQuery(input: ExecuteQueryInput): Promise<unknown> {
+      if (!run.connectors.includes(name)) {
+        return Promise.reject(simulated(`rayfin/rayfin.yml has no connector named "${name}" (it has: ${run.connectors.join(', ') || 'none'}).`));
+      }
+      if (config?.connector !== 'fabric-semanticmodel') {
+        return Promise.reject(simulated(`The "${name}" config is not a semantic model connector.`));
+      }
+      // Semantic model connectors run as the signed-in person (delegated only): with no session, no query.
+      if (!session.isAuthenticated) {
+        return Promise.reject(simulated('Nobody is signed in, and a semantic model query runs as the signed-in person (delegated).'));
+      }
+      if (!input || typeof input.query !== 'string') {
+        return Promise.reject(new TypeError('executeQuery expects { query: string }'));
+      }
+      const id = nextQueryId++;
+      const decoded = Boolean(runtime?.[SEMANTIC_MODEL_RUNTIME]);
+      post({ type: 'query', runId: currentRun, id, connector: name, decoded, query: input.query, limit: input.resultSetRowCountLimit });
+      return new Promise((resolve, reject) => pending.set(id, { resolve, reject }));
+    },
   };
 }
 
@@ -310,14 +313,6 @@ const METHODS_FOR_CRUD_OPERATION: Record<string, string[]> = {
   update: ['update'],
   delete: ['delete'],
 };
-
-/** The real client's error class name and code (rayfin-connectors ConnectorsError). */
-function connectorsError(message: string, code: string) {
-  const e = new Error(message) as Error & { code: string };
-  e.name = 'ConnectorsError';
-  e.code = code;
-  return e;
-}
 
 type ReadState = { select?: string[]; where?: unknown; orderBy?: Record<string, string>; first?: number; after?: string };
 
