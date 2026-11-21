@@ -1542,7 +1542,7 @@ export const lessons = [
         run: INVOKE_HEADLINE_CONTOSO,
         point: 'terminal',
         commandFails: true,
-        see: 'The query fails: `Query (1, 28) The value for \'Cutoff Headline\' cannot be determined. Either the column doesn\'t exist, or there is no current row for this column.`',
+        see: 'The query fails: `❌ Connector invoke failed (connector error): Query (1, 28) The value for \'Cutoff Headline\' cannot be determined. Either the column doesn\'t exist, or there is no current row for this column.`',
         why: 'The connector name picks the model, and each model knows only its own measures. Nothing to undo: it was only a test.',
       },
     ],
@@ -1623,7 +1623,7 @@ export const lessons = [
       {
         do: 'Click **Categories**.',
         point: 'preview',
-        see: 'The page draws, but the headline card is empty: no sentence, no error panel, no red line. The **Log** shows the `pareto` query, answered with raw bytes, not decoded.',
+        see: 'The page draws, but the headline card is empty: no sentence, no error panel, no red line. The **Log** shows the `pareto` query, answered with a raw payload, not decoded.',
         why: 'Without a `runtime` entry, `executeQuery` hands the page the raw payload the connector received, not the result the types promise: there is no `status: \'success\'` or `\'error\'` for the page to read. The page finds no `error` to show, and `toHeadline` finds no `success`, so it shows nothing. Rayfin\'s own CLI calls this failing silently.',
       },
       {
@@ -1742,7 +1742,7 @@ export const lessons = [
         why: 'Same name isn\'t proof of same meaning. Here it holds, and now we know why, instead of hoping.',
       },
       {
-        do: 'In the **Log**, open a `pareto` query and the `contoso · revenue` query, both near the top (the newest entries come first).',
+        do: 'In the **Log**, open the newest `pareto` query and the newest `contoso` query (the newest entries come first).',
         point: 'log',
         see: 'Each names its connector, and both say `runs as: the signed-in user (delegated)`.',
         why: 'Each query runs as the person, in each model separately: they need access to both models, and each model\'s own RLS applies to its own queries.',

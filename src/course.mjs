@@ -70,7 +70,7 @@ export const chapters = [
   {
     id: 'ask',
     title: 'Ask in plain words',
-    goal: 'Questions about Power BI data in plain words: Fabric IQ as the signed-in user, a data agent as the app.',
+    goal: 'Questions about Power BI data in plain words: Fabric IQ as the signed-in user, a data agent from a function.',
     builds: ['who'],
     coming: ['Ask Fabric IQ', 'A conversation', 'A data agent from a function', 'Whose answer is it'],
   },

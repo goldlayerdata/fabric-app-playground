@@ -95,7 +95,7 @@ export const help = [
   },
   {
     symptom: 'A semantic model page shows nothing: no numbers, no error, no red line',
-    cause: 'The connector has no `runtime` entry under its exact name, so `executeQuery` returns the raw payload, with no `status: \'success\'` or `\'error\'` to read (the Log says "raw bytes, not decoded"). That silence holds only while the request itself succeeds: if it is refused (a 401 or 403, say), the client throws, and the page shows an error.',
+    cause: 'The connector has no `runtime` entry under its exact name, so `executeQuery` returns the raw payload, with no `status: \'success\'` or `\'error\'` to read (the Log says "raw payload, not decoded"). That silence holds only while the request itself succeeds: if it is refused (a 401 or 403, say), the client throws, and the page shows an error.',
     fix: 'Add `fabricSemanticModel()` to `runtime` under the same name as in `configs`, such as `pareto: fabricSemanticModel()`.',
   },
   {

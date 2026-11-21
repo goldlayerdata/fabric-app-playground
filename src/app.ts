@@ -1532,7 +1532,7 @@ function logQuery(at: Date, connector: string, query: string, a: Answer, raw?: A
   let status: HTMLElement;
   let cols = '';
   if (a.thrown) status = h('span', { class: 'err' }, `${connector} · threw: network`);
-  else if (raw) status = h('span', { class: 'raw' }, `${connector} · raw bytes, not decoded`);
+  else if (raw) status = h('span', { class: 'raw' }, `${connector} · raw payload, not decoded`);
   else if (r?.status === 'error') status = h('span', { class: 'err' }, `${connector} · error: ${r.error.category}`);
   else {
     status = h('span', { class: 'ok' }, `${connector} · ${a.entry!.id}`);

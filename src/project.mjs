@@ -700,9 +700,22 @@ function connectorInvoke(p, args, answer, done, fail) {
   if (typeof payload?.query !== 'string') return fail(PG('The payload needs a "query" with the DAX text.'));
   const result = answer ? answer(String(name).toLowerCase(), payload.query) : undefined;
   if (!result) return fail(PG('No saved answer for that query.'));
-  // A failed query: the docs give a non-zero exit and a JSON result, but not its exact outer shape.
+  // A failed query, as connector-invoke.js prints it without --json (describeConnectorFailure, failHandled):
+  // "❌ Connector invoke failed (<code, or 'connector error'>): <message>", then the hint for the error's category.
   if (result.status !== 'success') {
-    return fail(PG('The query failed. The real CLI exits with an error and prints the result; its error part:'), ...JSON.stringify(result.error, null, 2).split('\n').map((l) => PG(l)));
+    const err = result.error ?? {};
+    const hints = {
+      network: 'The request never reached the service. Check connectivity and any proxy settings, then retry.',
+      api: 'The service rejected the request. Confirm you are signed in and have access to the resource.',
+      query: 'The service ran the operation and reported an error. Fix the query and retry.',
+      overflow: 'The result exceeded a size cap. Lower resultSetRowCountLimit, or narrow the query.',
+      unknown: 'Retry with --verbose to see the full response, then check permissions and query syntax.',
+    };
+    return fail(
+      `❌ Connector invoke failed (${err.code || 'connector error'}): ${err.message || 'The connector returned a failed response.'}`,
+      ...(hints[err.category] ? [`   ${hints[err.category]}`] : []),
+      PG('The saved answer has no error code; a real one may show a code in the brackets.'),
+    );
   }
   // Rayfin's CLI reference (invoke) and connector-invoke.js: without --json it prints "✅ Invoked <name>.<operation>",
   // then the output as pretty-printed JSON. Only --json wraps it in { status: 'ok', connector, operation, output }.
