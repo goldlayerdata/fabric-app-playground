@@ -77,12 +77,19 @@
         <article class="lesson" id="lesson"></article>
         <div class="split split-h" id="split-lesson" role="separator" aria-orientation="horizontal" title="Drag to resize. Double-click to reset."></div>
         <div class="editor-wrap" id="editor-wrap">
-          <div class="files" id="files" aria-label="Files in the project"></div>
+          <div class="editor-head">
+            <button type="button" class="link-btn" id="btn-tree" aria-pressed="true" aria-controls="files" title="Show or hide the file list">Files</button>
+            <p class="crumbs" id="crumbs" aria-label="The open file, and the folders it is in"></p>
+            <button type="button" class="link-btn pop-btn" id="btn-editor-pop" aria-pressed="false" title="Show the editor large, for comfortable reading (Esc closes)">Pop out</button>
+          </div>
           <div class="undo-bar" id="undo-bar" hidden></div>
-          <div class="editor" id="editor"><p class="editor-loading">Loading the editor…</p></div>
+          <div class="editor-body">
+            <nav class="tree" id="files" aria-label="Files in the project"></nav>
+            <div class="editor" id="editor"><p class="editor-loading">Loading the editor…</p></div>
+          </div>
           <div class="status" id="status">
             <span id="type-status">Checking types…</span>
-            <span class="status-hint">Runs when you pause typing · Ctrl+S runs now</span>
+            <span class="status-hint" id="status-hint">Runs when you pause typing · Ctrl+S runs now</span>
           </div>
         </div>
       </section>

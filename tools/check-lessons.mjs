@@ -23,7 +23,7 @@ import ts from 'typescript';
 import { lessons } from '../src/lesson-list.mjs';
 import { chapters, modules, parts } from '../src/course.mjs';
 import { terms, help } from '../src/terms.mjs';
-import { emptyProject, doStep, numberRuns, stepIsDone, PAGE_FILE } from '../src/project.mjs';
+import { emptyProject, doStep, numberRuns, stepFile, stepIsDone, PAGE_FILE } from '../src/project.mjs';
 import { createConnectorsApi, rawPayload } from '../src/connectors-sim.mjs';
 import lakehouse from '../data/lakehouse.json' with { type: 'json' };
 import * as C from '../src/course-code.mjs';
@@ -294,13 +294,18 @@ for (const lesson of order) {
   console.log(`\n${numOf(lesson)} ${lesson.title}  (${lesson.steps.length} steps)`);
   lesson.steps.forEach((step, si) => {
     const label = `${lesson.id} step ${si + 1}`;
-    const file = step.file ?? step.edits?.[0]?.file ?? (step.edits ? PAGE_FILE : undefined);
-    // The gold mark: in the project before the step, or, for a step that writes a new file, after it.
+    // The step's file opens in the editor, is marked in the file list and named on the card: it must be
+    // in the project when the card opens, unless the step itself creates it.
+    const file = stepFile(step);
+    if (file !== undefined && project.files[file] === undefined && !step.edits?.some((e) => (e.file ?? PAGE_FILE) === file && e.from === '')) {
+      fail(`${label}: names ${file}, which isn't in the project at this step`);
+    }
+    // The pink mark: in the project before the step, or, for a step that writes a new file, after it.
     const checkFind = (when) => {
       if (!step.find) return;
-      const text = project.files[file ?? PAGE_FILE];
+      const text = project.files[file];
       if (text === undefined) fail(`${label}: "${file}" doesn't exist ${when} this step`);
-      else if (!text.includes(step.find)) fail(`${label}: "Show me" text not found in ${file ?? PAGE_FILE}: ${step.find}`);
+      else if (!text.includes(step.find)) fail(`${label}: "Show me" text not found in ${file}: ${step.find}`);
     };
     const writesFile = step.edits?.some((e) => e.from === '' && !(project.files[e.file ?? PAGE_FILE] ?? '').trim());
     if (!writesFile) checkFind('at');
@@ -325,6 +330,11 @@ for (const lesson of order) {
     if (!ok) {
       fail(`${label}: expected ${step.errors ?? 0} type error(s), got ${d.length}`);
       d.forEach((x) => console.log(`     ${x}`));
+    }
+    // A red line is drawn in a file: every expected error must be in one of the project's, so the file
+    // list can turn it red and "Show the red line" can open it.
+    for (const x of step.errors ? d : []) {
+      if (project.files[x.split(':')[0]] === undefined) fail(`${label}: an expected error is in no file of the project: ${x}`);
     }
     let sent = [];
     try {

@@ -18,10 +18,12 @@
 //   run     optional: a command for the terminal. "Do it for me" runs it; done once it has been run.
 //   see     optional: what is visible once it's done
 //   why     optional: the explanation, shown under "see" in a quieter style
-//   file    optional: the file the step is about (its tab opens). Default: the file of its first edit.
+//   file    optional: the file the step is about: it opens in the editor, is marked "step" in the file
+//           list, and is named on the card. Default: the file of its first edit, or src/App.tsx for a
+//           step with only a `find`. It must be in the project by then, unless the step creates it.
 //   find    optional: text to mark in that file (pink), and select with "Show me in the code"
-//   point   optional: a part of the playground to outline: editor, files, preview, status (the query
-//           count), terminal, log, queries, terms, run, reset
+//   point   optional: a part of the playground to outline: editor, files (the file list), preview,
+//           status (the query count), terminal, log, queries, terms, run, reset, data, signin
 //   edits   optional: the exact change, as [{ file?, from, to, all? }] (file defaults to src/App.tsx;
 //           from: '' writes a new or empty file). An edit whose `to` starts with its `from` adds under
 //           that line, and "Show me in the code" puts the cursor there; one whose `to` ends with its
@@ -30,6 +32,7 @@
 //           every step.
 //   done    optional: another way to tell an edit step is done: { file, before: [a, b] } or { file, absent }
 //   errors  optional: type errors expected in the project after this step (default 0). '1+': at least one.
+//           The card then offers "Show the red line", which opens the file it is in.
 //   queryFails  optional: after this step, the page sends a query saved as the model's error
 //   commandFails  optional: the step's `run` command fails on purpose (the checker expects the failure)
 //
@@ -201,9 +204,9 @@ export const lessons = [
         why: 'Nothing else works yet: there is no project until the next lesson creates one. The commands are simulated, and lines starting with `Playground:` are the playground talking, not the real tool.',
       },
       {
-        do: 'Look above the code area: the **file list**.',
+        do: 'Look to the left of the code area: the **file list**.',
         point: 'files',
-        see: 'Empty for now. Our project\'s files appear here as we create them; click one to open it.',
+        see: 'Empty for now. Our project\'s files appear here, in their folders, as we create them; click one to open it.',
       },
       {
         do: 'The code area is where we read and write those files.',
@@ -1517,7 +1520,7 @@ export const lessons = [
         why: 'Each connector carries its own ids, so the two models could even live in different workspaces. Both are delegated: a semantic model connector only runs as the signed-in person.',
       },
       {
-        do: 'Look at `rayfin/connectors/pareto/schema.ts`, open in the editor (its tab says `pareto/schema.ts`).',
+        do: 'Look at `rayfin/connectors/pareto/schema.ts`, open in the editor (its path is above the code).',
         file: PARETO_SCHEMA_FILE,
         find: "export type ParetoSchema = FabricSemanticModel<'executeQuery'>;",
         see: 'The same shape as `ContosoSchema`: a semantic model with one operation, `executeQuery`.',
@@ -1595,7 +1598,7 @@ export const lessons = [
         why: '`export` lets other files use it: `src/pareto.ts`, next, will import it. The Pareto model is built on the same tables, so the same filter text works there: `\'date\'[Year]` is in both. A filter is only DAX text: it works in any model that has that column.',
       },
       {
-        do: 'Click **+ New file**, at the right end of the file tabs, and type `pareto.ts` after the `src/` already there.',
+        do: 'Click **+ New file**, at the top of the file list, and type `pareto.ts` after the `src/` already there.',
         edits: [{ file: PARETO_TS, from: '', to: '' }],
         point: 'files',
         see: 'A new, empty `src/pareto.ts`, open in the editor.',

@@ -110,6 +110,8 @@ interface ImportMeta {
 
 /** The page file the preview draws: its default export. */
 export const PAGE_FILE = 'src/App.tsx';
+/** The file a step is about: the one it names, or the one its first edit changes (the page, when neither says). */
+export const stepFile = (step) => step?.file ?? step?.edits?.[0]?.file ?? (step?.edits || step?.find ? PAGE_FILE : undefined);
 
 /** Values `rayfin dev` would write to .env.local. Made up, and marked as such. */
 export const SIMULATED_ENV = {

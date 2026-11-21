@@ -78,4 +78,4 @@ import '../node_modules/monaco-editor/esm/vs/base/browser/ui/codicons/codicon/co
 import 'monaco-editor/languages/definitions/typescript/register.js';
 import 'monaco-editor/languages/definitions/msdax/register.js';
 export * as typescript from 'monaco-editor/languages/features/typescript/register.js';
-export { editor, languages, Uri, KeyCode, KeyMod, MarkerSeverity, Range } from 'monaco-editor/editor/editor.api.js';
+export { editor, languages, Uri, KeyCode, KeyMod, MarkerSeverity, MarkerTag, Range } from 'monaco-editor/editor/editor.api.js';

@@ -27,6 +27,9 @@ npm run check      # checks the course, then builds it from an empty folder, ste
 | --- | --- |
 | The project (files, installed packages, terminal history) and the simulated CLI, as pure functions | `src/project.mjs` |
 | Editor: Monaco 0.57.0, one model per project file, React 19 types, Rayfin types per installed package | `src/app.ts`, `src/monaco.js`, `src/editor-types/packages/` |
+| File list: a folder tree left of the editor that mirrors the project (folders fold, new files are marked "new", files with type errors turn red with a count). A step's file opens on its own, is marked "step" in the tree and named on the card, which offers **Open `<path>`** when another file is open. The open file's full path is above the code; **Files** hides the tree | `src/app.ts` (`renderFiles`, `renderCrumbs`, `updateFileNote`, `stepFileOf`) |
+| The marked code of a step: a Monaco decoration plus a bar in the margin, kept in view when the editor changes size. The code font is a web font, so Monaco measures its characters again once it has loaded (`remeasureFonts`); without that, marks sit left of the text until the browser zoom changes | `src/app.ts` (`markFind`, `revealMark`, `remeasureFonts`) |
+| Red lines: the playground's own type check asks the TypeScript worker about every code file after every change (at once after a step's edit, 300 ms after typing), so a change in one file marks the others. Monaco's built-in check is off. The status line's file names and the card's **Show the red line** go to the first error | `src/app.ts` (`checkTypes`, `showProblem`) |
 | Compile on pause: Monaco's TypeScript worker emits each file as a System module (keeps `import.meta.env`) | `src/app.ts` (`compile`) |
 | Preview: sandboxed iframe (`allow-scripts`, no same-origin) that links the modules, simulates the Rayfin packages, and draws `src/App.tsx` | `src/preview.html`, `src/runtime.tsx` |
 | Saved answers: the iframe asks the parent page, which answers from the snapshots of the connector's model after a short delay and logs every query | `src/stand-in.ts`, `src/app.ts` (`onQuery`) |
@@ -38,7 +41,7 @@ npm run check      # checks the course, then builds it from an empty folder, ste
 | Lessons: goals, steps, summaries, Fabric notes; the longer code pieces they paste | `src/lesson-list.mjs`, `src/course-code.mjs` |
 | Glossary (Terms tab) and troubleshooting (Help tab) | `src/terms.mjs` |
 | Start screen (chapters), course drawer, progress, routing (`#lesson-id/step`, `#check/module-id`), terminal tab | `src/app.ts` |
-| Layout: three draggable dividers (sizes remembered, double-click resets) and **Pop out** on the lesson card and the bottom panel (large text, Esc docks) | `src/app.ts` (`initSplit`, `setPopped`), `src/app.css` |
+| Layout: three draggable dividers (sizes remembered, double-click resets) and **Pop out** on the lesson card, the editor and the bottom panel (large text, Esc docks) | `src/app.ts` (`initSplit`, `setPopped`), `src/app.css` |
 | Colours: a Gold Layer Tools piece, so Tools pink `#FF7FB5` leads (`--accent`), in text and lines only; gold for the logo and the "In a real Fabric app" notes. The logo links to goldlayerdata.com/tools.html, and the start screen lists the site sections and socials | `src/app.css` |
 
 ## Data

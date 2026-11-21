@@ -21,6 +21,7 @@ import {
   isGenerated,
   numberRuns,
   runCommand,
+  stepFile,
   stepIsDone,
 } from './project.mjs';
 import {
@@ -49,6 +50,7 @@ type Step = {
   find?: string;
   point?: Point;
   edits?: Edit[];
+  errors?: number | '1+';
   done?: { file?: string; before?: [string, string]; absent?: string };
   copy?: false;
 };
@@ -259,6 +261,9 @@ let lesson: Lesson = order[0];
 let check: Module | undefined;
 let position = 0;
 let doneTick: HTMLElement | undefined;
+/** On a step card: the line that names the step's file, and the button that goes to its red line. */
+let fileNote: HTMLElement | undefined;
+let redLine: HTMLElement | undefined;
 /** The lesson whose start didn't match the project, until the reader chooses. */
 let mismatch: Lesson | undefined;
 
@@ -448,8 +453,12 @@ function renderPanel() {
   if (check) renderCheck();
   else renderLesson();
   const step = currentStep();
-  const file = step?.file ?? step?.edits?.[0]?.file ?? (step?.edits || step?.find ? PAGE_FILE : undefined);
+  const file = stepFile(step);
+  newFiles.clear(); // "new" in the file list lasts for the card that made the files
+  treeReveal = file; // the file list scrolls to the step's file
   if (file && project.files[file] !== undefined && file !== activeFile) openFile(file);
+  else renderFiles(); // the step's file is marked in the file list
+  updateRedLine();
   pointAt(step?.point);
   markFind(step);
   renderCourseButton();
@@ -484,6 +493,8 @@ function renderLesson() {
   const last = lastPosition();
   const el = $('lesson');
   doneTick = undefined;
+  fileNote = undefined;
+  redLine = undefined;
 
   const dots = makeDots(
     (p) => (p === 0 ? 'The idea' : p === last ? 'Summary' : `Step ${p}`),
@@ -519,12 +530,17 @@ function renderLesson() {
     if (after) card.append(h('p', { class: 'up-next' }, ...after.upNext));
   } else {
     const step = currentStep()!;
-    card.append(h('p', { class: 'kicker' }, `Step ${position} of ${n}`), h('p', { class: 'do' }, rich(step.do)));
+    card.append(h('p', { class: 'kicker' }, `Step ${position} of ${n}`));
+    if (stepFile(step)) {
+      fileNote = h('p', { class: 'step-file' });
+      card.append(fileNote);
+    }
+    card.append(h('p', { class: 'do' }, rich(step.do)));
     const snippet = step.run ?? step.code;
     // `copy: false`: the code is only to read (Do it for me writes it), so there is nothing to paste.
     if (snippet) card.append(h('div', { class: `snippet${step.run ? ' command' : ''}` }, h('pre', {}, step.run ? `$ ${step.run}` : snippet), step.copy === false ? null : copyButton(snippet)));
     const actions = h('div', { class: 'actions' });
-    const findText = step.find ?? step.edits?.[0]?.from.trim();
+    const findText = findTextOf(step);
     if (findText) {
       const show = h('button', { type: 'button', title: 'Shows where this step\'s code goes: selects what to replace, or puts the cursor where to add' }, 'Show me in the code');
       show.addEventListener('click', () => showInCode(findText, step));
@@ -536,6 +552,12 @@ function renderLesson() {
       actions.append(doIt);
       doneTick = h('span', { class: 'done', hidden: '' }, '✓ Done');
       actions.append(doneTick);
+    }
+    if (step.errors) {
+      // The red line a step promises can be in another file, or further down: one click goes to it.
+      redLine = h('button', { type: 'button', class: 'red-line', hidden: '', title: 'Opens the file with the red line and scrolls to it' }, 'Show the red line');
+      redLine.addEventListener('click', () => showProblem());
+      actions.append(redLine);
     }
     if (actions.childElementCount) card.append(actions);
     if (step.see) card.append(h('p', { class: 'see' }, h('b', {}, 'You should see: '), rich(step.see)));
@@ -571,6 +593,8 @@ function renderCheck() {
   const qs = m.check!;
   const el = $('lesson');
   doneTick = undefined;
+  fileNote = undefined;
+  redLine = undefined;
   const dots = makeDots(
     (p) => (p === qs.length ? 'Result' : `Question ${p + 1}`),
     (p) => p === qs.length,
@@ -797,8 +821,9 @@ function tabButton(name: string) {
 function pointAt(p?: Point) {
   document.querySelectorAll('.pointed').forEach((e) => e.classList.remove('pointed'));
   if (!p) return;
+  if (p === 'files') showTree(true);
   const target = {
-    editor: $('editor').parentElement,
+    editor: $('editor'),
     files: $('files'),
     preview: $('preview'),
     status: $('run-state'),
@@ -823,25 +848,58 @@ function updateDoneTick() {
 /** The text a step is about: its `find`, or what its first edit changes. */
 const findTextOf = (step?: Step) => step?.find ?? (step?.edits?.[0]?.from ? step.edits[0].from.trim() : undefined);
 
-/** When a step card opens, mark its spot in the code (without taking the cursor) and scroll to it. */
+/** When a step card opens, mark its spot in the code (without taking the cursor) and scroll to it.
+ *  The mark is a Monaco decoration: Monaco places it, at any browser zoom. It is drawn in the step's file only. */
 let findMarks: monaco.editor.IEditorDecorationsCollection | undefined;
+/** Is the mark where the reader can see it (they have not scrolled away from it)? Then it stays in view when the editor changes size. */
+let markInView = false;
 function markFind(step?: Step) {
   findMarks?.clear();
+  findMarks = undefined;
+  markInView = false;
   const model = editor.getModel();
   const text = findTextOf(step);
-  if (!text || !model) return;
+  if (!text || !model || activeFile !== stepFile(step)) return;
   const matches = model.findMatches(text, false, false, true, null, false);
   if (!matches.length) return;
+  const range = matches[0].range;
   findMarks = editor.createDecorationsCollection([
-    { range: matches[0].range, options: { className: 'find-mark', overviewRuler: { color: '#ff7fb5', position: monaco.editor.OverviewRulerLane.Center } } },
+    { range, options: { className: 'find-mark', overviewRuler: { color: '#ff7fb5', position: monaco.editor.OverviewRulerLane.Center } } },
+    // A pink bar beside the marked lines, in the margin: easy to spot even when the mark itself is short.
+    { range, options: { isWholeLine: true, linesDecorationsClassName: 'find-line' } },
   ]);
-  editor.revealRangeInCenterIfOutsideViewport(matches[0].range);
+  revealMark(range);
 }
+
+/** Scroll so the marked lines are in view, at the editor's size right now (a new card may just have changed it). */
+function revealMark(range: monaco.Range, layoutFirst = true) {
+  if (layoutFirst) editor.layout();
+  editor.revealLinesInCenterIfOutsideViewport(range.startLineNumber, range.endLineNumber);
+  revealSideways(range);
+  markInView = true;
+}
+
+/** Sideways, stay at the start of the lines when the range begins in view there (a long line then runs off to
+ *  the right, as any long line does); a range that begins further along is scrolled to, a third of the way in. */
+function revealSideways(range: monaco.Range) {
+  const begins = editor.getOffsetForColumn(range.startLineNumber, range.startColumn);
+  const room = editor.getLayoutInfo().contentWidth - editor.getLayoutInfo().verticalScrollbarWidth;
+  editor.setScrollLeft(begins > room * 0.7 ? begins - room * 0.3 : 0);
+}
+
+/** After a scroll to somewhere else (the reader's, a red line, Show me in the code): is the mark still in view? */
+function noteMarkInView() {
+  const mark = findMarks?.getRange(0);
+  markInView = !!mark && rangeInView(mark);
+}
+
+const rangeInView = (range: monaco.Range) =>
+  editor.getVisibleRanges().some((v) => v.startLineNumber <= range.startLineNumber && v.endLineNumber >= Math.min(range.endLineNumber, range.startLineNumber + 2));
 
 /** Select the step's spot in the editor and scroll to it. */
 function showInCode(text: string, step?: Step) {
-  const file = step?.file ?? step?.edits?.[0]?.file;
-  if (file && project.files[file] !== undefined) openFile(file);
+  const file = stepFile(step);
+  if (file && project.files[file] !== undefined && file !== activeFile) openFile(file);
   const model = editor.getModel();
   if (!model) return;
   let matches = model.findMatches(text, false, false, true, null, false);
@@ -867,7 +925,10 @@ function showInCode(text: string, step?: Step) {
   } else {
     editor.setSelection(range);
   }
-  editor.revealRangeInCenter(range);
+  editor.layout();
+  editor.revealLinesInCenter(range.startLineNumber, range.endLineNumber);
+  revealSideways(range);
+  noteMarkInView();
   editor.focus();
 }
 
@@ -897,24 +958,27 @@ function doStepNow(step: Step, button: HTMLElement) {
   syncModels();
   const target = changed[0];
   if (target) openFile(target);
-  // Highlight the first new line the step added.
+  // The step's marked text, when it is (still) there, is already in view. Otherwise select the first new line the step added.
   const e = step.edits?.find((x) => x.to);
-  if (e) {
+  if (e && !(step.find && findMarks?.getRange(0))) {
     const fromLines = new Set(e.from.split('\n').map((l) => l.trim()));
     const added = e.to.split('\n').map((l) => l.trim()).find((l) => l && !fromLines.has(l));
-    if (added) showInCode(added, { ...step, file: e.file ?? PAGE_FILE });
+    if (added) showInCode(added, { do: step.do, file: e.file ?? PAGE_FILE });
   }
   updateDoneTick();
 }
 
+/** A short message under the editor, in place of the hint on the right: the type errors on the left stay. */
+const statusHint = $('status-hint').textContent;
 let flashTimer: number | undefined;
 function flash(message: string) {
-  const el = $('type-status');
-  const before = el.textContent;
+  const el = $('status-hint');
   el.textContent = message;
+  el.classList.add('flash');
   clearTimeout(flashTimer);
   flashTimer = window.setTimeout(() => {
-    if (el.textContent === message) el.textContent = before;
+    el.textContent = statusHint;
+    el.classList.remove('flash');
   }, 3000);
 }
 
@@ -932,11 +996,21 @@ function showUndo(note: string, undo: () => void) {
 }
 
 // ---------------------------------------------------------------- editor
-type TsDiagnostic = { category: number };
+type TsMessage = string | { messageText: string; next?: TsMessage[] };
+type TsDiagnostic = {
+  category: number;
+  code: number;
+  start?: number;
+  length?: number;
+  messageText: TsMessage;
+  reportsUnnecessary?: boolean;
+  reportsDeprecated?: boolean;
+};
 type TsWorker = {
   getEmitOutput(fileName: string): Promise<{ outputFiles: { name: string; text: string }[] }>;
   getSyntacticDiagnostics(fileName: string): Promise<TsDiagnostic[]>;
   getSemanticDiagnostics(fileName: string): Promise<TsDiagnostic[]>;
+  getSuggestionDiagnostics(fileName: string): Promise<TsDiagnostic[]>;
 };
 
 const ts = monaco.typescript;
@@ -953,24 +1027,20 @@ ts.typescriptDefaults.setCompilerOptions({
   allowNonTsExtensions: true,
   lib: ['es2022', 'dom'],
 });
-const DIAGNOSTICS = { noSemanticValidation: false, noSyntaxValidation: false };
-ts.typescriptDefaults.setDiagnosticsOptions(DIAGNOSTICS);
+// The red lines come from the playground's own check (checkTypes, below), which asks the TypeScript
+// worker about every file after every change. Monaco's built-in check is off: it re-checks only the
+// file that changed, and a change in data.ts can break App.tsx.
+ts.typescriptDefaults.setDiagnosticsOptions({ noSemanticValidation: true, noSyntaxValidation: true, noSuggestionDiagnostics: true });
 ts.typescriptDefaults.setEagerModelSync(true);
-
-/** Monaco re-checks only the file that changed; a change in data.ts can break App.tsx, so after a
- *  change, setting the options again makes it re-check every file. */
-let revalidateTimer: number | undefined;
-function revalidateAll() {
-  clearTimeout(revalidateTimer);
-  revalidateTimer = window.setTimeout(() => ts.typescriptDefaults.setDiagnosticsOptions({ ...DIAGNOSTICS }), 400);
-}
 for (const [path, text] of Object.entries(editorLibs.always)) ts.typescriptDefaults.addExtraLib(text, `file:///${path}`);
 
 // Package types appear once the package is installed in the project, as in a real project.
 const packageLibs = new Map<string, { dispose(): void }[]>();
 function updateLibs() {
+  let changed = false;
   for (const [pkg, files] of Object.entries(editorLibs.packages)) {
     const installed = project.packages.includes(pkg);
+    changed ||= installed !== packageLibs.has(pkg);
     if (installed && !packageLibs.has(pkg)) {
       packageLibs.set(
         pkg,
@@ -981,6 +1051,7 @@ function updateLibs() {
       packageLibs.delete(pkg);
     }
   }
+  return changed;
 }
 
 (self as unknown as { MonacoEnvironment: unknown }).MonacoEnvironment = {
@@ -1019,6 +1090,9 @@ const editor = monaco.editor.create($('editor'), {
   fontSize: 13.5,
   lineHeight: 21,
   minimap: { enabled: false },
+  lineNumbersMinChars: 3,
+  // No lines pinned to the top while scrolling: in a small editor they cover the code a step marks.
+  stickyScroll: { enabled: false },
   automaticLayout: true,
   scrollBeyondLastLine: false,
   tabSize: 2,
@@ -1027,8 +1101,50 @@ const editor = monaco.editor.create($('editor'), {
   readOnly: true,
 });
 
+// Monaco measures the width of a character once, when the editor is made, and places marks, selections
+// and red lines by it. The code font is a web font that arrives later, so that first measure is of the
+// fallback font, which is narrower: everything Monaco draws would sit left of its text, more so further
+// along a line, until something makes Monaco measure again (a change of browser zoom does). So: measure
+// again whenever a font has loaded.
+function remeasureFonts() {
+  monaco.editor.remeasureFonts();
+  const mark = findMarks?.getRange(0);
+  if (mark && markInView) revealMark(mark);
+}
+if (document.fonts) {
+  document.fonts.load("13.5px 'IBM Plex Mono'").then(remeasureFonts, () => undefined);
+  document.fonts.ready.then(remeasureFonts, () => undefined);
+  document.fonts.addEventListener('loadingdone', remeasureFonts);
+}
+
+// The marked code stays in view when the editor changes size (a taller card, a dragged divider, Pop out),
+// unless the reader scrolled away from it. Only a scroll that follows the reader's own wheel, key or
+// pointer counts: the editor also scrolls by itself while its size or font changes.
+let readerActedAt = 0;
+for (const type of ['wheel', 'keydown', 'pointerdown', 'pointermove', 'touchmove'] as const) {
+  $('editor').addEventListener(
+    type,
+    (e) => {
+      if (type !== 'pointermove' || (e as PointerEvent).buttons) readerActedAt = Date.now();
+    },
+    { capture: true, passive: true },
+  );
+}
+editor.onDidScrollChange((e) => {
+  if ((e.scrollTopChanged || e.scrollLeftChanged) && Date.now() - readerActedAt < 1500) noteMarkInView();
+});
+editor.onDidLayoutChange(() => {
+  // Once the editor has taken its new size in (its visible lines are not up to date inside this event).
+  queueMicrotask(() => {
+    const mark = findMarks?.getRange(0);
+    if (mark && markInView && !rangeInView(mark)) revealMark(mark, false);
+  });
+});
+
 const models = new Map<string, monaco.editor.ITextModel>();
 let activeFile: string | undefined;
+/** Where each file was scrolled to, and its cursor: going back to a file goes back to that place. */
+const viewStates = new Map<string, monaco.editor.ICodeEditorViewState | null>();
 const uriOf = (path: string) => monaco.Uri.parse(`file:///${path}`);
 const isCode = (path: string) => /\.tsx?$/.test(path);
 
@@ -1050,7 +1166,7 @@ function syncModels() {
       models.set(path, model);
       model.onDidChangeContent(() => {
         project.files[path] = model!.getValue(monaco.editor.EndOfLinePreference.LF);
-        revalidateAll();
+        scheduleTypeCheck();
         saveProject();
         scheduleDataRender();
         updateDoneTick();
@@ -1063,14 +1179,18 @@ function syncModels() {
   }
   for (const [path, model] of [...models]) {
     if (!(path in project.files)) {
+      monaco.editor.setModelMarkers(model, TYPE_CHECK, []);
       model.dispose();
       models.delete(path);
+      viewStates.delete(path);
       if (activeFile === path) activeFile = undefined;
     }
   }
-  updateLibs();
+  const libsChanged = updateLibs();
   renderFiles();
-  revalidateAll();
+  // The red lines a step promises come from this check: at once after a change the playground made,
+  // or as soon as the worker has the package types that changed with it.
+  scheduleTypeCheck(libsChanged ? TYPE_CHECK_LIBS_MS : 0);
   scheduleDataRender();
 }
 
@@ -1087,9 +1207,16 @@ function scheduleDataRender() {
 function openFile(path: string) {
   const model = models.get(path);
   if (!model) return;
+  const switching = editor.getModel() !== model;
+  if (switching && activeFile) viewStates.set(activeFile, editor.saveViewState());
   activeFile = path;
-  editor.setModel(model);
+  if (switching) {
+    editor.setModel(model);
+    editor.restoreViewState(viewStates.get(path) ?? null);
+  }
   editor.updateOptions({ readOnly: isGenerated(path, model.getValue()) });
+  unfold(path);
+  treeReveal = path;
   renderFiles();
   markFind(currentStep());
 }
@@ -1101,35 +1228,197 @@ function showNoFiles() {
   renderFiles();
 }
 
+// ---------------------------------------------------------------- the file list: a folder tree
+/** Folders the reader folded. A folder opens again when a file in it is opened, or a step creates one. */
+const folded = new Set<string>();
+try {
+  for (const p of JSON.parse(store.get('folded') ?? '[]') as string[]) folded.add(p);
+} catch {
+  /* unreadable: every folder open */
+}
+/** Files that appeared while this card was open: marked "new" in the list. */
+const newFiles = new Set<string>();
+/** The files the list showed last time, to tell which are new. */
+let listed: Set<string> | undefined;
+/** A file whose row the list scrolls to on its next draw. */
+let treeReveal: string | undefined;
+/** What the list last drew, as text. */
+let treeShows = '';
+
+/** Open the folders a file is in. */
+function unfold(path: string) {
+  const parts = path.split('/').slice(0, -1);
+  let changed = false;
+  for (let i = 1; i <= parts.length; i++) changed = folded.delete(parts.slice(0, i).join('/')) || changed;
+  if (changed) store.set('folded', JSON.stringify([...folded]));
+}
+
+function showTree(on: boolean) {
+  $('editor-wrap').classList.toggle('no-tree', !on);
+  $('btn-tree').setAttribute('aria-pressed', String(on));
+  store.set('size:tree', on ? null : '0');
+}
+
+type Folder = { path: string; folders: Map<string, Folder>; files: string[] };
+
+/** The file list, the path above the editor, and the step card's file line: all follow the project and the open file. */
 function renderFiles() {
-  const bar = $('files');
-  const paths = Object.keys(project.files).sort((a, b) => (a === PAGE_FILE ? -1 : b === PAGE_FILE ? 1 : a.localeCompare(b)));
-  // A tab shows the file name; two files with the same name (two schema.ts) also show their folder.
-  const base = (p: string) => p.split('/').pop()!;
-  const label = (p: string) => (paths.filter((q) => base(q) === base(p)).length > 1 ? p.split('/').slice(-2).join('/') : base(p));
-  const items = paths.map((p) => {
+  const nav = $('files');
+  const paths = Object.keys(project.files);
+  const stepPath = stepFile(currentStep());
+  const errors = errorsByFile();
+  if (listed) {
+    for (const p of paths) {
+      if (listed.has(p)) continue;
+      newFiles.add(p);
+      unfold(p);
+    }
+  }
+  for (const p of [...newFiles]) if (!(p in project.files)) newFiles.delete(p);
+  listed = new Set(paths);
+
+  // Draw again only when what the list shows has changed: a button replaced under the pointer loses its click.
+  const shows = JSON.stringify([project.appDir, paths.map((p) => [p, isGenerated(p, project.files[p])]), activeFile, stepPath, [...errors], [...folded], [...newFiles]]);
+  if (shows !== treeShows) {
+    treeShows = shows;
+    drawTree(nav, paths, stepPath, errors);
+  }
+  if (treeReveal) {
+    const row = [...nav.querySelectorAll<HTMLElement>('[data-path]')].find((x) => x.dataset.path === treeReveal);
+    treeReveal = undefined;
+    if (row) {
+      // Scroll the list only (scrollIntoView could move the page as well).
+      const box = nav.getBoundingClientRect();
+      const r = row.getBoundingClientRect();
+      const head = nav.firstElementChild!.getBoundingClientRect().height;
+      if (r.top < box.top + head) nav.scrollTop -= box.top + head - r.top;
+      else if (r.bottom > box.bottom) nav.scrollTop += r.bottom - box.bottom;
+    }
+  }
+  renderCrumbs();
+  updateFileNote();
+}
+
+function drawTree(nav: HTMLElement, paths: string[], stepPath: string | undefined, errors: Map<string, number>) {
+  const root: Folder = { path: '', folders: new Map(), files: [] };
+  for (const p of paths) {
+    const parts = p.split('/');
+    let at = root;
+    for (let i = 0; i < parts.length - 1; i++) {
+      let next = at.folders.get(parts[i]);
+      if (!next) {
+        next = { path: parts.slice(0, i + 1).join('/'), folders: new Map(), files: [] };
+        at.folders.set(parts[i], next);
+      }
+      at = next;
+    }
+    at.files.push(p);
+  }
+
+  const pill = (kind: 'step' | 'new', title: string) => h('span', { class: `pill ${kind}`, title }, kind);
+  const fileRow = (p: string, depth: number) => {
+    const generated = isGenerated(p, project.files[p]);
+    const n = errors.get(p) ?? 0;
+    const on = p === activeFile;
+    const title = [p, generated && 'generated: read-only here', p === stepPath && 'this step is about this file', n && `${n} type error${n > 1 ? 's' : ''}`]
+      .filter(Boolean)
+      .join(' · ');
     const b = h(
       'button',
-      { type: 'button', class: `file${p === activeFile ? ' on' : ''}`, title: isGenerated(p, project.files[p]) ? `${p} (generated: read-only here)` : p },
-      isGenerated(p, project.files[p]) ? h('span', { class: 'lock', 'aria-hidden': 'true' }, '🔒') : null,
-      label(p),
+      { type: 'button', class: 'tree-item tree-file', 'data-path': p, 'aria-current': on ? 'true' : undefined, title, style: `--depth: ${depth}` },
+      h('span', { class: 'name' }, p.split('/').pop()!),
+      generated ? h('span', { class: 'lock', 'aria-hidden': 'true' }, '🔒') : null,
+      p === stepPath ? pill('step', 'This step is about this file') : newFiles.has(p) ? pill('new', 'Just created') : null,
+      n ? h('span', { class: 'count' }, String(n)) : null,
     );
     b.addEventListener('click', () => openFile(p));
-    if (p !== activeFile || isGenerated(p, project.files[p])) return b;
-    // The open file can be deleted (a slip like a mistyped name); Undo brings it back.
-    const del = h('button', { type: 'button', class: 'file-del', title: `Delete ${p}`, 'aria-label': `Delete ${p}` }, '×');
-    del.addEventListener('click', () => deleteFile(p));
-    return h('span', { class: 'file-pair' }, b, del);
-  });
-  const add = h('button', { type: 'button', class: 'file add', title: 'Create a file in the project' }, '+ New file');
+    const row = h('li', { class: `file${on ? ' on' : ''}${n ? ' bad' : ''}` }, b);
+    if (on && !generated) {
+      // The open file can be deleted (a slip like a mistyped name); Undo brings it back.
+      const del = h('button', { type: 'button', class: 'file-del', title: `Delete ${p}`, 'aria-label': `Delete ${p}` }, '×');
+      del.addEventListener('click', () => deleteFile(p));
+      row.append(del);
+    }
+    return row;
+  };
+  const byName = (a: string, b: string) => a.localeCompare(b);
+  const rows = (folder: Folder, depth: number): HTMLElement[] => [
+    ...[...folder.folders.entries()]
+      .sort(([a], [b]) => byName(a, b))
+      .map(([name, sub]) => {
+        const open = !folded.has(sub.path);
+        const holds = (p?: string) => !!p && p.startsWith(`${sub.path}/`);
+        // A folded folder still says what is inside it: the step's file, a red line.
+        const bad = !open && [...errors.keys()].some(holds);
+        const b = h(
+          'button',
+          { type: 'button', class: `tree-item tree-folder${bad ? ' bad' : ''}`, 'data-path': `${sub.path}/`, 'aria-expanded': String(open), title: `${sub.path}/`, style: `--depth: ${depth}` },
+          h('span', { class: 'caret', 'aria-hidden': 'true' }),
+          h('span', { class: 'name' }, name),
+          !open && holds(stepPath) ? pill('step', 'This step is about a file in this folder') : null,
+        );
+        b.addEventListener('click', () => {
+          if (open) folded.add(sub.path);
+          else folded.delete(sub.path);
+          store.set('folded', JSON.stringify([...folded]));
+          renderFiles();
+        });
+        return h('li', {}, b, open ? h('ul', { role: 'group' }, ...rows(sub, depth + 1)) : null);
+      }),
+    ...[...folder.files].sort((a, b) => byName(a.split('/').pop()!, b.split('/').pop()!)).map((p) => fileRow(p, depth)),
+  ];
+
+  const add = h('button', { type: 'button', class: 'add', title: 'Create a file in the project' }, '+ New file');
   add.addEventListener('click', newFile);
   if (!project.appDir) add.setAttribute('disabled', '');
-  bar.replaceChildren(
-    project.appDir ? h('span', { class: 'folder' }, `${project.appDir}/`) : h('span', { class: 'muted' }, 'No project yet'),
-    ...items,
-    // New file and Pop out stay in view at the right edge, however many files there are.
-    h('span', { class: 'files-end' }, add, popButton($('editor-wrap'))),
+  // Drawing again must not take the keyboard's place in the list.
+  const focused = nav.contains(document.activeElement) ? (document.activeElement as HTMLElement).dataset.path : undefined;
+  nav.replaceChildren(
+    h('div', { class: 'tree-head' }, project.appDir ? h('span', { class: 'folder', title: 'The app folder' }, `${project.appDir}/`) : h('span', { class: 'muted' }, 'No project yet'), add),
+    h('ul', {}, ...rows(root, 0)),
   );
+  if (focused) [...nav.querySelectorAll<HTMLElement>('[data-path]')].find((x) => x.dataset.path === focused)?.focus({ preventScroll: true });
+}
+
+/** The open file's full path above the editor: the app folder, then each folder down to the file. */
+function renderCrumbs() {
+  const el = $('crumbs');
+  $('editor-wrap').dataset.file = activeFile ?? '';
+  if (!activeFile) {
+    el.replaceChildren(h('span', {}, project.appDir ? 'No file open' : 'No project yet'));
+    el.title = '';
+    return;
+  }
+  const parts = [...(project.appDir ? [project.appDir] : []), ...activeFile.split('/')];
+  el.replaceChildren(
+    ...parts.flatMap((part, i) => [...(i ? [h('span', { class: 'sep', 'aria-hidden': 'true' }, '›')] : []), h('span', { class: i === parts.length - 1 ? 'here' : undefined }, part)]),
+    ...(isGenerated(activeFile, project.files[activeFile]) ? [h('span', { class: 'lock' }, '🔒 generated: read-only here')] : []),
+  );
+  el.title = activeFile;
+}
+
+/** The step card's file line: which file the step is in, and one click to open it when another is open. */
+function updateFileNote() {
+  const step = currentStep();
+  const file = stepFile(step);
+  if (!fileNote || !file) return;
+  const shows = JSON.stringify([file, activeFile, project.files[file] !== undefined]);
+  if (fileNote.dataset.shows === shows) return;
+  fileNote.dataset.shows = shows;
+  const code = (p: string) => h('code', {}, p);
+  fileNote.className = 'step-file';
+  if (project.files[file] === undefined) {
+    const creates = step?.edits?.some((e) => (e.file ?? PAGE_FILE) === file && e.from === '');
+    if (creates) fileNote.replaceChildren('This step creates ', code(file), '.');
+    else fileNote.replaceChildren('This step is in ', code(file), ', which is not in your project yet.');
+  } else if (file === activeFile) {
+    fileNote.replaceChildren('In ', code(file), ', open in the editor.');
+  } else {
+    const open = h('button', { type: 'button' }, 'Open ', code(file));
+    open.addEventListener('click', () => openFile(file));
+    fileNote.classList.add('away');
+    fileNote.replaceChildren('This step is in ', code(file), ...(activeFile ? [', and ', code(activeFile), ' is open.'] : ['.']), ' ', open);
+  }
 }
 
 function deleteFile(path: string) {
@@ -1155,31 +1444,148 @@ function newFile() {
 
 editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => runNow());
 
-/** Type errors across the project's code files. */
-function countErrors() {
-  const byFile: Record<string, number> = {};
+// ---------------------------------------------------------------- red lines: the type check
+const TYPE_CHECK = 'playground-types'; // the owner of the markers the check sets
+const TYPE_CHECK_DELAY_MS = 300; // after typing; a step's own edit is checked at once
+let checkTimer: number | undefined;
+let checkRun = 0;
+let typesChecked = false;
+
+/** Check every code file again, shortly: a change in one file can break another. */
+function scheduleTypeCheck(delay = TYPE_CHECK_DELAY_MS) {
+  clearTimeout(checkTimer);
+  checkTimer = window.setTimeout(checkTypes, delay);
+}
+// Package types reach the worker a moment after a package is installed: check once they have.
+const TYPE_CHECK_LIBS_MS = 60;
+ts.typescriptDefaults.onDidExtraLibsChange(() => scheduleTypeCheck(TYPE_CHECK_LIBS_MS));
+
+async function checkTypes() {
+  const run = ++checkRun;
+  const files = [...models].filter(([path]) => isCode(path));
+  for (let attempt = 0; files.length && attempt < 3; attempt++) {
+    // No answer in time (the worker is still starting, or was replaced): ask again.
+    const found = await Promise.race([diagnose(files), new Promise<undefined>((r) => setTimeout(() => r(undefined), 4000))]).catch(() => undefined);
+    if (run !== checkRun) return; // a newer check has started: its answer is the one to show
+    if (!found) continue;
+    for (const { model, version, diagnostics } of found) {
+      // Typed in since: the check that edit scheduled marks this file.
+      if (model.isDisposed() || model.getVersionId() !== version) continue;
+      monaco.editor.setModelMarkers(model, TYPE_CHECK, diagnostics.map((d) => toMarker(model, d)));
+    }
+    break;
+  }
+  typesChecked = true;
+  showProblems();
+}
+
+async function diagnose(files: [string, monaco.editor.ITextModel][]) {
+  const getWorker = await tsWorkerGetter();
+  const worker = await getWorker(...files.map(([, model]) => model.uri));
+  return Promise.all(
+    files.map(async ([, model]) => {
+      const version = model.getVersionId();
+      const uri = model.uri.toString();
+      const all = await Promise.all([worker.getSyntacticDiagnostics(uri), worker.getSemanticDiagnostics(uri), worker.getSuggestionDiagnostics(uri)]);
+      return { model, version, diagnostics: all.flat() };
+    }),
+  );
+}
+
+const flatMessage = (m: TsMessage | undefined, indent = 0): string =>
+  m === undefined ? '' : typeof m === 'string' ? m : `${indent ? `\n${'  '.repeat(indent)}` : ''}${m.messageText}${(m.next ?? []).map((x) => flatMessage(x, indent + 1)).join('')}`;
+
+function toMarker(model: monaco.editor.ITextModel, d: TsDiagnostic): monaco.editor.IMarkerData {
+  const start = model.getPositionAt(d.start ?? 0);
+  const end = model.getPositionAt((d.start ?? 0) + (d.length || 1));
+  // TypeScript's categories: 0 warning, 1 error, 2 suggestion, 3 message.
+  const severity = [monaco.MarkerSeverity.Warning, monaco.MarkerSeverity.Error, monaco.MarkerSeverity.Hint, monaco.MarkerSeverity.Info][d.category] ?? monaco.MarkerSeverity.Info;
+  return {
+    severity,
+    startLineNumber: start.lineNumber,
+    startColumn: start.column,
+    endLineNumber: end.lineNumber,
+    endColumn: end.column,
+    message: flatMessage(d.messageText),
+    code: String(d.code),
+    tags: [...(d.reportsUnnecessary ? [monaco.MarkerTag.Unnecessary] : []), ...(d.reportsDeprecated ? [monaco.MarkerTag.Deprecated] : [])],
+  };
+}
+
+/** The red lines of one file, top to bottom. */
+const errorsIn = (model: monaco.editor.ITextModel) =>
+  monaco.editor
+    .getModelMarkers({ resource: model.uri })
+    .filter((m) => m.severity === monaco.MarkerSeverity.Error)
+    .sort((a, b) => a.startLineNumber - b.startLineNumber || a.startColumn - b.startColumn);
+
+/** How many type errors each code file has (files without any are left out). */
+function errorsByFile() {
+  const byFile = new Map<string, number>();
   for (const [path, model] of models) {
-    if (!isCode(path)) continue;
-    const n = monaco.editor
-      .getModelMarkers({ resource: model.uri })
-      .filter((m) => m.severity === monaco.MarkerSeverity.Error).length;
-    if (n) byFile[path.split('/').pop()!] = n;
+    const n = isCode(path) ? errorsIn(model).length : 0;
+    if (n) byFile.set(path, n);
   }
   return byFile;
 }
 
+/** A file's name, with its folder when another file has the same name (two schema.ts). */
+function shortName(path: string) {
+  const base = (p: string) => p.split('/').pop()!;
+  return [...models.keys()].filter((q) => base(q) === base(path)).length > 1 ? path.split('/').slice(-2).join('/') : base(path);
+}
+
 function showTypeStatus() {
-  const byFile = countErrors();
-  const total = Object.values(byFile).reduce((a, b) => a + b, 0);
+  const byFile = errorsByFile();
+  const total = [...byFile.values()].reduce((a, b) => a + b, 0);
   const el = $('type-status');
   el.className = total ? 'bad' : 'ok';
-  el.textContent = total
-    ? `${total} type error${total > 1 ? 's' : ''} in ${Object.keys(byFile).join(', ')}: hover the red lines (the page still runs)`
-    : models.size
-      ? 'No type errors'
-      : '';
+  if (!total) {
+    const anyCode = [...models.keys()].some(isCode);
+    el.textContent = anyCode && !typesChecked ? 'Checking types…' : models.size ? 'No type errors' : '';
+    return;
+  }
+  // Each file name goes to that file's first red line.
+  const links = [...byFile.keys()].map((path) => {
+    const b = h('button', { type: 'button', class: 'status-file', title: `Show the red line in ${path}` }, shortName(path));
+    b.addEventListener('click', () => showProblem(path));
+    return b;
+  });
+  el.replaceChildren(`${total} type error${total > 1 ? 's' : ''} in `, ...joined(links, ', '), ': hover the red lines (the page still runs)');
 }
-monaco.editor.onDidChangeMarkers(() => showTypeStatus());
+
+/** Open the file with a red line and scroll to it: the open file's first, or the first there is. */
+function showProblem(path?: string) {
+  const files = [...errorsByFile().keys()];
+  const target = path ?? (activeFile && files.includes(activeFile) ? activeFile : files[0]);
+  const model = target ? models.get(target) : undefined;
+  const first = model ? errorsIn(model)[0] : undefined;
+  if (!target || !first) return;
+  if (target !== activeFile) openFile(target);
+  editor.layout();
+  editor.revealLineInCenter(first.startLineNumber);
+  revealSideways(new monaco.Range(first.startLineNumber, first.startColumn, first.endLineNumber, first.endColumn));
+  noteMarkInView();
+  editor.setPosition({ lineNumber: first.startLineNumber, column: first.startColumn });
+  editor.focus();
+}
+
+/** "Show the red line" is on the card of a step that expects red lines, while there are any. */
+function updateRedLine() {
+  if (redLine) redLine.hidden = !errorsByFile().size;
+}
+
+/** The red lines changed: say so under the editor, in the file list and on the step card. */
+let problemsTimer: number | undefined;
+function showProblems() {
+  clearTimeout(problemsTimer);
+  problemsTimer = window.setTimeout(() => {
+    showTypeStatus();
+    renderFiles();
+    updateRedLine();
+  }, 0);
+}
+monaco.editor.onDidChangeMarkers(() => showProblems());
 
 /** Monaco loads its TypeScript support lazily; wait for it on the first run. */
 async function tsWorkerGetter() {
@@ -1197,9 +1603,8 @@ async function tsWorkerGetter() {
 async function compile(): Promise<Record<string, string>> {
   const paths = Object.keys(project.files).filter((p) => isCode(p) && !p.endsWith('.d.ts'));
   if (!paths.length) return {};
-  // The editor replaces its TypeScript worker when package types or options change, as they do at start-up.
-  // A call that went to the replaced worker is never answered (seen on a reload with a project already there),
-  // so: wait a little, then compile again with the current worker.
+  // A call to a TypeScript worker that is replaced meanwhile (Monaco does that when its options change) is
+  // never answered, so: wait a little, then compile again with the current worker.
   for (let wait = 1500; ; wait += 1500) {
     const out = await Promise.race([compileOnce(paths), new Promise<undefined>((r) => setTimeout(() => r(undefined), wait))]);
     if (out) {
@@ -2222,6 +2627,9 @@ window.addEventListener('hashchange', () => {
   if (r) openRoute(r);
 });
 $('btn-panel-pop').addEventListener('click', () => setPopped($('panel').classList.contains('popped') ? null : $('panel')));
+$('btn-editor-pop').addEventListener('click', () => setPopped($('editor-wrap').classList.contains('popped') ? null : $('editor-wrap')));
+$('btn-tree').addEventListener('click', () => showTree($('editor-wrap').classList.contains('no-tree')));
+showTree(store.get('size:tree') !== '0');
 $('pop-backdrop').addEventListener('click', () => setPopped(null));
 {
   const left = document.querySelector<HTMLElement>('.left')!;

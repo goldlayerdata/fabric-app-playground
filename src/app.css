@@ -247,6 +247,15 @@ a:focus-visible, .brand-here:focus-visible { outline: 2px solid var(--accent); o
 
 /* the spot in the code a step is about */
 .monaco-editor .find-mark { background: rgb(255 127 181 / 0.16); outline: 1px solid rgb(255 127 181 / 0.6); border-radius: 2px; }
+/* and a bar beside those lines, in the margin */
+.monaco-editor .find-line { background: var(--accent); width: 3px !important; margin-left: 4px; border-radius: 2px; }
+
+/* a step card's file line, and its way to the red line */
+.card .step-file { margin-bottom: 6px; font-size: 12.5px; color: var(--muted); }
+.card .step-file.away { color: var(--text); }
+.card .step-file button { margin-left: 2px; font-size: 12.5px; padding: 1px 9px; color: var(--accent); background: none; border-color: var(--accent); }
+.card .step-file button code { background: none; padding: 0; color: inherit; }
+.actions .red-line { color: var(--red); background: none; border-color: color-mix(in srgb, var(--red) 55%, transparent); }
 
 /* a part of the playground a step points at */
 .pointed { outline: 2px solid var(--accent) !important; outline-offset: -2px; animation: point 1.1s ease-in-out 3; }
@@ -297,28 +306,69 @@ a:focus-visible, .brand-here:focus-visible { outline: 2px solid var(--accent); o
 
 /* ---------------------------------------------------------------- editor */
 .editor-wrap { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-.files {
+/* above the code: the file list switch, the open file's full path, Pop out */
+.editor-head {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 10px;
   padding: 5px 10px;
   border-bottom: 1px solid var(--line);
-  overflow-x: auto;
   flex-shrink: 0;
-  font-size: 12.5px;
+  min-width: 0;
 }
-/* New file and Pop out stay in view at the right edge, however many files there are */
-.files .files-end { position: sticky; right: -10px; margin-left: auto; flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px; padding: 0 10px 0 6px; background: var(--navy); box-shadow: -10px 0 10px var(--navy); }
-.files .files-end .pop-btn { margin-left: 0; white-space: nowrap; }
-.files .folder { color: var(--muted); font-family: var(--mono); margin-right: 4px; white-space: nowrap; }
-.files .file { font-family: var(--mono); font-size: 12px; padding: 2px 8px; white-space: nowrap; color: var(--muted); background: none; }
-.files .file.on { color: var(--text); background: var(--navy-3); border-color: var(--accent); }
-.files .file .lock { font-size: 10px; margin-right: 4px; }
-.files .file-pair { display: inline-flex; align-items: center; gap: 2px; }
-.files .file-del { font-size: 13px; line-height: 1; padding: 2px 6px; color: var(--muted); background: none; border-color: transparent; }
-.files .file-del:hover { color: var(--red); border-color: var(--red); }
-.files .file.add { color: var(--accent); border-style: dashed; }
-.files .file.add:disabled { opacity: 0.4; cursor: default; }
+.editor-head .link-btn { flex-shrink: 0; white-space: nowrap; }
+.editor-head #btn-tree[aria-pressed='true'] { color: var(--text); border-color: var(--accent); }
+.crumbs { flex: 1; min-width: 0; margin: 0; font-family: var(--mono); font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.crumbs .sep { margin: 0 6px; opacity: 0.7; }
+.crumbs .here { color: var(--text); }
+.crumbs .lock { margin-left: 10px; font-family: Figtree, system-ui, sans-serif; font-size: 11.5px; }
+.editor-body { flex: 1; min-height: 0; display: flex; }
+
+/* the file list: the project's folders and files, as a tree */
+.tree { width: clamp(130px, 30%, 220px); flex-shrink: 0; overflow: auto; border-right: 1px solid var(--line); padding-bottom: 6px; }
+.no-tree .tree { display: none; }
+.tree-head { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 5px 6px 5px 10px; background: var(--navy); font-size: 12px; }
+.tree-head .folder { font-family: var(--mono); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tree-head .add { flex-shrink: 0; font-size: 11.5px; padding: 1px 7px; white-space: nowrap; color: var(--accent); background: none; border-style: dashed; }
+.tree-head .add:disabled { opacity: 0.4; cursor: default; }
+.tree ul { list-style: none; margin: 0; padding: 0; }
+.tree li.file { display: flex; align-items: center; }
+.tree .tree-item {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  /* one step in per folder; a file's name lines up with the folder names beside it */
+  padding: 2px 6px 2px calc(8px + var(--depth, 0) * 12px);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: left;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  border-left: 2px solid transparent;
+  border-radius: 0;
+}
+.tree .tree-file { padding-left: calc(22px + var(--depth, 0) * 12px); }
+.tree .tree-item:hover { color: var(--text); background: var(--navy-2); border-left-color: transparent; }
+.tree .tree-item:focus-visible { outline-offset: -2px; }
+.tree .tree-item .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* a small triangle: pointing right when folded, down when open */
+.tree .tree-folder .caret { flex-shrink: 0; width: 0; height: 0; margin: 0 2px 0 1px; border: 4px solid transparent; border-right-width: 0; border-left: 6px solid currentColor; }
+.tree .tree-folder[aria-expanded='true'] .caret { transform: rotate(90deg); }
+.tree li.on { background: var(--navy-3); }
+.tree li.on > .tree-item, .tree li.on > .tree-item:hover { color: var(--text); background: none; border-left-color: var(--accent); }
+.tree .bad .name { color: var(--red); }
+.tree .count { margin-left: auto; flex-shrink: 0; color: var(--red); font-size: 11px; }
+.tree .lock { flex-shrink: 0; font-size: 9px; }
+.tree .pill { flex-shrink: 0; font-family: Figtree, system-ui, sans-serif; font-size: 10px; line-height: 1.5; padding: 0 5px; border: 1px solid; border-radius: 999px; }
+.tree .pill.step { color: var(--accent); }
+.tree .pill.new { color: var(--green); }
+.tree .file-del { flex-shrink: 0; font-size: 13px; line-height: 1; padding: 2px 6px; margin-right: 2px; color: var(--muted); background: none; border-color: transparent; }
+.tree .file-del:hover { color: var(--red); border-color: var(--red); }
 .undo-bar {
   display: flex;
   align-items: center;
@@ -330,7 +380,7 @@ a:focus-visible, .brand-here:focus-visible { outline: 2px solid var(--accent); o
   font-size: 13px;
   flex-shrink: 0;
 }
-.editor { flex: 1; min-height: 0; }
+.editor { flex: 1; min-width: 0; min-height: 0; }
 .editor-loading { color: var(--muted); padding: 16px; margin: 0; }
 .status {
   display: flex;
@@ -343,7 +393,10 @@ a:focus-visible, .brand-here:focus-visible { outline: 2px solid var(--accent); o
 }
 .status .ok { color: var(--green); }
 .status .bad { color: var(--red); }
+.status .status-file { font-family: var(--mono); font-size: inherit; padding: 0 3px; color: var(--red); background: none; border: 0; border-radius: 3px; text-decoration: underline; }
+.status .status-file:hover { color: var(--text); }
 .status-hint { white-space: nowrap; }
+.status-hint.flash { white-space: normal; text-align: right; color: var(--text); }
 
 /* ---------------------------------------------------------------- preview */
 .toolbar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
@@ -474,7 +527,7 @@ table.ref tr.flash { animation: flash 1.6s ease-out; }
   .layout { display: flex; flex-direction: column; height: auto; }
   .split { display: none; }
   .lesson { max-height: none; }
-  .editor { height: 60vh; flex: none; }
+  .editor-body { height: 60vh; flex: none; }
   .preview { height: 70vh; flex: none; }
   .panel { height: 40vh; }
 }
@@ -500,8 +553,9 @@ table.ref tr.flash { animation: flash 1.6s ease-out; }
   position: fixed !important;
   z-index: 30;
   top: 5vh;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
+  margin-inline: auto;
   width: min(960px, 94vw);
   background: var(--navy);
   border: 1px solid var(--accent) !important;
@@ -518,7 +572,8 @@ table.ref tr.flash { animation: flash 1.6s ease-out; }
 .lesson.popped button, .lesson.popped .lesson-nav .next { font-size: 16px; }
 .panel.popped { height: 90vh !important; }
 .editor-wrap.popped { height: 90vh; width: min(1200px, 94vw); overflow: hidden; }
-.editor-wrap.popped .files .file { font-size: 14px; }
+.editor-wrap.popped .tree { width: 260px; }
+.editor-wrap.popped .tree .tree-item, .editor-wrap.popped .crumbs { font-size: 14px; }
 .editor-wrap.popped .status { font-size: 14px; }
 .panel.popped .panel-body { font-size: 16px; }
 .panel.popped .term-out, .panel.popped .term-prompt, .panel.popped .term-input { font-size: 15px; }
