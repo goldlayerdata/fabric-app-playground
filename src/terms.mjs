@@ -18,9 +18,22 @@ export const terms = [
   { id: 'dependency-list', term: 'Dependency list', means: 'The list at the end of `useEffect` (here, of `useDax`). When something in it changes, the effect runs again.', pbi: 'What makes a visual query again: its filters changing.', lesson: 'redraw-trap' },
   { id: 'lifting-state', term: 'Lifting state up', means: 'Keeping a selection in the component that holds all the visuals, and handing it down to them.', pbi: 'What makes cross-filtering work: the page, not one visual, holds the selection.', lesson: 'cross-filter' },
   { id: 'connector', term: 'Connector', means: 'How a Fabric app reaches existing data in other Fabric items. Added with `npx rayfin connector add`; the page calls it as `rayfinClient.connectors.contoso`.', pbi: 'A connection to a semantic model (or another Fabric item, such as a warehouse).', lesson: 'connector' },
+  { id: 'metadata', term: 'metadata.json', means: 'The tables and columns `connector add` found in a SQL source (schema discovery): names, types, keys. Regenerated, never edited by hand.', pbi: "What the Navigator shows in Get data: a source's tables and columns.", lesson: 'lakehouse-connector' },
+  { id: 'entity', term: 'Entity', means: "A TypeScript class that stands for a table: one property per column, with decorators (`@int`, `@text`…) saying each column's type.", pbi: 'A table in the model, with its columns and data types.', lesson: 'lakehouse-entities' },
+  { id: 'page-of-rows', term: 'Page of rows', means: "What one read returns: 100 rows by default, or `first(n)`. `execute()` returns one page and doesn't say there are more; `executePaginated()` gives a cursor for the next.", pbi: "No direct match: a visual's query returns its whole result.", lesson: 'rows-or-measures' },
 ];
 
 export const help = [
+  {
+    symptom: '**A read requires an explicit .select([...])** on a lakehouse page',
+    cause: 'A query chain reached `execute()` without `select` (`SELECTION_REQUIRED`).',
+    fix: 'Add `.select([…])` with the columns the page uses.',
+  },
+  {
+    symptom: "A total from lakehouse rows is smaller than the model's",
+    cause: '`execute()` returns one page, 100 rows by default.',
+    fix: "Take totals from the model's measures, or page through with `executePaginated()` and `after()`.",
+  },
   {
     symptom: 'A file with the wrong name, or one you do not need',
     cause: '**+ New file** creates whatever path you type.',

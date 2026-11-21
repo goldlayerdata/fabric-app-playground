@@ -34,7 +34,7 @@
 // Text formatting: inline `code`, **bold**, and [[term]] or [[shown text|term-id]] for a word in the
 // glossary (terms.mjs). Nothing else.
 import * as C from './course-code.mjs';
-import { PLACEHOLDER } from './project.mjs';
+import { PLACEHOLDER, sqlPlaceholder } from './project.mjs';
 
 const LEARN = 'https://learn.microsoft.com/fabric/apps';
 const learn = {
@@ -46,6 +46,8 @@ const learn = {
   addConnector: { href: `${LEARN}/connectors#add-a-connector`, label: 'Add a connector (Microsoft Learn)' },
   deploy: { href: `${LEARN}/connectors#deploy-the-connector`, label: 'Deploy the connector (Microsoft Learn)' },
   copilotReview: { href: `${LEARN}/create-app-with-github-copilot#review-the-generated-changes`, label: 'Review the generated changes (Microsoft Learn)' },
+  entityConnector: { href: `${LEARN}/connectors#configure-an-entity-connector`, label: 'Configure an entity connector (Microsoft Learn)' },
+  secureConnector: { href: `${LEARN}/connectors#secure-connector-access`, label: 'Secure connector access (Microsoft Learn)' },
 };
 const rayfin = {
   docs: { href: 'https://rayfin.ai/docs', label: 'Rayfin docs overview (rayfin.ai)' },
@@ -53,6 +55,14 @@ const rayfin = {
   adding: { href: 'https://rayfin.ai/docs/connectors/adding', label: 'Adding a connector (rayfin.ai)' },
   clientSetup: { href: 'https://rayfin.ai/docs/connectors/client-setup', label: 'Wiring connectors into your app (rayfin.ai)' },
   semanticModels: { href: 'https://rayfin.ai/docs/connectors/semantic-models', label: 'Semantic models (rayfin.ai)' },
+  connectors: { href: 'https://rayfin.ai/docs/connectors', label: 'Connectors (rayfin.ai)' },
+  entityGeneration: { href: 'https://rayfin.ai/docs/connectors/entity-generation', label: 'Generating entity files (rayfin.ai)' },
+  sqlSources: { href: 'https://rayfin.ai/docs/connectors/sql-sources', label: 'Fabric SQL sources (rayfin.ai)' },
+  sqlRead: { href: 'https://rayfin.ai/docs/connectors/sql-sources#read-rows-with-the-query-chain', label: 'Read rows with the query chain (rayfin.ai)' },
+  sqlAggregate: { href: 'https://rayfin.ai/docs/connectors/sql-sources#aggregate-connector-rows', label: 'Aggregate connector rows (rayfin.ai)' },
+  onePage: { href: 'https://rayfin.ai/docs/reference/known-limitations#collection-queries-return-only-one-page-unless-you-paginate', label: 'Known limitations: one page (rayfin.ai)' },
+  connectorAuth: { href: 'https://rayfin.ai/docs/connectors/auth', label: 'Connector authentication (rayfin.ai)' },
+  cliConnector: { href: 'https://rayfin.ai/docs/reference/cli/connector', label: 'rayfin connector (rayfin.ai)' },
 };
 
 const APP = 'src/App.tsx';
@@ -85,6 +95,25 @@ const ERRORS = "  for (const r of [countriesResult, totalsResult, marginResult])
 const YEAR_STATE = '  const [year, setYear] = useState<number | undefined>(undefined);\n';
 const LOCAL_RUNDAX = '  const runDax = (query: string) => rayfinClient.connectors.contoso.executeQuery({ query });\n';
 const AGENT_RUNDAX_IN_PAGE = '  // Runs a DAX query against the model.\n  const runDax: RunDax = (query) => rayfinClient.connectors.contoso.executeQuery({ query });\n\n';
+
+// Chapter 2: the lakehouse.
+const LAKE_TS = 'src/lake.ts';
+const LINES = 'src/LinesPage.tsx';
+const LAKE_DIR = 'rayfin/connectors/lake';
+const LAKE_METADATA = `${LAKE_DIR}/metadata.json`;
+const LAKE_SCHEMA_FILE = `${LAKE_DIR}/schema.ts`;
+const LAKE_STORE = `${LAKE_DIR}/Store.ts`;
+const LAKE_SALES = `${LAKE_DIR}/Sales.ts`;
+const LAKE_SEARCH = `npx rayfin connector search --workspace-id ${PLACEHOLDER.workspaceId} --type fabric-sqlanalytics --json`;
+const LAKE_ADD = `npx rayfin connector add --type fabric-sqlanalytics --workspace-id ${PLACEHOLDER.workspaceId} --item-id ${PLACEHOLDER.lakehouseId} --name lake --operations read`;
+const LAKE_READD = `npx rayfin connector add --type fabric-sqlanalytics --workspace-id ${PLACEHOLDER.workspaceId} --item-id ${PLACEHOLDER.lakehouseId} --name lake --auth delegated --yes`;
+const LAKE_INSTALL = 'npm install @microsoft/rayfin-connector-fabric-graphql@2.0.0 @microsoft/rayfin-connectors@2.0.0';
+const LAKE_INSPECT = 'npx rayfin connector inspect --name lake --entity dbo.store --rows 1';
+const CONTOSO_CLIENT_IMPORT = "import { connectorConfig as contosoConfig, type ContosoSchema } from '../../rayfin/connectors/contoso/schema';\n";
+const LAKE_CLIENT_IMPORT = "import { connectorConfig as lakeConfig, type LakeSchema } from '../../rayfin/connectors/lake/schema';\n";
+const LATEST_LINES_END = '    .first(20)\n    .execute();\n}\n';
+const LINES_HOOK = '  const lines = useLoad(async () => latestLines(await storeKeysIn(country)), country);\n';
+const LINES_END = '      </section>\n    </div>\n  );\n}\n';
 
 export const lessons = [
   // ================================================================== 0 Start here
@@ -1386,6 +1415,383 @@ export const lessons = [
     fabric: {
       text: 'Read next: Microsoft\'s walkthrough of a data app connected to a semantic model, Rayfin\'s page on semantic model connectors, and the Quickstart.',
       links: [learn.template, rayfin.semanticModels, rayfin.quickstart],
+    },
+  },
+  // ================================================================== Chapter 2: Read a lakehouse
+  // ================================================================== Connect a lakehouse
+  {
+    id: 'lakehouse-connector',
+    title: 'Add a lakehouse connector',
+    goal: 'add a read-only connector to a lakehouse\'s SQL analytics endpoint',
+    builds: ['to-fabric'],
+    pbi: 'Like Get data > Lakehouse with DirectQuery: every read goes live to the lakehouse\'s SQL endpoint, through the app\'s backend. Nothing is imported.',
+    idea: 'Our report numbers come from the model. The order lines behind them live in a lakehouse, made from the same Contoso files. One more connector, of a new kind: it gives us tables as typed [[entities|entity]] instead of a DAX door.',
+    steps: [
+      {
+        do: 'In the **Terminal**, look for lakehouses in our workspace:',
+        run: LAKE_SEARCH,
+        point: 'terminal',
+        see: 'One result, `ContosoLake`, a `Lakehouse`, with its `itemId` and a ready-made `addCommand`.',
+        why: '`--type` is required when you name a workspace. The real command lists only items your account can reach; here the list is made up.',
+      },
+      {
+        do: 'Add it, named `lake`, for reading:',
+        run: LAKE_ADD,
+        see: '`rayfin.yml` changed, a new folder `rayfin/connectors/lake/` with `metadata.json` and `schema.ts`, an install line, and a line saying nothing was wired into the app.',
+        why: 'For a SQL source, the command reads the tables and columns (schema discovery) and saves them. It writes no code for them: that is the next lesson. Nothing was wired because we wrote our client by hand, in **Wire the client**. `--operations read` is how Microsoft Learn\'s example adds a lakehouse; `read` is all a lakehouse allows anyway.',
+      },
+      {
+        do: 'Open `rayfin/rayfin.yml` and find the marked `- name: lake`.',
+        file: YML,
+        find: '  - name: lake',
+        see: '`type: fabric-sqlanalytics`, the two ids, `auth` of type `application`, and one operation, `read`. No `version` line this time.',
+        why: 'The `itemId` is not the one we typed: the CLI swaps in the id of the lakehouse\'s SQL analytics endpoint (the docs don\'t say so; the Rayfin CLI 2.0.0\'s own code does). `application` means the app\'s own identity, not the person using it: **Who runs this query** comes back to it.',
+      },
+      {
+        do: 'Run the install line it printed:',
+        run: LAKE_INSTALL,
+        see: '`@microsoft/rayfin-connector-fabric-graphql` added to `package.json`.',
+        why: 'As in **Add the connector**: run it as printed, with the versions, so every Rayfin package stays on one version.',
+      },
+      {
+        do: 'Open `rayfin/connectors/lake/metadata.json`.',
+        file: LAKE_METADATA,
+        find: '"tableName": "sales"',
+        see: 'One schema, `dbo`, with two tables, `sales` and `store`. Each column has a `dataType` and `isNullable`. There is no `primaryKeyColumns` and no `foreignKeys`.',
+        why: 'This is what discovery found: the [[metadata]]. Lakehouse endpoints commonly declare no keys and no relationships. The file is regenerated, never edited: to refresh it, run `connector add` again. (Playground: this one was made for the course, in the documented shape, not captured from a real lakehouse.)',
+      },
+      {
+        do: 'Open `rayfin/connectors/lake/schema.ts`.',
+        file: LAKE_SCHEMA_FILE,
+        find: 'Placeholder',
+        see: 'A placeholder: nothing our app can use yet.',
+        why: 'For a semantic model, `connector add` wrote a finished schema. For SQL sources, we (or an agent) write one class per table first, then replace this file.',
+      },
+      {
+        do: 'Check we can read the source: one row from `store`.',
+        run: LAKE_INSPECT,
+        see: 'One row: `StoreKey`, `CountryName` and `State`.',
+        why: '`inspect` reads the source read-only, as you, the developer. It proves your access, not the app\'s: once deployed, queries run as the identity in `auth`.',
+      },
+    ],
+    summary: [
+      '`connector add --type fabric-sqlanalytics` writes the connector, its `metadata.json` and a placeholder schema, and installs nothing.',
+      'A lakehouse connector only reads, and by default runs as the app (`application`).',
+      '`connector inspect` proves your own access to the source, before any app code.',
+    ],
+    fabric: {
+      text: 'In a real project, discovery runs as you and needs SQL endpoint permissions on the lakehouse; the deployed app then reads as the identity in `auth`. Connector queries start working once the app is deployed: `rayfin dev` doesn\'t wire connectors.',
+      links: [rayfin.adding, rayfin.connectors, learn.addConnector],
+    },
+  },
+
+  {
+    id: 'lakehouse-entities',
+    title: 'Entities from the metadata',
+    goal: 'turn the discovered tables into typed entity files, and replace the placeholder schema',
+    builds: ['lakehouse-connector'],
+    pbi: 'Like the Navigator in Get data, listing a source\'s tables and columns. Here each table becomes a class, and each column a property with a type.',
+    idea: 'In a real project an agent usually writes these files from `metadata.json`: Rayfin\'s docs spell out the rules for it. We write the small one, `Store`, by hand, let the "agent" write `Sales`, and check it against the same rules.',
+    steps: [
+      {
+        do: 'Create `rayfin/connectors/lake/Store.ts` (**+ New file**), and paste the imports:',
+        code: C.STORE_IMPORTS,
+        edits: [{ file: LAKE_STORE, from: '', to: C.STORE_IMPORTS }],
+        point: 'files',
+        see: 'No red lines.',
+        why: '`@microsoft/rayfin-core` has the decorators, the `@…` lines that describe a class to Rayfin. `Source` points a class at a table in the connector\'s source.',
+      },
+      {
+        do: 'Under the imports, add the class:',
+        code: C.STORE_CLASS.trimStart(),
+        edits: [{ file: LAKE_STORE, from: C.STORE_IMPORTS, to: C.STORE_IMPORTS + C.STORE_CLASS }],
+        see: 'No red lines.',
+        why: '`@entity()` makes the class an [[entity]]. `Source` names the physical table. Each property gets a decorator for its column\'s SQL type (`int` → `@int`, `varchar` → `@text`), and `column:` maps the SQL name (`StoreKey`) to a camelCase property (`storeKey`). `max` is the column\'s `maxLength`. `@role(\'authenticated\', [\'read\'])`: signed-in people may read; its actions must fit the connector\'s operations. We keep only the columns the app needs.',
+      },
+      {
+        do: 'Look at the marked `primaryKey: []`.',
+        file: LAKE_STORE,
+        find: 'primaryKey: []',
+        see: 'An empty list: this entity has no key.',
+        why: 'The metadata named none, and the rule is never to invent one from column names, even one called `StoreKey`. Without a key there is no `findByKey`, `update` or `delete`. For a read-only lakehouse, that\'s fine.',
+      },
+      {
+        do: 'Let the agent write the other table: **Do it for me**.',
+        edits: [{ file: LAKE_SALES, from: '', to: C.SALES_ENTITY }],
+        point: 'files',
+        see: '`rayfin/connectors/lake/Sales.ts`, with `orderKey`, `lineNumber`, `orderDate` (`@date`), `storeKey`, `quantity` (`@int`) and `netPrice` (`@decimal`).',
+      },
+      {
+        do: 'Review it as the rules say. Is every SQL name mapped with `column:`? Is `primaryKey` empty? Is there a relationship to `Store`?',
+        file: LAKE_SALES,
+        find: 'storeKey!: number;',
+        see: 'Yes, yes, and no relationship, even though both tables have `storeKey`.',
+        why: 'Relationships come only from foreign keys in the metadata, never from matching column names. In Power BI terms: a model with two tables and no relationship. To see countries and order lines together, we join them ourselves.',
+      },
+      {
+        do: 'Replace the placeholder: open `rayfin/connectors/lake/schema.ts`, click **Show me in the code** to select all of it, and paste this over it:',
+        code: C.LAKE_SCHEMA,
+        file: LAKE_SCHEMA_FILE,
+        edits: [{ file: LAKE_SCHEMA_FILE, from: sqlPlaceholder('lake', 'fabric-sqlanalytics'), to: C.LAKE_SCHEMA }],
+        see: 'No red lines.',
+        why: 'Three things the app imports: the entity types, `LakeSchema` (what the connector can do) and `connectorConfig`. `entities` lists each entity\'s property names, not the SQL column names. `as const satisfies` keeps the exact values (`\'fabric-sqlanalytics\'`, `\'read\'`), which decide which methods exist.',
+      },
+    ],
+    summary: [
+      'One entity per table, from the metadata only: no invented keys and no guessed relationships.',
+      'The schema file replaces the placeholder: it exports the entity types, `LakeSchema` and `connectorConfig`.',
+      'An agent\'s entity files are checked against the same rules: column names, keys, relationships.',
+    ],
+    fabric: {
+      text: 'Rayfin\'s docs keep a prompt for agents that generate these files, and its rules make a good review checklist. After an entity change on a deployed app, `npx rayfin up connector apply --name lake` sends it.',
+      links: [rayfin.entityGeneration, learn.entityConnector, rayfin.sqlSources],
+    },
+  },
+
+  // ================================================================== Rows, not measures
+  {
+    id: 'lakehouse-rows',
+    title: 'Rows on a page',
+    goal: 'wire the lakehouse connector into the client and list the order lines behind a number',
+    builds: ['lakehouse-entities', 'pages'],
+    pbi: 'A drill-through page: the order lines behind a country\'s total, newest first.',
+    idea: 'We register `lake` in the client, write a small hook that waits for a promise, and add an **Order lines** page.',
+    steps: [
+      {
+        do: 'In `src/services/rayfinClient.ts`, add this import on a new line under the marked `contoso` import:',
+        code: LAKE_CLIENT_IMPORT.trim(),
+        edits: [{ file: CLIENT, from: CONTOSO_CLIENT_IMPORT, to: CONTOSO_CLIENT_IMPORT + LAKE_CLIENT_IMPORT }],
+        see: 'Nothing changes.',
+      },
+      {
+        do: 'In `AppConnectorsSchema`, add a line under the marked `contoso: ContosoSchema;`:',
+        code: 'lake: LakeSchema;',
+        edits: [{ file: CLIENT, from: '  contoso: ContosoSchema;\n', to: '  contoso: ContosoSchema;\n  lake: LakeSchema;\n' }],
+        errors: 1,
+        see: 'A red line under `configs`: `lake` is missing.',
+        why: 'The `configs` map must have every connector in the schema, under the same name. TypeScript points at the gap.',
+      },
+      {
+        do: 'In `configs`, add the lakehouse: `configs: { contoso: contosoConfig, lake: lakeConfig },`',
+        edits: [{ file: CLIENT, from: 'configs: { contoso: contosoConfig },', to: 'configs: { contoso: contosoConfig, lake: lakeConfig },' }],
+        see: 'The red line goes.',
+        why: 'No `runtime` entry this time: that is for connectors that run a request on the server, such as `fabricSemanticModel()`. A lakehouse connector needs its configuration only.',
+      },
+      {
+        do: 'Create `src/lake.ts` (**+ New file**) with a hook that waits for any promise:',
+        code: C.LAKE_HOOK,
+        edits: [{ file: LAKE_TS, from: '', to: C.LAKE_HOOK }],
+        see: 'No red lines.',
+        why: 'A lakehouse call doesn\'t return a `status`, as `executeQuery` does: it gives the rows, or it throws. So the hook catches the error and turns it into a state, as **Failure** taught. `key` plays the part of the dependency list from **The redraw trap**.',
+      },
+      {
+        do: 'At the end of `src/lake.ts`, add the two queries:',
+        code: C.LAKE_QUERIES.trimStart(),
+        edits: [{ file: LAKE_TS, from: C.LAKE_HOOK, to: C.LAKE_HOOK + C.LAKE_QUERIES }],
+        see: 'No red lines.',
+        why: 'The chain reads like a query: `select` the columns, `where` to filter, `orderBy`, `first` for the row count, then `execute`. Two calls, because the tables have no relationship: the first finds France\'s store keys, the second the lines in those stores.',
+      },
+      {
+        do: 'Add the page: **Do it for me** writes `src/LinesPage.tsx` and adds it to the report as **Order lines** (page id, `PAGES` entry and import).',
+        code: "lines: { title: 'Order lines', Component: LinesPage },",
+        edits: [
+          { file: LINES, from: '', to: C.LINES_PAGE },
+          { from: "type PageId = 'overview' | 'years' | 'agent';", to: "type PageId = 'overview' | 'years' | 'agent' | 'lines';" },
+          { from: "  agent: { title: 'Agent page', Component: SalesOverview },\n", to: "  agent: { title: 'Agent page', Component: SalesOverview },\n  lines: { title: 'Order lines', Component: LinesPage },\n" },
+          { from: "import SalesOverview from './SalesOverview';\n", to: "import SalesOverview from './SalesOverview';\nimport LinesPage from './LinesPage';\n" },
+        ],
+        see: '**Order lines** in the page list.',
+      },
+      {
+        do: 'Click **Order lines**.',
+        point: 'preview',
+        see: '20 lines for France, newest first: 12/31/2023 at the top. The Log shows two lakehouse reads.',
+      },
+      {
+        do: 'A slip on purpose: in `src/LinesPage.tsx`, replace the marked date with `{line.orderDate.toLocaleDateString(\'en-US\', { timeZone: \'UTC\' })}`.',
+        file: LINES,
+        edits: [{ file: LINES, from: C.LINES_DATE, to: C.LINES_DATE_SLIP }],
+        errors: 1,
+        see: 'A red line: `toLocaleDateString` does not exist on type `string | Date`.',
+        why: 'Dates come back as they were sent: maybe a `Date`, maybe text. `new Date(…)` makes a date out of either. (`timeZone: \'UTC\'`: a date with no time is read as midnight UTC, so the day stays the same everywhere.)',
+      },
+      {
+        do: UNDO,
+        edits: [{ file: LINES, from: C.LINES_DATE_SLIP, to: C.LINES_DATE }],
+        see: 'The red line goes.',
+      },
+      {
+        do: 'Another slip on purpose: in `src/lake.ts`, delete the marked `.select([\'storeKey\'])` line in `storeKeysIn`.',
+        file: LAKE_TS,
+        edits: [{ file: LAKE_TS, from: "    .select(['storeKey'])\n", to: '' }],
+        see: 'No red line, but the page shows its error panel: **A read requires an explicit .select([...]).**',
+        why: 'A query chain must say which columns it wants (`SELECTION_REQUIRED`). The default list in `connectorConfig.entities` never applies to a chain.',
+      },
+      {
+        do: UNDO,
+        edits: [{ file: LAKE_TS, from: "  const stores = await rayfinClient.connectors.lake.Store\n    .where(", to: "  const stores = await rayfinClient.connectors.lake.Store\n    .select(['storeKey'])\n    .where(" }],
+        see: 'The lines are back.',
+      },
+      {
+        do: 'In a real project, this is where the connector goes live:',
+        run: 'npx rayfin up connector apply --name lake',
+        point: 'terminal',
+        see: 'The playground says what the real command does.',
+        why: '`rayfin dev` doesn\'t wire connectors. `connector apply` sends the connector\'s entities to the deployed app, which must exist already: we deployed in **Take it to Fabric**. Rayfin marks the command as Preview.',
+      },
+    ],
+    summary: [
+      'A lakehouse connector goes in `configs` only: no `runtime` entry.',
+      'Read it with `select`, `where`, `orderBy`, `first` and `execute`: it returns rows, or throws. Without `select`, it throws.',
+      'Dates arrive as `Date | string`: make a `Date` before using one.',
+    ],
+    fabric: {
+      text: 'On Fabric, a read goes to the app\'s backend, which queries the lakehouse\'s SQL analytics endpoint. Rayfin\'s docs say to prove a connector with a real query from the deployed app before building more on it.',
+      links: [rayfin.clientSetup, rayfin.sqlRead, learn.query],
+    },
+  },
+
+  {
+    id: 'rows-or-measures',
+    title: 'Rows or measures',
+    goal: 'tell which numbers come from the lakehouse and which from the model',
+    builds: ['lakehouse-rows', 'measure-or-query'],
+    pbi: 'In a report, a total comes from a measure over every row the filters allow. Nobody adds up a table visual\'s rows by hand.',
+    idea: 'We try to get France\'s 2023 revenue from the lakehouse rows, and compare it with the model\'s `[Revenue]`. A slip on purpose, the kind an agent makes.',
+    steps: [
+      {
+        do: 'A slip on purpose: at the end of `src/lake.ts`, add a revenue total over the lines:',
+        code: C.REVENUE_ONE_PAGE.trimStart(),
+        edits: [{ file: LAKE_TS, from: LATEST_LINES_END, to: LATEST_LINES_END + C.REVENUE_ONE_PAGE }],
+        see: 'No red lines.',
+      },
+      {
+        do: 'Show it on the page: **Do it for me** adds a **Revenue (from lines)** card to `src/LinesPage.tsx` (two imports, the hook line, the card).',
+        code: C.REVENUE_CARD.trim(),
+        edits: [
+          { file: LINES, from: "import { ErrorPanel } from './components';", to: "import { ErrorPanel, KpiCard } from './components';" },
+          { file: LINES, from: "import { latestLines, storeKeysIn, useLoad } from './lake';", to: "import { latestLines, revenueFromLines, storeKeysIn, useLoad } from './lake';" },
+          { file: LINES, from: LINES_HOOK, to: LINES_HOOK + C.REVENUE_HOOK },
+          { file: LINES, from: LINES_END, to: `      </section>\n${C.REVENUE_CARD}    </div>\n  );\n}\n` },
+        ],
+        see: '**Revenue (from lines)**: 142.3K.',
+      },
+      {
+        do: 'Open **Overview**, pick **2023** on the slicer, and click **France** on the countries chart.',
+        point: 'preview',
+        see: 'Its **Revenue** card: 369K. Far apart.',
+        why: 'The lakehouse holds France\'s 2023 lines only, so this is the same slice. The model\'s `[Revenue]` is `SUMX ( sales, sales[Quantity] * sales[NetPrice] )`: the same formula the page used.',
+      },
+      {
+        do: 'Open the **Log** and click the newest lakehouse read, the one behind the card.',
+        point: 'log',
+        see: 'It returned exactly 100 rows.',
+        why: '`execute()` returns one [[page of rows|page-of-rows]], 100 by default, and doesn\'t say there are more. No red line, no error: just a wrong total.',
+      },
+      {
+        do: 'Page through every line instead: click **Show me in the code** to select `revenueFromLines`, and paste this over it.',
+        code: C.REVENUE_PAGED.trimStart(),
+        file: LAKE_TS,
+        edits: [{ file: LAKE_TS, from: C.REVENUE_ONE_PAGE, to: C.REVENUE_PAGED }],
+        see: '369K on both. In the Log: three reads, of 100, 100 and 83 rows.',
+        why: '`executePaginated()` returns a page with `hasNextPage` and `endCursor`; `after(endCursor)` asks for the next one, with the same `select`, `where` and a stable `orderBy`. Now the numbers match, because the page copies the model\'s formula: a second copy, which can drift without a warning.',
+      },
+      {
+        do: 'Keep totals in the model: **Do it for me** takes the card and `revenueFromLines` out again.',
+        edits: [
+          { file: LINES, from: "import { ErrorPanel, KpiCard } from './components';", to: "import { ErrorPanel } from './components';" },
+          { file: LINES, from: "import { latestLines, revenueFromLines, storeKeysIn, useLoad } from './lake';", to: "import { latestLines, storeKeysIn, useLoad } from './lake';" },
+          { file: LINES, from: LINES_HOOK + C.REVENUE_HOOK, to: LINES_HOOK },
+          { file: LINES, from: `      </section>\n${C.REVENUE_CARD}    </div>\n  );\n}\n`, to: LINES_END },
+          { file: LAKE_TS, from: C.REVENUE_PAGED, to: '' },
+        ],
+        done: { file: LAKE_TS, absent: 'revenueFromLines' },
+        see: '**Order lines** shows only the lines; **Overview** keeps the totals.',
+        why: 'Fetching every row to add it up is slow on a big table. The lakehouse can sum on its side with `aggregate`, but one numeric column per entry: no quantity × net price in one call. Totals belong to the model\'s measures; the lakehouse gives the detail behind them.',
+      },
+    ],
+    summary: [
+      'Totals come from the model\'s measures, and the detail behind them from rows.',
+      '`execute()` stops at one page, 100 rows by default, without a word. `executePaginated()` and `after()` page through the rest.',
+      'A total computed on the page copies a formula the model already owns.',
+    ],
+    fabric: {
+      text: 'Rayfin lists one-page reads as a known limitation of its data layer (Data API Builder): a longer list is silently cut. Aggregations run on the source, one numeric column per entry.',
+      links: [rayfin.onePage, rayfin.sqlAggregate],
+    },
+  },
+
+  {
+    id: 'who-runs-it',
+    title: 'Who runs this query',
+    goal: 'say whose permissions a lakehouse query runs with, and how to change it safely',
+    builds: ['rows-or-measures', 'to-fabric'],
+    pbi: 'Like a data source with stored credentials versus single sign-on. With stored credentials, every viewer sees what that one account sees. With single sign-on, each viewer\'s own access counts.',
+    idea: 'Our two connectors run as two different identities. We look at both, try a write, then change the lakehouse\'s identity, with a slip on the way.',
+    steps: [
+      {
+        do: 'Open `rayfin/rayfin.yml` and look at the `lake` connector\'s `auth`.',
+        file: YML,
+        find: '      type: application',
+        see: '`type: application`.',
+        why: 'Every lakehouse query runs as the app\'s identity, the owner of the app. Everyone using the app sees the same rows, and any row-level security in the lakehouse is checked against the app\'s owner, not against them.',
+      },
+      {
+        do: 'Now look at the `contoso` connector\'s `auth`.',
+        file: YML,
+        find: '      type: delegated',
+        see: '`type: delegated`.',
+        why: 'Semantic model connectors only run as the person using the app, so each person needs Read and Build permission on the model.',
+      },
+      {
+        do: 'Open the **Log**, and compare a `contoso` query with a `lake` read.',
+        point: 'log',
+        see: '`runs as: the signed-in user (delegated)` and `runs as: the app owner (application)`.',
+        why: 'The playground prints this line; a real app doesn\'t. `connector add` and `inspect` ran as you, the developer: discovery and the running app use different identities.',
+      },
+      {
+        do: 'A slip on purpose: at the end of `src/lake.ts`, add a write:',
+        code: C.ADD_LINE.trimStart(),
+        edits: [{ file: LAKE_TS, from: LATEST_LINES_END, to: LATEST_LINES_END + C.ADD_LINE }],
+        errors: 1,
+        see: 'A red line under `create`: it does not exist on the lakehouse\'s `Sales`.',
+        why: '`operations: [\'read\']` in `connectorConfig` leaves only the read methods. The types are a help, not the lock: the lock is the connector\'s operations (a call that gets past the types is refused with `OPERATION_NOT_ALLOWED`) and the lakehouse itself, which is read-only.',
+      },
+      {
+        do: UNDO,
+        edits: [{ file: LAKE_TS, from: C.ADD_LINE, to: '' }],
+        see: 'The red line goes.',
+      },
+      {
+        do: 'A slip on purpose: re-add the connector as delegated, accepting every prompt:',
+        run: LAKE_READD,
+        point: 'terminal',
+        see: '`type: delegated` for `lake` in `rayfin.yml`, and red lines in `src/services/rayfinClient.ts`: `schema.ts` is a placeholder again.',
+        why: 'Re-adding keeps the entity files, but `--yes` replaces a hand-written `schema.ts` with a fresh placeholder. Without `--auth`, re-adding would also have set `auth` back to `application`.',
+      },
+      {
+        do: 'Undo it: **Undo** in the bar above the editor, or **Do it for me** (it puts back `schema.ts` and `application`).',
+        edits: [
+          { file: LAKE_SCHEMA_FILE, from: sqlPlaceholder('lake', 'fabric-sqlanalytics'), to: C.LAKE_SCHEMA },
+          { file: YML, from: '      type: delegated\n    operations:\n      - name: read', to: '      type: application\n    operations:\n      - name: read' },
+        ],
+        see: 'The red lines go, and `lake` is `application` again.',
+        why: 'On a real project, copy `schema.ts` aside before re-adding, or leave out `--yes` and answer the prompt.',
+      },
+      {
+        do: 'Which to choose? Read this card.',
+        see: '`application`: one shared view, and the app\'s owner needs access to the lakehouse. `delegated`: each person sees what they may see at the source, and each needs their own access.',
+        why: 'Rayfin\'s docs: don\'t choose `application` for per-user access control. **Who is using it**, a later chapter, comes back to identities for every part of the app.',
+      },
+    ],
+    summary: [
+      'A lakehouse connector runs as the app\'s owner unless you choose `delegated`; a semantic model connector always runs as the person using the app.',
+      'A lakehouse connector has no write methods: its operations are `read`, and the source is read-only.',
+      'Re-adding resets `auth` unless you pass `--auth`, and `--yes` replaces your `schema.ts`.',
+    ],
+    fabric: {
+      text: 'Changing the identity grants no permission: with `application`, give the app\'s identity access to the lakehouse; with `delegated`, each user needs their own. Microsoft Learn: client-side types aren\'t an authorization boundary; limit operations and use `@role`.',
+      links: [rayfin.connectorAuth, learn.secureConnector, learn.addConnector],
     },
   },
 ];

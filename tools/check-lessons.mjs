@@ -17,9 +17,10 @@ import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import ts from 'typescript';
 import { lessons } from '../src/lesson-list.mjs';
-import { modules } from '../src/course.mjs';
+import { chapters, modules } from '../src/course.mjs';
 import { terms, help } from '../src/terms.mjs';
 import { emptyProject, doStep, stepIsDone, PAGE_FILE } from '../src/project.mjs';
+import lakehouse from '../data/lakehouse.json' with { type: 'json' };
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const catalog = JSON.parse(readFileSync(join(root, 'data', 'catalog.json'), 'utf8'));
@@ -38,6 +39,21 @@ const fail = (msg) => {
 };
 
 // ---------------------------------------------------------------- the course
+// Chapters: a live one lists modules, a coming one lists planned titles; every module is in exactly
+// one live chapter, and the chapters hold the modules in course order.
+{
+  const ids = chapters.map((c) => c.id);
+  if (new Set(ids).size !== ids.length) fail('course.mjs: duplicate chapter id');
+  for (const [ci, c] of chapters.entries()) {
+    if (!c.title || !c.goal) fail(`chapter ${c.id}: title and goal needed`);
+    if (!!c.modules === !!c.coming) fail(`chapter ${c.id}: needs exactly one of modules or coming`);
+    for (const b of c.builds ?? []) if (!(ids.indexOf(b) >= 0 && ids.indexOf(b) < ci)) fail(`chapter ${c.id}: builds on ${b}, which is not an earlier chapter`);
+  }
+  const live = chapters.filter((c) => c.modules);
+  if (live.some((c, i) => chapters.indexOf(c) !== i)) fail('course.mjs: live chapters come first, then the coming ones');
+  const inChapters = live.flatMap((c) => c.modules);
+  if (inChapters.join('|') !== modules.map((m) => m.id).join('|')) fail('course.mjs: the chapters must hold every module once, in the order of `modules`');
+}
 const byId = new Map(lessons.map((l) => [l.id, l]));
 const placed = modules.flatMap((m) => m.lessons);
 for (const l of lessons) {
@@ -52,7 +68,7 @@ const numOf = (l) => {
 };
 
 const LESSON_FIELDS = ['id', 'title', 'goal', 'builds', 'pbi', 'idea', 'steps', 'summary', 'fabric'];
-const STEP_FIELDS = ['do', 'code', 'run', 'see', 'why', 'file', 'find', 'point', 'edits', 'errors', 'done', 'queryFails'];
+const STEP_FIELDS = ['do', 'code', 'run', 'see', 'why', 'file', 'find', 'point', 'edits', 'errors', 'done', 'queryFails', 'commandFails'];
 const POINTS = ['editor', 'files', 'preview', 'status', 'terminal', 'log', 'queries', 'terms', 'run', 'reset'];
 const LINK_HOSTS = ['learn.microsoft.com', 'rayfin.ai'];
 
@@ -106,6 +122,7 @@ const collect = (v, where) => {
 };
 lessons.forEach((l) => collect(l, l.id));
 modules.forEach((m) => collect(m, `module ${m.id}`));
+chapters.forEach((c) => collect(c, `chapter ${c.id}`));
 terms.forEach((t) => collect(t, `term ${t.id}`));
 help.forEach((r, i) => collect(r, `help row ${i + 1}`));
 for (const [text, where] of texts) {
@@ -114,6 +131,7 @@ for (const [text, where] of texts) {
     if (!termIds.has(id)) fail(`${where}: [[${inner}]] is not in the glossary`);
   }
   if (/\blesson \d/i.test(text)) fail(`${where}: refers to a lesson by number ("${text.match(/\blesson \d+/i)[0]}"); use its title`);
+  if (/\b(chapter|module) \d/i.test(text)) fail(`${where}: refers to a chapter or module by number ("${text.match(/\b(chapter|module) \d+/i)[0]}"); use its title`);
 }
 
 // ---------------------------------------------------------------- type-checking a project
@@ -136,6 +154,9 @@ const PACKAGE_TYPES = {
   '@microsoft/rayfin-auth': ['rayfin-auth.d.ts'],
   '@microsoft/rayfin-connectors': ['rayfin-connectors.d.ts'],
   '@microsoft/rayfin-connector-fabric-semanticmodel': ['rayfin-connector-fabric-semanticmodel.d.ts'],
+  '@microsoft/rayfin-core': ['rayfin-core.d.ts'],
+  '@microsoft/rayfin-data': ['rayfin-data.d.ts'],
+  '@microsoft/rayfin-connector-fabric-graphql': ['rayfin-connector-fabric-graphql.d.ts'],
   vite: ['vite-client.d.ts'],
 };
 const vroot = join(root, '.virtual-project').replace(/\\/g, '/');
@@ -304,6 +325,44 @@ console.log('\ncontrols');
   const d = typeCheck({ ...p, files: { ...p.files, [file]: bad } });
   console.log(`   ${numOf(byId.get('client'))} mistyped connector name: ${d[0] ?? 'no error'}`.slice(0, 140));
   if (bad === p.files[file] || !d.some((x) => x.includes('contosso'))) fail('client: a mistyped connector name gets no red line');
+}
+
+// Lakehouse: the configs map is exhaustive, so a missing `lake` entry gets a red line naming it.
+{
+  const lesson = byId.get('lakehouse-rows');
+  let p = after['lakehouse-entities'];
+  for (const s of lesson.steps.slice(0, 2)) p = doStep(p, s, answer).project;
+  const d = typeCheck(p);
+  console.log(`   ${numOf(lesson)} missing configs entry: ${d[0] ?? 'no error'}`.slice(0, 140));
+  if (!d.some((x) => x.includes("'lake'"))) fail(`${numOf(lesson)}: the error does not name 'lake'`);
+}
+
+// Who runs this query: the write is a red line on `create`.
+{
+  const lesson = byId.get('who-runs-it');
+  const step = lesson.steps.findIndex((s) => s.code?.includes('.create('));
+  let p = after['rows-or-measures'];
+  for (const s of lesson.steps.slice(0, step + 1)) p = doStep(p, s, answer).project;
+  const d = typeCheck(p);
+  console.log(`   ${numOf(lesson)} create: ${d[0] ?? 'no error'}`.slice(0, 140));
+  if (!d.some((x) => x.includes("'create'"))) fail(`${numOf(lesson)}: the error does not name 'create'`);
+}
+
+// Rows or measures: the numbers the cards show. All of France's 2023 lines add up to the model's
+// [Revenue] for that slice; the first page of 100 does not.
+{
+  const lesson = byId.get('rows-or-measures');
+  const { columns, rows } = lakehouse.rows.sales;
+  const at = (c) => columns.indexOf(c);
+  const sum = (rs) => rs.reduce((t, r) => t + r[at('Quantity')] * r[at('NetPrice')], 0);
+  const model = snapshots['totals-2023-france'].table.rows[0][0];
+  const compact = (v) => v.toLocaleString('en-US', { notation: 'compact', maximumFractionDigits: 1 });
+  const all = sum(rows);
+  const first = sum(rows.slice(0, 100));
+  console.log(`   ${numOf(lesson)} all lines ${all.toFixed(4)} (${compact(all)}), first 100 ${first.toFixed(2)} (${compact(first)}), model ${model} (${compact(model)})`);
+  if (Math.abs(all - model) > 0.01) fail(`${numOf(lesson)}: the lakehouse lines don't add up to the model's [Revenue]`);
+  const text = JSON.stringify(lesson.steps);
+  for (const shown of [compact(first), compact(model)]) if (!text.includes(shown)) fail(`${numOf(lesson)}: the steps don't show ${shown}`);
 }
 
 console.log(failures ? `\n${failures} failure(s)` : `\nall checks passed (TypeScript ${ts.version})`);

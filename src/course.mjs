@@ -1,6 +1,79 @@
-// The course: modules in order, the lessons in each (by id, from lesson-list.mjs), and each
-// module's knowledge check (2 to 4 questions). Lesson numbers (2.1, 2.2…) come from positions here,
-// so they are never written anywhere else. tools/check-lessons.mjs checks every reference.
+// The course: chapters, the modules in each, the lessons in each module (by id, from
+// lesson-list.mjs), and each module's knowledge check (2 to 4 questions).
+//
+// Numbers come from positions here, so they are never written anywhere else (tools/check-lessons.mjs
+// checks every reference). A chapter's number is its place in `chapters`, from 1. Module numbers run
+// on across chapters, from 0, so a lesson keeps one number for good: Chapter 1 has modules 0 to 5,
+// Chapter 2 starts at module 6 (lesson 6.1). Adding a chapter never moves an earlier number, a link
+// such as #failure/9, or the progress kept in the browser (stored by lesson and module id).
+//
+// A chapter:
+//   id       stable, used in links and progress
+//   title    short, sentence case
+//   goal     one line, what the learner can do after it
+//   builds   ids of earlier chapters it starts from (its project starts where they end)
+//   modules  a live chapter: module ids, in order (every module is in exactly one chapter, in order)
+//   coming   a chapter not built yet: planned lesson titles, shown muted with no numbers or links
+export const chapters = [
+  {
+    id: 'model-app',
+    title: 'An app on a semantic model',
+    goal: 'From an empty folder to a report page on a semantic model, and a review of an agent\'s page.',
+    builds: [],
+    modules: ['start', 'setup', 'build', 'data', 'interact', 'own'],
+  },
+  {
+    id: 'lakehouse',
+    title: 'Read a lakehouse',
+    goal: 'Read typed rows from a lakehouse, and know which numbers belong to the model.',
+    builds: ['model-app'],
+    modules: ['lake-connect', 'lake-rows'],
+  },
+  {
+    id: 'own-data',
+    title: 'Store your own data',
+    goal: 'Give the app a database of its own: model sales targets, apply the schema, read and write them.',
+    builds: ['lakehouse'],
+    coming: ['Turn on the data service', 'Model a sales target', 'Register and apply', 'Read and write targets', 'Change the model'],
+  },
+  {
+    id: 'who',
+    title: 'Who is using it',
+    goal: 'Sign-in, claims and policies: who sees and changes which targets, and whose identity each call runs as.',
+    builds: ['own-data'],
+    coming: ['Signed in as', 'My rows only', 'Two identities', 'Roles the business knows', 'Each country, its own targets'],
+  },
+  {
+    id: 'approvals',
+    title: 'Approvals',
+    goal: 'A change request one person proposes and another approves, and the approved value written where Power BI can read it.',
+    builds: ['who'],
+    coming: ['A change request', 'Requester and approver', 'Apply the approved value', 'Where each record lives', 'Review the agent\'s approval page'],
+  },
+  {
+    id: 'files',
+    title: 'Files, two ways',
+    goal: 'Upload and manage files in the app\'s own storage, or write them to a lakehouse from a function.',
+    builds: ['who'],
+    coming: ['A folder in the app', 'When an upload fails', 'A file into a lakehouse', 'Which one, when'],
+  },
+  {
+    id: 'ask',
+    title: 'Ask in plain words',
+    goal: 'Questions about Power BI data in plain words: Fabric IQ as the signed-in user, a data agent as the app.',
+    builds: ['who'],
+    coming: ['Ask Fabric IQ', 'A conversation', 'A data agent from a function', 'Whose answer is it'],
+  },
+  {
+    id: 'ship',
+    title: 'Ship it',
+    goal: 'Environments, deployment pipelines, and tests that run without Fabric.',
+    builds: ['approvals'],
+    coming: ['Dev, test and prod', 'Promote with a pipeline', 'Tests without Fabric', 'Ready to share'],
+  },
+];
+
+// The modules, in course order: every live chapter's modules, one after the other.
 //
 // A check question:
 //   q        the question (same formatting as lesson text)
@@ -180,6 +253,79 @@ export const modules = [
         why: 'Semantic model connectors use delegated access only: each query runs as the person signed in, so each user needs Build and Read permission on the model.',
         lesson: 'to-fabric',
         step: 2,
+      },
+    ],
+  },
+  // ================================================================== Chapter 2: Read a lakehouse
+  {
+    id: 'lake-connect',
+    title: 'Connect a lakehouse',
+    goal: 'Add a read-only lakehouse connector, and turn its tables into typed entities.',
+    lessons: ['lakehouse-connector', 'lakehouse-entities'],
+    check: [
+      {
+        q: 'What does `connector add --type fabric-sqlanalytics` write?',
+        options: ['A `rayfin.yml` entry, `metadata.json` and a placeholder schema', 'One entity file for every table it found', 'The packages, and the wiring in the client'],
+        answer: 0,
+        why: 'For a SQL source it discovers the tables and columns, and stops there: the entity files are ours (or an agent\'s) to write, and the install is the line it prints.',
+        lesson: 'lakehouse-connector',
+        step: 2,
+      },
+      {
+        q: 'The metadata has no primary key for `store`. What goes in `Source`?',
+        options: ['`primaryKey: []`', '`primaryKey: [\'storeKey\']`', '`primaryKey: [\'id\']`'],
+        answer: 0,
+        why: 'Never invent a key from column names: the entity is keyless, so it has no `findByKey`, `update` or `delete`.',
+        lesson: 'lakehouse-entities',
+        step: 3,
+      },
+      {
+        q: 'Both tables have a `storeKey` column. Does the generated `Sales` get a relationship to `Store`?',
+        options: ['No: relationships come only from foreign keys in the metadata', 'Yes: matching column names make one', 'Yes, once both entities are in `schema.ts`'],
+        answer: 0,
+        why: 'The metadata has no foreign keys, so there is no relationship. To combine the tables, the app joins them itself.',
+        lesson: 'lakehouse-entities',
+        step: 5,
+      },
+    ],
+  },
+  {
+    id: 'lake-rows',
+    title: 'Rows, not measures',
+    goal: 'Read lakehouse rows on a page, keep totals in the model, and know whose identity each read uses.',
+    lessons: ['lakehouse-rows', 'rows-or-measures', 'who-runs-it'],
+    check: [
+      {
+        q: 'What does the lakehouse connector need in `connectorsService`?',
+        options: ['An entry in `configs` only', 'An entry in `configs` and one in `runtime`', 'An entry in `runtime` only'],
+        answer: 0,
+        why: '`runtime` is for connectors that run a request on the server, such as the semantic model. A lakehouse connector needs its configuration only.',
+        lesson: 'lakehouse-rows',
+        step: 3,
+      },
+      {
+        q: '`Sales.select([...]).where(...).execute()` matches 5,000 rows. What comes back?',
+        options: ['The first 100, with no warning', 'All 5,000 rows', 'An error asking for paging'],
+        answer: 0,
+        why: '`execute()` returns one page, 100 rows by default. Page through with `executePaginated()`, or take totals from the model.',
+        lesson: 'rows-or-measures',
+        step: 4,
+      },
+      {
+        q: 'Who does a lakehouse query run as, by default?',
+        options: ['The owner of the app', 'The person using the app', 'The developer who added it'],
+        answer: 0,
+        why: '`connector add` writes `auth` of type `application` for SQL sources. Choose `delegated` for per-user access.',
+        lesson: 'who-runs-it',
+        step: 1,
+      },
+      {
+        q: 'The page calls `Sales.create(...)` on the lakehouse connector. What happens?',
+        options: ['A red line: there is no `create`', 'A new row in the lakehouse', 'A row only in the browser'],
+        answer: 0,
+        why: 'The connector\'s operations are `read` only, so its type has no write methods; at run time the client refuses too.',
+        lesson: 'who-runs-it',
+        step: 4,
       },
     ],
   },

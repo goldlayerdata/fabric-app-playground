@@ -634,3 +634,219 @@ DEFINE
 EVALUATE
 ROW ( "Margin %", [App Margin %] )
 \`;`;
+
+// ================================================================== Chapter 2: Read a lakehouse
+// ---------------------------------------------------------------- entities and the connector schema
+// Written from metadata.json by the rules on rayfin.ai (Generating entity files): camelCase properties,
+// `column:` when the SQL name differs, the decorator from the SQL type, `max` from maxLength, and
+// `primaryKey: []` because the metadata has no primary key. Only the columns the app needs (Microsoft Learn).
+export const STORE_IMPORTS = `import { entity, int, text } from '@microsoft/rayfin-core';
+import { role } from '@microsoft/rayfin-core';
+import { Source } from '@microsoft/rayfin-connectors';
+`;
+
+export const STORE_CLASS = `
+@role('authenticated', ['read'])
+@entity()
+export class Store extends Source({ schema: 'dbo', table: 'store', primaryKey: [] }) {
+  @int({ column: 'StoreKey' })
+  storeKey!: number;
+
+  @text({ column: 'CountryName', max: 8000 })
+  countryName!: string;
+}
+`;
+
+// The file the "agent" writes.
+export const SALES_ENTITY = `import { entity, date, decimal, int } from '@microsoft/rayfin-core';
+import { role } from '@microsoft/rayfin-core';
+import { Source } from '@microsoft/rayfin-connectors';
+
+@role('authenticated', ['read'])
+@entity()
+export class Sales extends Source({ schema: 'dbo', table: 'sales', primaryKey: [] }) {
+  @int({ column: 'OrderKey' })
+  orderKey!: number;
+
+  @int({ column: 'LineNumber' })
+  lineNumber!: number;
+
+  @date({ column: 'OrderDate' })
+  orderDate!: Date;
+
+  @int({ column: 'StoreKey' })
+  storeKey!: number;
+
+  @int({ column: 'Quantity' })
+  quantity!: number;
+
+  @decimal({ column: 'NetPrice', precision: 19, scale: 4 })
+  netPrice!: number;
+}
+`;
+
+export const LAKE_SCHEMA = `import type { GraphQLBackedConnector } from '@microsoft/rayfin-connector-fabric-graphql';
+import type { ConnectorConfig } from '@microsoft/rayfin-connectors';
+
+import type { Sales } from './Sales.js';
+import type { Store } from './Store.js';
+
+export type { Sales } from './Sales.js';
+export type { Store } from './Store.js';
+
+export const connectorConfig = {
+  connector: 'fabric-sqlanalytics',
+  operations: ['read'],
+  entities: {
+    Sales: ['orderKey', 'lineNumber', 'orderDate', 'storeKey', 'quantity', 'netPrice'],
+    Store: ['storeKey', 'countryName'],
+  },
+} as const satisfies ConnectorConfig;
+
+export type LakeSchema = GraphQLBackedConnector<
+  { Sales: typeof Sales; Store: typeof Store },
+  typeof connectorConfig
+>;
+`;
+
+// ---------------------------------------------------------------- rows on a page
+export const LAKE_HOOK = `import { useEffect, useState } from 'react';
+
+export type Loaded<T> =
+  | { status: 'loading' }
+  | { status: 'success'; value: T }
+  | { status: 'error'; message: string };
+
+// Runs \`load\` again only when \`key\` changes, like useDax with its query text.
+export function useLoad<T>(load: () => Promise<T>, key: string): Loaded<T> {
+  const [state, setState] = useState<Loaded<T>>({ status: 'loading' });
+  useEffect(() => {
+    let live = true;
+    setState({ status: 'loading' });
+    load()
+      .then((value) => live && setState({ status: 'success', value }))
+      .catch((e: unknown) => live && setState({ status: 'error', message: e instanceof Error ? e.message : String(e) }));
+    return () => {
+      live = false;
+    };
+  }, [key]);
+  return state;
+}
+`;
+
+export const LAKE_QUERIES = `
+// ------------------------------------------------------------ lakehouse queries
+import { rayfinClient } from './services/rayfinClient';
+
+export async function storeKeysIn(country: string) {
+  const stores = await rayfinClient.connectors.lake.Store
+    .select(['storeKey'])
+    .where({ countryName: { eq: country } })
+    .execute();
+  return stores.map((s) => s.storeKey);
+}
+
+export function latestLines(storeKeys: number[]) {
+  return rayfinClient.connectors.lake.Sales
+    .select(['orderKey', 'lineNumber', 'orderDate', 'quantity', 'netPrice'])
+    .where({ storeKey: { in: storeKeys } })
+    .orderBy({ orderDate: 'desc' })
+    .first(20)
+    .execute();
+}
+`;
+
+export const LINES_DATE = "{new Date(line.orderDate).toLocaleDateString('en-US', { timeZone: 'UTC' })}";
+export const LINES_DATE_SLIP = "{line.orderDate.toLocaleDateString('en-US', { timeZone: 'UTC' })}";
+
+export const LINES_PAGE = `import { ErrorPanel } from './components';
+import { latestLines, storeKeysIn, useLoad } from './lake';
+
+// The order lines behind a country's number: the latest 20, newest first.
+export default function LinesPage() {
+  const country = 'France';
+  const lines = useLoad(async () => latestLines(await storeKeysIn(country)), country);
+
+  if (lines.status === 'loading') return <p className="p-4">Loading…</p>;
+  if (lines.status === 'error') return <ErrorPanel message={lines.message} />;
+
+  return (
+    <div className="mx-auto aspect-video w-full max-w-6xl grid grid-cols-12 grid-rows-6 gap-4 p-4">
+      <header className="col-span-12 row-span-1">
+        <h1 className="text-2xl font-bold">Order lines: {country}</h1>
+        <p className="text-sm text-gray-500">From the lakehouse, which holds 2023 only.</p>
+      </header>
+      <section className="col-span-8 row-span-5 overflow-auto rounded-lg border border-gray-200 bg-white p-4">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-gray-500">
+              <th>Order date</th>
+              <th>Order</th>
+              <th className="text-right">Quantity</th>
+              <th className="text-right">Net price</th>
+              <th className="text-right">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {lines.value.map((line) => (
+              <tr key={\`\${line.orderKey}-\${line.lineNumber}\`} className="border-t border-gray-100">
+                <td>${LINES_DATE}</td>
+                <td>{line.orderKey}</td>
+                <td className="text-right">{line.quantity}</td>
+                <td className="text-right">{line.netPrice.toFixed(2)}</td>
+                <td className="text-right">{(line.quantity * line.netPrice).toFixed(2)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+    </div>
+  );
+}
+`;
+
+// ---------------------------------------------------------------- rows or measures
+export const REVENUE_ONE_PAGE = `
+export async function revenueFromLines(storeKeys: number[]) {
+  const lines = await rayfinClient.connectors.lake.Sales
+    .select(['quantity', 'netPrice'])
+    .where({ storeKey: { in: storeKeys } })
+    .execute();
+  return lines.reduce((sum, l) => sum + l.quantity * l.netPrice, 0);
+}
+`;
+
+export const REVENUE_PAGED = `
+// Every matching line, page by page (execute() alone stops at one page), then the sum.
+export async function revenueFromLines(storeKeys: number[]) {
+  const query = rayfinClient.connectors.lake.Sales
+    .select(['quantity', 'netPrice'])
+    .where({ storeKey: { in: storeKeys } })
+    .orderBy({ orderKey: 'asc', lineNumber: 'asc' })
+    .first(100);
+  let page = await query.executePaginated();
+  const lines = [...page.items];
+  while (page.hasNextPage && page.endCursor) {
+    page = await query.after(page.endCursor).executePaginated();
+    lines.push(...page.items);
+  }
+  return lines.reduce((sum, l) => sum + l.quantity * l.netPrice, 0);
+}
+`;
+
+export const REVENUE_HOOK = "  const revenue = useLoad(async () => revenueFromLines(await storeKeysIn(country)), country);\n";
+
+export const REVENUE_CARD = `      <div className="col-span-4 row-span-2">
+        <KpiCard title="Revenue (from lines)" value={revenue.status === 'success' ? revenue.value : 0} />
+      </div>
+`;
+
+// ---------------------------------------------------------------- who runs this query
+export const ADD_LINE = `
+// A slip on purpose: write a row through the lakehouse connector.
+export function addLine() {
+  return rayfinClient.connectors.lake.Sales.create({
+    orderKey: 1, lineNumber: 0, orderDate: new Date(), storeKey: 120, quantity: 1, netPrice: 6.293,
+  });
+}
+`;
