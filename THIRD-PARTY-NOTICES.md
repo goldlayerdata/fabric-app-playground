@@ -9,12 +9,13 @@ The Gold Layer page playground is unofficial and not affiliated with Microsoft. 
 | Tailwind CSS, in-browser build (`@tailwindcss/browser`) | 4.3.4 | MIT | Tailwind Labs, Inc. |
 | React type definitions (`@types/react`) | 19.3.0 | MIT | Microsoft Corporation |
 | csstype | 3.2.4 | MIT | Fredrik Nicol |
-| Type subsets adapted from `@microsoft/rayfin-connector-fabric-semanticmodel`, `@microsoft/rayfin-connectors`, `@microsoft/rayfin-client`, `@microsoft/rayfin-lib`, `@microsoft/rayfin-auth` (in `src/editor-types/packages/`) | 2.0.0 | MIT | Microsoft Corporation |
+| Type subsets adapted from `@microsoft/rayfin-connector-fabric-semanticmodel`, `@microsoft/rayfin-connector-fabric-graphql`, `@microsoft/rayfin-connectors`, `@microsoft/rayfin-core`, `@microsoft/rayfin-data`, `@microsoft/rayfin-client`, `@microsoft/rayfin-lib`, `@microsoft/rayfin-auth` (in `src/editor-types/packages/`) | 2.0.0 | MIT | Microsoft Corporation |
+| The placeholder `schema.ts` and the messages of `connector add` for an entity connector, from `@microsoft/rayfin-cli` (dist/commands/connector/connector-add.js, dist/services/connector-schema-discovery.js), and the read gating messages of `@microsoft/rayfin-connectors` (in `src/project.mjs`, `src/runtime.tsx`) | 2.0.0 | MIT | Microsoft Corporation |
 | Data app template files the simulated terminal writes (`package.json` scripts and dependencies, `rayfin/rayfin.yml`, `src/vite-env.d.ts`), from `@microsoft/rayfin-cli` templates/data-app (in `src/project.mjs`) | 2.0.0 | MIT | Microsoft Corporation |
 | Figtree font (`@fontsource/figtree`) | 5.3.0 | SIL Open Font License 1.1 | The Figtree Project Authors |
 | IBM Plex Mono font (`@fontsource/ibm-plex-mono`) | 5.3.0 | SIL Open Font License 1.1 | IBM Corp. |
 
-**Data.** The query results are aggregates from a Contoso sample model built with the [SQLBI Contoso Data Generator V2](https://github.com/sql-bi/Contoso-Data-Generator-V2) (MIT, © SQLBI).
+**Data.** The query results are aggregates from a Contoso sample model built with the [SQLBI Contoso Data Generator V2](https://github.com/sql-bi/Contoso-Data-Generator-V2) (MIT, © SQLBI). The lakehouse rows (`data/lakehouse.json`: every store, and the sales lines of the stores in France in 2023) come from the same generated Contoso files (MIT, © SQLBI).
 
 ## MIT License (applies to each MIT component above, with its own copyright line)
 

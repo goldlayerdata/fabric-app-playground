@@ -397,6 +397,13 @@ export function connectorType(p, name) {
   return yml.match(new RegExp(`^  - name: ${name}\\n    type: (\\S+)$`, 'm'))?.[1];
 }
 
+/** A connector's `auth.type` in rayfin.yml: `delegated` or `application`. */
+export function connectorAuth(p, name) {
+  const yml = p.files['rayfin/rayfin.yml'] ?? '';
+  const entry = yml.split(/^ {2}- name: /m).find((e) => e.startsWith(`${name}\n`)) ?? '';
+  return entry.match(/^ {4}auth:\n {6}type: (\S+)$/m)?.[1];
+}
+
 /** The connector-type catalog of Rayfin CLI 2.0.0, for the two types simulated here (rayfin-tools-common config/connectors.js). */
 const CATALOG = {
   'fabric-sqlanalytics': { allowedOperations: ['read'], defaultAuth: 'application', allowedAuthTypes: ['delegated', 'application'] },

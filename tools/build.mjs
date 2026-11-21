@@ -30,6 +30,11 @@ const editorLibsPlugin = {
         '@microsoft/rayfin-connector-fabric-semanticmodel': {
           'playground-types/rayfin-connector-fabric-semanticmodel.d.ts': pkgTypes('rayfin-connector-fabric-semanticmodel.d.ts'),
         },
+        '@microsoft/rayfin-core': { 'playground-types/rayfin-core.d.ts': pkgTypes('rayfin-core.d.ts') },
+        '@microsoft/rayfin-data': { 'playground-types/rayfin-data.d.ts': pkgTypes('rayfin-data.d.ts') },
+        '@microsoft/rayfin-connector-fabric-graphql': {
+          'playground-types/rayfin-connector-fabric-graphql.d.ts': pkgTypes('rayfin-connector-fabric-graphql.d.ts'),
+        },
         vite: { 'node_modules/vite/client.d.ts': pkgTypes('vite-client.d.ts') },
       };
       const read = (map) => Object.fromEntries(Object.entries(map).map(([k, f]) => [k, readFileSync(f, 'utf8')]));

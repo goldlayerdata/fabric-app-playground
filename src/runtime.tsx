@@ -61,10 +61,16 @@ function makePackages(run: RunMessage): Record<string, unknown> {
   };
 
   const rayfinConnectors = {
-    connectorsService(options: { configs?: Record<string, { connector?: string }>; runtime?: Record<string, Record<symbol, unknown>> }) {
+    // Simulated: the real Source() stores the schema, table and key on the class for @entity() to read.
+    Source: () => class {},
+    connectorsService(options: { configs?: Record<string, ConnectorConfigLike>; runtime?: Record<string, Record<symbol, unknown>> }) {
       return () => {
         const api: Record<string, unknown> = {};
         for (const [name, config] of Object.entries(options?.configs ?? {})) {
+          if (ENTITY_CONNECTORS.includes(String(config?.connector))) {
+            api[name] = entityConnector(run, name, config);
+            continue;
+          }
           api[name] = {
             // Simulated: the course never uses `connection`. A real semantic model connector is
             // delegated, so its status comes from the signed-in user's connection.
@@ -100,6 +106,10 @@ function makePackages(run: RunMessage): Record<string, unknown> {
     },
   };
 
+  // Decorators record metadata for the Rayfin CLI; in the page they change nothing, so here they do nothing.
+  const decorator = () => () => undefined;
+  const rayfinCore = { entity: decorator, role: decorator, int: decorator, decimal: decorator, text: decorator, date: decorator };
+
   return {
     react: React,
     'react/jsx-runtime': jsxRuntime,
@@ -107,6 +117,102 @@ function makePackages(run: RunMessage): Record<string, unknown> {
     '@microsoft/rayfin-auth': rayfinAuth,
     '@microsoft/rayfin-connectors': rayfinConnectors,
     '@microsoft/rayfin-connector-fabric-semanticmodel': connectorPackage,
+    '@microsoft/rayfin-core': rayfinCore,
+    // Types only: the package has no runtime code.
+    '@microsoft/rayfin-connector-fabric-graphql': {},
+    '@microsoft/rayfin-data': {},
+  };
+}
+
+// ---------------------------------------------------------------- simulated entity connectors (Category A)
+type ConnectorConfigLike = { connector?: string; operations?: readonly string[]; entities?: Record<string, unknown> };
+const ENTITY_CONNECTORS = ['fabric-sqlanalytics', 'fabric-warehouse', 'fabric-sqldatabase'];
+
+// @microsoft/rayfin-connectors 2.0.0: the methods each operation allows (ConnectorsSchema METHODS_FOR_CRUD_OPERATION).
+const METHODS_FOR_CRUD_OPERATION: Record<string, string[]> = {
+  read: ['select', 'where', 'orderBy', 'first', 'groupBy', 'aggregate', 'findMany', 'findFirst', 'findByKey'],
+  create: ['create'],
+  update: ['update'],
+  delete: ['delete'],
+};
+
+/** The real client's error class name and code (rayfin-connectors ConnectorsError). */
+function connectorsError(message: string, code: string) {
+  const e = new Error(message) as Error & { code: string };
+  e.name = 'ConnectorsError';
+  e.code = code;
+  return e;
+}
+
+type ReadState = { select?: string[]; where?: unknown; orderBy?: Record<string, string>; first?: number; after?: string };
+
+/** `client.connectors.<name>`: one client per entity, reached by name, gated by the connector's operations. */
+function entityConnector(run: RunMessage, name: string, config: ConnectorConfigLike) {
+  const disallowed = new Set<string>();
+  if (config.operations) {
+    for (const [verb, methods] of Object.entries(METHODS_FOR_CRUD_OPERATION)) {
+      if (!config.operations.includes(verb)) methods.forEach((m) => disallowed.add(m));
+    }
+  }
+  const cache = new Map<string, unknown>();
+  return new Proxy(
+    {},
+    {
+      get(_target, entity) {
+        if (typeof entity !== 'string' || entity === 'then') return undefined;
+        if (!cache.has(entity)) cache.set(entity, gate(entityClient(run, name, entity, config), name, entity, disallowed));
+        return cache.get(entity);
+      },
+    },
+  );
+}
+
+function gate(client: Record<string, unknown>, name: string, entity: string, disallowed: Set<string>) {
+  return new Proxy(client, {
+    get(target, prop, receiver) {
+      if (typeof prop === 'string' && disallowed.has(prop)) {
+        return () => {
+          throw connectorsError(`Operation "${prop}" on connector "${name}" entity "${entity}" is not in the connector's allowed operations.`, 'OPERATION_NOT_ALLOWED');
+        };
+      }
+      return Reflect.get(target, prop, receiver);
+    },
+  });
+}
+
+function entityClient(run: RunMessage, name: string, entity: string, config: ConnectorConfigLike): Record<string, unknown> {
+  const send = (state: ReadState, kind: 'execute' | 'paged' | 'first'): Promise<unknown> => {
+    if (!run.connectors.includes(name)) {
+      return Promise.reject(simulated(`rayfin/rayfin.yml has no connector named "${name}" (it has: ${run.connectors.join(', ') || 'none'}).`));
+    }
+    if (!state.select?.length) return Promise.reject(connectorsError('A read requires an explicit .select([...]).', 'SELECTION_REQUIRED'));
+    const id = nextQueryId++;
+    post({ type: 'read', runId: currentRun, id, connector: name, entity, kind, state });
+    return new Promise((resolve, reject) => pending.set(id, { resolve, reject }));
+  };
+  const builder = (state: ReadState): Record<string, unknown> => ({
+    select: (fields: string[]) => builder({ ...state, select: [...fields] }),
+    where: (where: unknown) => builder({ ...state, where }),
+    orderBy: (orderBy: Record<string, string>) => builder({ ...state, orderBy }),
+    first: (first: number) => builder({ ...state, first }),
+    after: (after: string) => builder({ ...state, after }),
+    execute: () => send(state, 'execute'),
+    executePaginated: () => send(state, 'paged'),
+    findFirst: () => send({ ...state, first: 1 }, 'first'),
+  });
+  // Reads without a selection use the connector's registered columns, when it lists them.
+  const registered = () => (Array.isArray(config.entities?.[entity]) ? [...(config.entities![entity] as string[])] : undefined);
+  const notSimulated = (what: string) => () => Promise.reject(simulated(`${what} is not simulated here: the lakehouse connector only reads.`));
+  return {
+    ...builder({}),
+    findMany: (fields?: unknown, filter?: unknown) =>
+      Array.isArray(fields) ? send({ select: fields, where: filter }, 'execute') : send({ select: registered(), where: fields }, 'execute'),
+    findFirst: (fields?: unknown, filter?: unknown) =>
+      Array.isArray(fields) ? send({ select: fields, where: filter, first: 1 }, 'first') : send({ select: registered(), where: fields, first: 1 }, 'first'),
+    findByKey: () => Promise.reject(simulated(`${entity} has no primary key here, so it has no findByKey.`)),
+    create: notSimulated('create'),
+    update: notSimulated('update'),
+    delete: notSimulated('delete'),
   };
 }
 

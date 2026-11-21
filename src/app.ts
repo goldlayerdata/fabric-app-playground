@@ -1,15 +1,16 @@
 import './app.css';
 import * as monaco from './monaco.js';
 import { lessons } from './lesson-list.mjs';
-import { modules } from './course.mjs';
+import { chapters, modules } from './course.mjs';
 import { terms, help } from './terms.mjs';
 import editorLibs from 'virtual:editor-libs';
-import { answer, entries, savedResult, snapshotsTakenAt, type Answer, type Mode } from './stand-in';
+import { answer, entries, readLakehouse, savedResult, snapshotsTakenAt, type Answer, type Mode, type ReadAnswer, type ReadRequest } from './stand-in';
 import {
   PAGE_FILE,
   SIMULATED_ENV,
   applyFileEdits,
   checkpoint,
+  connectorAuth,
   connectorNames,
   emptyProject,
   isGenerated,
@@ -45,6 +46,7 @@ type Lesson = {
 };
 type Question = { q: string; options: string[]; answer: number; why: string; lesson: string; step: number };
 type Module = { id: string; title: string; goal: string; lessons: string[]; check?: Question[] };
+type Chapter = { id: string; title: string; goal: string; builds: string[]; modules?: string[]; coming?: string[] };
 type Project = { cwd: string | null; appDir: string | null; files: Record<string, string>; packages: string[]; dev: boolean; history: string[] };
 
 // ---------------------------------------------------------------- settings
@@ -55,7 +57,7 @@ const QUERY_DELAY_MS: [number, number] = [250, 600]; // simulated round trip
 const CUTOFF = { queries: 20, withinMs: 10_000 };
 
 // ---------------------------------------------------------------- the course
-const course = modules as Module[];
+const course = modules as Module[]; // in course order: the live chapters' modules, one chapter after another
 const byId = new Map((lessons as Lesson[]).map((l) => [l.id, l]));
 /** Every lesson, in course order. */
 const order: Lesson[] = course.flatMap((m) => m.lessons.map((id) => byId.get(id)!));
@@ -66,6 +68,13 @@ function num(l: Lesson) {
   return `${course.indexOf(m)}.${m.lessons.indexOf(l.id) + 1}`;
 }
 const termById = new Map(terms.map((t) => [t.id, t]));
+
+// Chapters group the modules; module numbers run on across chapters (see course.mjs).
+const chapterList = chapters as Chapter[];
+const chapterOf = (l: Lesson) => chapterList.find((c) => c.modules?.includes(moduleOf(l).id))!;
+const chapterNum = (c: Chapter) => chapterList.indexOf(c) + 1;
+const modulesOf = (c: Chapter) => (c.modules ?? []).map((id) => course.find((m) => m.id === id)!);
+const lessonsOf = (c: Chapter) => modulesOf(c).flatMap((m) => m.lessons.map((id) => byId.get(id)!));
 
 // ---------------------------------------------------------------- small helpers
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -596,10 +605,47 @@ function renderCheck() {
 
 // ---------------------------------------------------------------- course drawer
 function renderCourseButton() {
-  const done = order.filter(progress.done).length;
+  const chapter = chapterOf(lesson);
+  const list = lessonsOf(chapter);
+  const done = list.filter(progress.done).length;
   $('course-where').textContent = check ? `${course.indexOf(check)} · Check your knowledge` : `${num(lesson)} ${lesson.title}`;
-  $('course-count').textContent = `${done} of ${order.length} lessons`;
-  ($('course-bar').firstElementChild as HTMLElement).style.width = `${(done / order.length) * 100}%`;
+  $('course-count').textContent = `Chapter ${chapterNum(chapter)} · ${done} of ${list.length} lessons`;
+  ($('course-bar').firstElementChild as HTMLElement).style.width = `${(done / list.length) * 100}%`;
+}
+
+/** A chapter's state, computed from progress: never stored. */
+function chapterState(c: Chapter): { key: 'done' | 'progress' | 'new' | 'coming'; label: string } {
+  if (!c.modules) return { key: 'coming', label: 'Coming soon' };
+  const list = lessonsOf(c);
+  const done = list.filter(progress.done).length;
+  if (done === list.length) return { key: 'done', label: 'Done ✓' };
+  if (list.some(progress.started)) return { key: 'progress', label: `In progress · ${done} of ${list.length}` };
+  return { key: 'new', label: 'Not started' };
+}
+
+/** Open a chapter: the first lesson not done. A chapter not started yet starts from its checkpoint (Undo is offered). */
+function openChapter(c: Chapter) {
+  const list = lessonsOf(c);
+  const target = list.find((l) => !progress.done(l)) ?? list[0];
+  closeCourse();
+  if (chapterState(c).key === 'new') {
+    replaceProject(checkpointOf(list[0]), `Started ${c.title}: the project as the chapter begins.`);
+    store.set(`keep:${list[0].id}`, null);
+  }
+  location.hash = `#${target.id}`;
+  hideSplash();
+}
+
+/** A chapter's open/start button, for the splash and the drawer. */
+function chapterButton(c: Chapter) {
+  const state = chapterState(c).key;
+  const b = h(
+    'button',
+    { type: 'button', class: 'link-btn', title: state === 'new' ? 'Builds the project as this chapter begins (every earlier step done). Undo is offered.' : undefined },
+    state === 'new' ? 'Start this chapter →' : 'Open this chapter →',
+  );
+  b.addEventListener('click', () => openChapter(c));
+  return b;
 }
 
 function renderCourse() {
@@ -614,17 +660,38 @@ function renderCourse() {
     closeCourse();
     restartCourse();
   });
+  const live = chapterList.filter((c) => c.modules);
   body.replaceChildren(
     h(
       'p',
       { class: 'muted' },
-      `${order.length} lessons in ${course.length} modules, one step at a time, building one app. Progress and the project are kept in this browser only.`,
+      `${order.length} lessons in ${live.length} chapters so far, one step at a time, building one app. Progress and the project are kept in this browser only.`,
     ),
     resume
       ? h('a', { class: 'next resume', href: `#${resume.id}` }, `${progress.started(resume) ? 'Continue' : 'Start'}: ${num(resume)} ${resume.title} →`)
       : h('p', { class: 'ok' }, 'Every lesson done.'),
   );
-  for (const [mi, m] of course.entries()) {
+  for (const c of chapterList) {
+    const state = chapterState(c);
+    const head = h(
+      'div',
+      { class: `chapter-head${state.key === 'coming' ? ' coming' : ''}` },
+      h('h3', {}, h('span', { class: 'num' }, `Chapter ${chapterNum(c)}`), c.title),
+      h('span', { class: `chip ${state.key}` }, state.label),
+    );
+    if (!c.modules) {
+      body.append(h('section', { class: 'chapter coming' }, head, h('p', { class: 'muted' }, c.goal)));
+      continue;
+    }
+    body.append(h('section', { class: 'chapter' }, head, h('p', { class: 'muted' }, c.goal), c !== chapterOf(lesson) ? h('p', {}, chapterButton(c)) : null));
+    for (const m of modulesOf(c)) renderModule(body, m, course.indexOf(m));
+  }
+  body.append(h('p', { class: 'start-over' }, startOver));
+}
+
+/** One module in the course drawer: its lessons and its knowledge check. */
+function renderModule(body: HTMLElement, m: Module, mi: number) {
+  {
     const list = h('ul', {});
     for (const id of m.lessons) {
       const l = byId.get(id)!;
@@ -663,7 +730,6 @@ function renderCourse() {
       h('section', { class: 'mod' }, h('h3', {}, h('span', { class: 'num' }, `Module ${mi}`), m.title), h('p', { class: 'muted' }, m.goal), list),
     );
   }
-  body.append(h('p', { class: 'start-over' }, startOver));
 }
 
 function openCourse() {
@@ -1224,24 +1290,53 @@ window.addEventListener('message', (e: MessageEvent) => {
   if (msg.type === 'runtimeError') showError(`The page threw an error:\n${msg.message}`);
   if (msg.type === 'empty') showIdle('No page yet: `src/App.tsx` is empty.');
   if (msg.type === 'query' && msg.runId === runId) onQuery(msg.runId, msg.id, String(msg.query), msg.limit);
+  if (msg.type === 'read' && msg.runId === runId) onRead(msg.runId, msg.id, msg as ReadRequest);
 });
 
-function onQuery(forRun: number, id: number, query: string, limit: unknown) {
+/** Count a query or read against the cut-off; false when the page was stopped. */
+function countQuery() {
   const now = performance.now();
   queryTimes = queryTimes.filter((t) => now - t < CUTOFF.withinMs);
   queryTimes.push(now);
   runQueries++;
   showRunning();
-  const started = new Date();
-  const result = answer(query, limit, mode);
-  const row = logQuery(started, query, result);
   if (queryTimes.length > CUTOFF.queries) {
     stop(
       `Stopped: the page sent more than ${CUTOFF.queries} queries in ${CUTOFF.withinMs / 1000} seconds. ` +
-        'Something is running the query again on every redraw. In a real app, each of those is a query against the model.',
+        'Something is running the query again on every redraw. In a real app, each of those is a query against the model or the lakehouse.',
     );
-    return;
+    return false;
   }
+  return true;
+}
+
+/** Simulated identity, from the connector's `auth` in rayfin.yml (a real app doesn't print it). */
+function runsAs(connector: string) {
+  const auth = connectorAuth(project, connector);
+  if (auth === 'delegated') return 'runs as: the signed-in user (delegated)';
+  if (auth === 'application') return 'runs as: the app owner (application)';
+  return '';
+}
+
+/** A read from an entity connector (the lakehouse), answered from its table after a short delay. */
+function onRead(forRun: number, id: number, req: ReadRequest) {
+  const started = new Date();
+  const a = readLakehouse(req, mode);
+  const row = logRead(started, req, a);
+  if (!countQuery()) return;
+  const delay = QUERY_DELAY_MS[0] + Math.random() * (QUERY_DELAY_MS[1] - QUERY_DELAY_MS[0]);
+  window.setTimeout(() => {
+    if (forRun !== runId) return;
+    row.setDuration(Math.round(delay));
+    toFrame({ type: 'queryResult', runId: forRun, id, result: a.result, thrown: a.thrown });
+  }, delay);
+}
+
+function onQuery(forRun: number, id: number, query: string, limit: unknown) {
+  const started = new Date();
+  const result = answer(query, limit, mode);
+  const row = logQuery(started, query, result);
+  if (!countQuery()) return;
   const delay = QUERY_DELAY_MS[0] + Math.random() * (QUERY_DELAY_MS[1] - QUERY_DELAY_MS[0]);
   window.setTimeout(() => {
     if (forRun !== runId) return;
@@ -1299,6 +1394,9 @@ function submitCommand(line: string) {
   if (filesChanged) {
     syncModels();
     if (!activeFile && project.files[PAGE_FILE] !== undefined) openFile(PAGE_FILE);
+    // A command that rewrote a file we wrote ourselves (such as `connector add --yes` on schema.ts) can be undone.
+    const rewritten = Object.keys(before.files).filter((f) => before.files[f] !== project.files[f] && !isGenerated(f, before.files[f]));
+    if (rewritten.length) showUndo(`The command rewrote ${rewritten.join(', ')}.`, () => replaceProject(before, 'Undone.'));
   } else {
     updateLibs();
   }
@@ -1385,10 +1483,43 @@ function logQuery(at: Date, query: string, a: Answer) {
       h(
         'div',
         { class: 'log-detail' },
-        h('div', { class: 'muted' }, 'Query sent'),
+        h('div', { class: 'muted' }, `Query sent${runsAs('contoso') ? ` · ${runsAs('contoso')}` : ''}`),
         h('pre', { class: 'dax' }, query.trim()),
         h('div', { class: 'muted' }, a.thrown ? 'The call threw' : 'Result (what executeQuery returned)'),
         h('pre', { class: 'json' }, JSON.stringify(shown, null, 2)),
+      ),
+    );
+  });
+  const firstRun = logEl.querySelector('.log-run');
+  if (firstRun) firstRun.after(details);
+  else logEl.prepend(details);
+  trimLog();
+  return { setDuration: (n: number) => (ms.textContent = `${n} ms`) };
+}
+
+function logRead(at: Date, req: ReadRequest, a: ReadAnswer) {
+  logCount++;
+  $('log-count').textContent = String(logCount);
+  const what = `${req.connector}.${req.entity}`;
+  const status = a.thrown ? h('span', { class: 'err' }, `threw: ${what}`) : h('span', { class: 'ok' }, `read ${what}: ${a.rows} row${a.rows === 1 ? '' : 's'}`);
+  const ms = h('span', { class: 't' }, '…');
+  const details = h(
+    'details',
+    { class: 'log-row' },
+    h('summary', {}, h('span', { class: 'n' }, `#${logCount}`), h('span', { class: 't' }, fmtTime(at)), h('span', { class: 'what' }, status), ms),
+  );
+  details.addEventListener('toggle', () => {
+    if (details.querySelector('.log-detail')) return;
+    const result = a.result as unknown;
+    const shown = Array.isArray(result) && result.length > 12 ? [...result.slice(0, 12), `… ${result.length - 12} more rows`] : result;
+    details.append(
+      h(
+        'div',
+        { class: 'log-detail' },
+        h('div', { class: 'muted' }, `Read sent (Playground: the real client sends it as a GraphQL query) · ${runsAs(req.connector)}`),
+        h('pre', { class: 'json' }, JSON.stringify({ entity: req.entity, call: req.kind === 'paged' ? 'executePaginated' : req.kind === 'first' ? 'findFirst' : 'execute', ...req.state }, null, 2)),
+        h('div', { class: 'muted' }, a.thrown ? 'The call threw' : 'What came back'),
+        h('pre', { class: 'json' }, a.thrown ? a.thrown : JSON.stringify(shown, null, 2)),
       ),
     );
   });
@@ -1430,7 +1561,8 @@ function renderQueries() {
       {},
       'These are the only queries the simulated connector can answer: saved results from the Contoso model. ',
       'Send one of them, word for word (spacing and letter case don\'t matter), and you get its result. ',
-      'Anything else comes back as an error result.',
+      'Anything else comes back as an error result. ',
+      'Reads from the lakehouse (from Read a lakehouse on) are not listed here: they are answered from a small table of Contoso rows, the sales lines of the stores in France in 2023.',
     ),
     modeBox,
   );
@@ -1545,6 +1677,14 @@ function renderAbout() {
       ' in the Rayfin docs.',
     ),
     p(
+      h('b', {}, 'The lakehouse. '),
+      'connector add --type fabric-sqlanalytics writes what the Rayfin CLI 2.0.0 writes (its placeholder schema file and messages are taken from its code); metadata.json has the documented shape, but its types and values are the playground\'s, not captured from a real lakehouse. Reads (select, where, orderBy, first, after) are answered in the browser from a small table, in pages of 100 by default, as the docs describe; the cursor is made up. The "runs as" line in the Log is the playground\'s: a real app doesn\'t print it. The real thing: ',
+      a('https://rayfin.ai/docs/connectors/sql-sources', 'Fabric SQL sources'),
+      ' and ',
+      a('https://rayfin.ai/docs/connectors/entity-generation', 'Generating entity files'),
+      ' in the Rayfin docs.',
+    ),
+    p(
       h('b', {}, 'The course. '),
       'Its structure follows the way Microsoft Learn builds training (modules of short units, a knowledge check at the end of a module, summaries) and the way the Rayfin docs teach (numbered steps, then what to read next). Only the structure is borrowed.',
     ),
@@ -1553,6 +1693,7 @@ function renderAbout() {
       `Snapshots taken ${snapshotsTakenAt} from the Contoso measures model (gold-layer-examples), built with the `,
       a('https://github.com/sql-bi/Contoso-Data-Generator-V2', 'SQLBI Contoso Data Generator V2'),
       ' (MIT). Sales lines from January 2023 to 9 November 2026, so 2026 is a part year. The queries use the model\'s own measures, as a real app does, such as [Revenue] (quantity × net price, in USD), [# Orders], [# Customers] and [Margin %]. Only Measure or query and the review lesson write one into a query, to compare.',
+      ' The lakehouse holds every store and the sales lines of the stores in France in 2023, from the same Contoso files: they add up to the model\'s [Revenue] for France in 2023.',
     ),
     p(
       h('b', {}, 'Versions. '),
@@ -1669,14 +1810,48 @@ function hideSplash() {
 function showSplash() {
   const el = $('splash');
   const started = !!project.appDir || order.some((l) => progress.started(l));
-  const done = order.filter(progress.done).length;
-  $('splash-modules').replaceChildren(
-    ...course.map((m, i) => h('li', {}, h('span', { class: 'n' }, String(i)), h('span', { class: 't' }, m.title), h('span', { class: 'g' }, m.goal))),
+  const current = chapterOf(lesson);
+  const currentDone = lessonsOf(current).filter(progress.done).length;
+  $('splash-chapters').replaceChildren(
+    ...chapterList.map((c) => {
+      const state = chapterState(c);
+      const item = h(
+        'li',
+        { class: `chapter ${state.key}${c === current ? ' current' : ''}` },
+        h('span', { class: 'n' }, `Chapter ${chapterNum(c)}`),
+        h('span', { class: 't' }, c.title),
+        h('span', { class: `chip ${state.key}` }, state.label),
+        h('span', { class: 'g' }, c.goal),
+      );
+      if (c === current) {
+        item.append(
+          h(
+            'ol',
+            { class: 'splash-modules' },
+            ...modulesOf(c).map((m) => h('li', {}, h('span', { class: 'n' }, String(course.indexOf(m))), h('span', { class: 't' }, m.title), h('span', { class: 'g' }, m.goal))),
+          ),
+        );
+      } else if (c.modules) {
+        item.append(h('span', { class: 'go' }, chapterButton(c)));
+      } else {
+        item.append(
+          h(
+            'details',
+            { class: 'planned' },
+            h('summary', {}, `${c.coming!.length} lessons planned`),
+            h('ul', {}, ...c.coming!.map((t) => h('li', {}, t))),
+          ),
+        );
+      }
+      return item;
+    }),
   );
   const go = $('splash-go') as HTMLButtonElement;
   go.disabled = false;
   go.textContent = started ? `Continue: ${check ? 'Check your knowledge' : `${num(lesson)} ${lesson.title}`} →` : 'Start the course →';
-  $('splash-progress').textContent = started ? `${done} of ${order.length} lessons done. Your project and progress are kept in this browser.` : `${order.length} lessons in ${course.length} modules, one step at a time.`;
+  $('splash-progress').textContent = started
+    ? `Chapter ${chapterNum(current)}: ${currentDone} of ${lessonsOf(current).length} lessons done. Your project and progress are kept in this browser.`
+    : `${order.length} lessons in ${chapterList.filter((c) => c.modules).length} chapters so far, one step at a time.`;
   $('splash-restart').hidden = !started;
   el.classList.remove('leaving');
   el.hidden = false;

@@ -1,10 +1,11 @@
 # Fabric app playground
 
-A Gold Layer playground where Power BI developers build a Fabric app from an empty folder: create the project, add a semantic model connector, wire the client, then build a report-style 16:9 page in TypeScript and React, make it interactive, and review a page "an agent" wrote. Unofficial, and not affiliated with Microsoft.
+A Gold Layer playground where Power BI developers build a Fabric app from an empty folder, chapter by chapter. Chapter 1: create the project, add a semantic model connector, wire the client, then build a report-style 16:9 page in TypeScript and React, make it interactive, and review a page "an agent" wrote. Chapter 2: read a lakehouse through an entity connector, and keep totals in the model. Unofficial, and not affiliated with Microsoft.
 
 There is no Fabric and no model behind it:
 
 - **The terminal** simulates the Rayfin 2.0 commands the course uses (`npm create @microsoft/rayfin@latest … --template dataapp`, `npm install`, `npx rayfin connector add`, `connector invoke`, `npm run dev`, `npx rayfin up`). What they write (`package.json`, `rayfin/rayfin.yml`, the connector's `schema.ts`) follows the Rayfin docs and the data app template as installed by the Rayfin CLI 2.0.0. Lines we could not check against the real output start with `Playground:`. Sign-in is skipped.
+- **The lakehouse** (Chapter 2) is simulated too. `connector add --type fabric-sqlanalytics` writes what the Rayfin CLI 2.0.0 writes (its placeholder `schema.ts` and messages are taken from its code); `metadata.json` has the documented shape, with the playground's own types and values. Reads (`select`, `where`, `orderBy`, `first`, `after`, `execute`, `executePaginated`) are answered in the browser from `data/lakehouse.json`, one page of 100 rows unless `first` says otherwise, as rayfin.ai describes; cursors are made up. The Log's "runs as" line comes from each connector's `auth` in `rayfin.yml`.
 - **The Rayfin packages** are simulated. The editor checks the learner's code against their real 2.0 signatures (a subset, MIT: `src/editor-types/packages/`), and only once the project has "installed" them. In the page, `executeQuery` matches the query text against saved results from a Contoso model and returns them in the connector's result shape.
 
 ## Run it
@@ -29,10 +30,11 @@ npm run check      # checks the course, then builds it from an empty folder, ste
 | Preview: sandboxed iframe (`allow-scripts`, no same-origin) that links the modules, simulates the Rayfin packages, and draws `src/App.tsx` | `src/preview.html`, `src/runtime.tsx` |
 | Saved answers: the iframe asks the parent page, which answers from the snapshots after a short delay and logs every query | `src/stand-in.ts`, `src/app.ts` (`onQuery`) |
 | Cut-off: more than 20 queries in 10 seconds stops the page | `src/app.ts` (`CUTOFF`) |
-| Course: modules, their order, knowledge checks | `src/course.mjs` |
+| Course: chapters, modules, their order, knowledge checks | `src/course.mjs` |
+| Lakehouse reads (filter, sort, pages) | `src/stand-in.ts` (`readLakehouse`), `src/runtime.tsx` (`entityConnector`) |
 | Lessons: goals, steps, summaries, Fabric notes; the longer code pieces they paste | `src/lesson-list.mjs`, `src/course-code.mjs` |
 | Glossary (Terms tab) and troubleshooting (Help tab) | `src/terms.mjs` |
-| Course drawer, progress, routing (`#lesson-id/step`, `#check/module-id`), terminal tab | `src/app.ts` |
+| Start screen (chapters), course drawer, progress, routing (`#lesson-id/step`, `#check/module-id`), terminal tab | `src/app.ts` |
 | Layout: three draggable dividers (sizes remembered, double-click resets) and **Pop out** on the lesson card and the bottom panel (large text, Esc docks) | `src/app.ts` (`initSplit`, `setPopped`), `src/app.css` |
 | Colours: a Gold Layer Tools piece, so Tools pink `#FF7FB5` leads (`--accent`), in text and lines only; gold for the logo and the "In a real Fabric app" notes. The logo links to goldlayerdata.com/tools.html, and the start screen lists the site sections and socials | `src/app.css` |
 
@@ -47,11 +49,17 @@ npm run catalog     # tools/make-catalog.mjs -> data/catalog.json
 npm run snapshots   # tools/snapshot.ps1: runs each query over ADOMD, writes data/snapshots.json
 ```
 
+`data/lakehouse.json` is the lakehouse of Chapter 2: its `metadata.json` (two tables, `sales` and `store`), every store, and the 283 sales lines of the stores in France in 2023, from `datasets/contoso` in gold-layer-examples (prices rounded to 4 decimals, as the model stores them). Those lines add up to the model's `[Revenue]` for France in 2023, which `npm run check` verifies against the saved snapshot.
+
 Queries match ignoring spacing and letter case. `npm run check` finds every query the project can send (query functions are called with every year and store country) and fails if one has no saved answer.
 
 ## The course
 
 One app, built from an empty folder. Structured the way Microsoft Learn builds training (modules of short units, a knowledge check at the end of a module, summaries) and the way the Rayfin docs teach (numbered steps, then what to read next). Only the structure is borrowed.
+
+Chapters group the modules (`chapters` in `src/course.mjs`). Module numbers run on across chapters, so a lesson's number never changes when a chapter is added: Chapter 1 is modules 0 to 5, Chapter 2 starts at module 6. Progress is kept by lesson and module id. Chapters not built yet are listed as Coming soon, with their planned lesson titles. The start screen shows each chapter's state (done, in progress, not started, coming soon); **Start this chapter** builds the project as that chapter begins, with Undo.
+
+**Chapter 1: An app on a semantic model**
 
 | Module | Lessons |
 | --- | --- |
@@ -62,7 +70,14 @@ One app, built from an empty folder. Structured the way Microsoft Learn builds t
 | 4 Make it interactive | 4.1 State as a slicer · 4.2 The redraw trap · 4.3 Cross-filter · 4.4 Two pages |
 | 5 Own what the agent wrote | 5.1 Review an agent's page · 5.2 Take it to Fabric |
 
-Lesson numbers come from positions in `src/course.mjs` and are never written anywhere else: lesson text refers to lessons by title, and `npm run check` fails on "lesson 4"-style references.
+**Chapter 2: Read a lakehouse**
+
+| Module | Lessons |
+| --- | --- |
+| 6 Connect a lakehouse | 6.1 Add a lakehouse connector · 6.2 Entities from the metadata |
+| 7 Rows, not measures | 7.1 Rows on a page · 7.2 Rows or measures · 7.3 Who runs this query |
+
+Lesson numbers come from positions in `src/course.mjs` and are never written anywhere else: lesson text refers to lessons and chapters by title, and `npm run check` fails on "lesson 4" or "chapter 2"-style references.
 
 Each lesson is the same set of cards: the idea in Power BI terms with "You'll be able to" and "Builds on", then one card per step, then a summary with an **In a real Fabric app** note linking to Microsoft Learn or rayfin.ai. Modules 1 to 5 end with three or four questions; each answer links to the step that taught it. Mistakes the course is about (a wrong column, a query loop, a mistyped measure) are made on purpose by the learner, then undone; the review lesson is the one place an "agent" drops a ready-made file into the project.
 

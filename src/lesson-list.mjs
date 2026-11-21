@@ -1624,7 +1624,7 @@ export const lessons = [
         do: 'Another slip on purpose: in `src/lake.ts`, delete the marked `.select([\'storeKey\'])` line in `storeKeysIn`.',
         file: LAKE_TS,
         edits: [{ file: LAKE_TS, from: "    .select(['storeKey'])\n", to: '' }],
-        see: 'No red line, but the page shows its error panel: **A read requires an explicit .select([...]).**',
+        see: 'No red line. The page starts again on **Overview**: open **Order lines**, and it shows its error panel: **A read requires an explicit .select([...]).**',
         why: 'A query chain must say which columns it wants (`SELECTION_REQUIRED`). The default list in `connectorConfig.entities` never applies to a chain.',
       },
       {
@@ -1674,7 +1674,7 @@ export const lessons = [
           { file: LINES, from: LINES_HOOK, to: LINES_HOOK + C.REVENUE_HOOK },
           { file: LINES, from: LINES_END, to: `      </section>\n${C.REVENUE_CARD}    </div>\n  );\n}\n` },
         ],
-        see: '**Revenue (from lines)**: 142.3K.',
+        see: 'The page starts again on **Overview**. Open **Order lines**: **Revenue (from lines)**, 142.3K.',
       },
       {
         do: 'Open **Overview**, pick **2023** on the slicer, and click **France** on the countries chart.',
@@ -1693,7 +1693,7 @@ export const lessons = [
         code: C.REVENUE_PAGED.trimStart(),
         file: LAKE_TS,
         edits: [{ file: LAKE_TS, from: C.REVENUE_ONE_PAGE, to: C.REVENUE_PAGED }],
-        see: '369K on both. In the Log: three reads, of 100, 100 and 83 rows.',
+        see: 'Open **Order lines** again: 369K, as on **Overview**. In the Log: three reads, of 100, 100 and 83 rows.',
         why: '`executePaginated()` returns a page with `hasNextPage` and `endCursor`; `after(endCursor)` asks for the next one, with the same `select`, `where` and a stable `orderBy`. Now the numbers match, because the page copies the model\'s formula: a second copy, which can drift without a warning.',
       },
       {
