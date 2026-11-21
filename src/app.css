@@ -527,8 +527,6 @@ body.resizing iframe, body.resizing .monaco-editor { pointer-events: none; }
   inset: 0;
   z-index: 60;
   display: flex;
-  align-items: center;
-  justify-content: center;
   padding: 24px;
   overflow: auto;
   background:
@@ -537,7 +535,8 @@ body.resizing iframe, body.resizing .monaco-editor { pointer-events: none; }
   transition: opacity 0.3s ease;
 }
 .splash.leaving { opacity: 0; pointer-events: none; }
-.splash-card { width: min(760px, 100%); }
+/* auto margins centre the card, and a tall card still scrolls from its top */
+.splash-card { width: min(760px, 100%); margin: auto; }
 .splash-brand { display: flex; align-items: center; gap: 8px; margin: 0 0 18px; font-weight: 700; }
 .splash-site { margin: 22px 0 0; padding-top: 14px; border-top: 1px solid var(--line); font-size: 14px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px 18px; }
 .splash-follow { margin-top: 8px; padding-top: 0; border-top: 0; }
@@ -569,9 +568,10 @@ body.resizing iframe, body.resizing .monaco-editor { pointer-events: none; }
 @media (prefers-reduced-motion: reduce) { .splash { transition: none; } }
 
 /* ---------------------------------------------------------------- chapters (splash and course drawer) */
-.splash-chapters { list-style: none; margin: 0 0 26px; padding: 0; border-top: 1px solid var(--line); }
+.splash-chapters { list-style: none; margin: 26px 0 0; padding: 0; border-top: 1px solid var(--line); }
 .splash-chapters > li { display: grid; grid-template-columns: 92px 1fr auto; gap: 2px 12px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--line); }
-.splash-chapters > li > .n { color: var(--accent); font-family: var(--mono); font-size: 13px; }
+.splash-chapters > li > .n { color: var(--muted); font-family: var(--mono); font-size: 13px; }
+.splash-chapters > li.current > .n { color: var(--accent); }
 .splash-chapters > li > .t { font-weight: 600; }
 .splash-chapters > li > .g, .splash-chapters > li > .go, .splash-chapters > li > .planned, .splash-chapters > li > .splash-modules { grid-column: 2 / 4; }
 .splash-chapters > li > .g { color: var(--muted); font-size: 13.5px; }

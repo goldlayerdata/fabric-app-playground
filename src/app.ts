@@ -646,7 +646,9 @@ function chapterState(c: Chapter): { key: 'done' | 'progress' | 'new' | 'coming'
   const list = lessonsOf(c);
   const done = list.filter(progress.done).length;
   if (done === list.length) return { key: 'done', label: 'Done ✓' };
-  if (list.some(progress.started)) return { key: 'progress', label: `In progress · ${done} of ${list.length}` };
+  // Opening a lesson elsewhere leaves a step position behind; that alone doesn't make a chapter started.
+  const here = c === chapterOf(lesson) && (!!project.appDir || list.some(progress.started));
+  if (done > 0 || here) return { key: 'progress', label: `In progress · ${done} of ${list.length}` };
   return { key: 'new', label: 'Not started' };
 }
 
@@ -669,7 +671,7 @@ function chapterButton(c: Chapter) {
   const b = h(
     'button',
     { type: 'button', class: 'link-btn', title: state === 'new' ? 'Builds the project as this chapter begins (every earlier step done). Undo is offered.' : undefined },
-    state === 'new' ? 'Start this chapter →' : 'Open this chapter →',
+    state === 'new' ? 'Start this chapter →' : 'Continue this chapter →',
   );
   b.addEventListener('click', () => openChapter(c));
   return b;
