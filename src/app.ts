@@ -50,6 +50,7 @@ type Step = {
   point?: Point;
   edits?: Edit[];
   done?: { file?: string; before?: [string, string]; absent?: string };
+  copy?: false;
 };
 type Link = { href: string; label: string };
 type Lesson = {
@@ -77,9 +78,10 @@ type Project = { cwd: string | null; appDir: string | null; files: Record<string
 // ---------------------------------------------------------------- settings
 const RUN_DELAY_MS = 700; // compile and run after a pause in typing
 const QUERY_DELAY_MS: [number, number] = [250, 600]; // simulated round trip
-// Stop a page that keeps querying. A redraw loop runs at about one query per simulated round
-// trip (2 to 4 a second), so it trips this within 10 seconds; a normal page sends a handful.
-const CUTOFF = { queries: 20, withinMs: 10_000 };
+// Stop a page that keeps querying. A redraw loop sends every one of the page's queries again on each
+// simulated round trip (about 7 a second for a page with three), so it trips this in about 6 seconds.
+// Normal use stays under it: a slicer click on a four-query page sends 4, ten clicks in 10 seconds 40.
+const CUTOFF = { queries: 40, withinMs: 10_000 };
 
 // ---------------------------------------------------------------- the course
 const course = modules as Module[]; // in course order: the live chapters' modules, one chapter after another
@@ -519,7 +521,8 @@ function renderLesson() {
     const step = currentStep()!;
     card.append(h('p', { class: 'kicker' }, `Step ${position} of ${n}`), h('p', { class: 'do' }, rich(step.do)));
     const snippet = step.run ?? step.code;
-    if (snippet) card.append(h('div', { class: `snippet${step.run ? ' command' : ''}` }, h('pre', {}, step.run ? `$ ${step.run}` : snippet), copyButton(snippet)));
+    // `copy: false`: the code is only to read (Do it for me writes it), so there is nothing to paste.
+    if (snippet) card.append(h('div', { class: `snippet${step.run ? ' command' : ''}` }, h('pre', {}, step.run ? `$ ${step.run}` : snippet), step.copy === false ? null : copyButton(snippet)));
     const actions = h('div', { class: 'actions' });
     const findText = step.find ?? step.edits?.[0]?.from.trim();
     if (findText) {
@@ -1101,12 +1104,15 @@ function showNoFiles() {
 function renderFiles() {
   const bar = $('files');
   const paths = Object.keys(project.files).sort((a, b) => (a === PAGE_FILE ? -1 : b === PAGE_FILE ? 1 : a.localeCompare(b)));
+  // A tab shows the file name; two files with the same name (two schema.ts) also show their folder.
+  const base = (p: string) => p.split('/').pop()!;
+  const label = (p: string) => (paths.filter((q) => base(q) === base(p)).length > 1 ? p.split('/').slice(-2).join('/') : base(p));
   const items = paths.map((p) => {
     const b = h(
       'button',
       { type: 'button', class: `file${p === activeFile ? ' on' : ''}`, title: isGenerated(p, project.files[p]) ? `${p} (generated: read-only here)` : p },
       isGenerated(p, project.files[p]) ? h('span', { class: 'lock', 'aria-hidden': 'true' }, '🔒') : null,
-      p.split('/').pop()!,
+      label(p),
     );
     b.addEventListener('click', () => openFile(p));
     if (p !== activeFile || isGenerated(p, project.files[p])) return b;
@@ -1121,8 +1127,8 @@ function renderFiles() {
   bar.replaceChildren(
     project.appDir ? h('span', { class: 'folder' }, `${project.appDir}/`) : h('span', { class: 'muted' }, 'No project yet'),
     ...items,
-    add,
-    popButton($('editor-wrap')),
+    // New file and Pop out stay in view at the right edge, however many files there are.
+    h('span', { class: 'files-end' }, add, popButton($('editor-wrap'))),
   );
 }
 
@@ -1144,6 +1150,7 @@ function newFile() {
   saveProject();
   syncModels();
   openFile(clean);
+  updateDoneTick(); // a step that only creates the file is done now
 }
 
 editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => runNow());
@@ -1647,11 +1654,28 @@ function renderQueries() {
     ),
     modeBox,
   );
+  // A filter over the list: titles, connectors and ids that contain the text, ignoring case.
+  const find = h('input', { type: 'search', class: 'q-find', placeholder: 'Find a query: a word from its title, or contoso or pareto', 'aria-label': 'Find a query' }) as HTMLInputElement;
+  el.prepend(h('label', { class: 'q-find-label' }, h('b', {}, 'Find a query '), find));
+  const boxes: { box: HTMLElement; items: [HTMLElement, string][] }[] = [];
+  find.addEventListener('input', () => {
+    const text = find.value.trim().toLowerCase();
+    for (const { box, items } of boxes) {
+      let shown = 0;
+      for (const [item, haystack] of items) {
+        item.hidden = !!text && !haystack.includes(text);
+        if (!item.hidden) shown++;
+      }
+      box.hidden = shown === 0;
+    }
+  });
   const groups = [...new Set(entries.map((e) => e.group))];
   for (const g of groups) {
     const box = h('div', { class: 'q-group' }, h('h3', {}, g));
+    boxes.push({ box, items: [] });
     for (const e of entries.filter((x) => x.group === g)) {
       const item = h('details', { class: 'q-item' }, h('summary', {}, h('span', {}, e.title), h('span', { class: 'id' }, `${e.connector} · ${e.id}`)));
+      boxes.at(-1)!.items.push([item, `${e.title} ${e.connector} ${e.id}`.toLowerCase()]);
       item.addEventListener('toggle', () => {
         if (item.querySelector('pre')) return;
         const saved = savedResult(e.id)!;

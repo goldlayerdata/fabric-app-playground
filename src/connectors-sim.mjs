@@ -69,7 +69,8 @@ export function createConnectorsApi(configs = {}, runtime, make) {
 /**
  * What `executeQuery` hands the page when a semantic model connector has no runtime: the transport's raw
  * payload. Rayfin 2.0 asks for Apache Arrow and returns an ArrayBuffer for an Arrow reply, with no `status`.
- * Playground: these bytes are a placeholder, not a real Arrow stream; the deployed reply format isn't documented.
+ * Playground: these bytes are a placeholder, not a real Arrow stream. Rayfin's docs disagree on the deployed reply
+ * (Arrow in the guide, JSON in the semantic model package docs).
  */
 export function rawPayload(connector) {
   return new TextEncoder().encode(

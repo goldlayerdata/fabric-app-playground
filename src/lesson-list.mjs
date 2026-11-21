@@ -14,6 +14,7 @@
 // Each step does one thing:
 //   do      what to do, and where. Short.
 //   code    optional snippet to paste or type, exactly as it goes in (shown with a Copy button)
+//   copy    optional: false when the code is only to read, because Do it for me writes it (no Copy button)
 //   run     optional: a command for the terminal. "Do it for me" runs it; done once it has been run.
 //   see     optional: what is visible once it's done
 //   why     optional: the explanation, shown under "see" in a quieter style
@@ -55,6 +56,7 @@ const learn = {
   authentication: { href: `${LEARN}/authentication`, label: 'Authentication (Microsoft Learn)' },
   modelPermissions: { href: 'https://learn.microsoft.com/power-bi/connect-data/service-datasets-permissions', label: 'Semantic model permissions (Microsoft Learn)' },
   infoViewMeasures: { href: 'https://learn.microsoft.com/dax/info-view-measures-function-dax#remarks', label: 'INFO.VIEW.MEASURES (Microsoft Learn)' },
+  daxErrors: { href: 'https://learn.microsoft.com/power-bi/developer/execute-dax-queries-arrow/best-practices#handle-errors-and-retries', label: 'Execute DAX Queries: handle errors (Microsoft Learn)' },
 };
 const rayfin = {
   docs: { href: 'https://rayfin.ai/docs', label: 'Rayfin docs overview (rayfin.ai)' },
@@ -1119,7 +1121,7 @@ export const lessons = [
       {
         do: 'Watch the count next to **Running**, above the preview.',
         point: 'status',
-        see: 'It keeps climbing, and the Log fills with the same queries. After more than 20 in 10 seconds, the playground stops the page.',
+        see: 'It keeps climbing, and the Log fills with the same queries. After more than 40 in 10 seconds, the playground stops the page.',
       },
       {
         do: 'Look at the marked line.',
@@ -1504,28 +1506,28 @@ export const lessons = [
         do: 'Add it again, named `pareto`:',
         run: ADD_PARETO,
         point: 'terminal',
-        see: '`rayfin.yml` changed, a new `rayfin/connectors/pareto/schema.ts`, the same install line as before, and a note that nothing was wired.',
+        see: '`rayfin.yml` changed, a new `rayfin/connectors/pareto/schema.ts`, the same install line as before, and a note that nothing was wired. No need to run the install line yet.',
         why: 'The name is how our code will reach it: `rayfinClient.connectors.pareto`. Pick one that says which model it is. New names are stored in lower case anyway.',
       },
       {
-        do: 'Open `rayfin/rayfin.yml`.',
+        do: 'Look at `rayfin/rayfin.yml`, open in the editor.',
         file: YML,
         find: '  - name: pareto',
         see: 'Two entries under `connectors:`, each with its own `workspaceId` and `itemId`, and both with `auth` of type `delegated`.',
         why: 'Each connector carries its own ids, so the two models could even live in different workspaces. Both are delegated: a semantic model connector only runs as the signed-in person.',
       },
       {
-        do: 'Open `rayfin/connectors/pareto/schema.ts`.',
+        do: 'Look at `rayfin/connectors/pareto/schema.ts`, open in the editor (its tab says `pareto/schema.ts`).',
         file: PARETO_SCHEMA_FILE,
         find: "export type ParetoSchema = FabricSemanticModel<'executeQuery'>;",
         see: 'The same shape as `ContosoSchema`: a semantic model with one operation, `executeQuery`.',
         why: 'The type knows what kind of connector it is, not which measures the model has. TypeScript can\'t tell our two models apart: only their names can.',
       },
       {
-        do: 'Open `package.json`, and find the package from the install line.',
+        do: 'In `package.json`, open in the editor, find the packages from the install line.',
         file: 'package.json',
         find: '"@microsoft/rayfin-connector-fabric-semanticmodel"',
-        see: 'It is already there, since **Add the connector**.',
+        see: 'Both are already there, since **Add the connector**, as `^2.0.0`: npm saves the `@2.0.0` we installed with its default `^` (2.0.0, or a later 2.x).',
         why: 'One package serves every semantic model connector, so there is nothing new to install.',
       },
       {
@@ -1540,7 +1542,7 @@ export const lessons = [
         run: INVOKE_HEADLINE_CONTOSO,
         point: 'terminal',
         commandFails: true,
-        see: 'The query fails: `The value for \'Cutoff Headline\' cannot be determined. Either the column doesn\'t exist, or there is no current row for this column.`',
+        see: 'The query fails: `Query (1, 28) The value for \'Cutoff Headline\' cannot be determined. Either the column doesn\'t exist, or there is no current row for this column.`',
         why: 'The connector name picks the model, and each model knows only its own measures. Nothing to undo: it was only a test.',
       },
     ],
@@ -1566,14 +1568,14 @@ export const lessons = [
         do: 'In `src/services/rayfinClient.ts`, add this import on a new line under the marked `contoso` import:',
         code: PARETO_CLIENT_IMPORT.trim(),
         edits: [{ file: CLIENT, from: CONTOSO_CLIENT_IMPORT, to: CONTOSO_CLIENT_IMPORT + PARETO_CLIENT_IMPORT }],
-        see: 'Nothing changes.',
+        see: 'Nothing changes, except the new line (it greys out until it\'s used).',
       },
       {
         do: 'In `AppConnectorsSchema`, add a line under the marked `contoso: ContosoSchema;`:',
         code: 'pareto: ParetoSchema;',
         edits: [{ file: CLIENT, from: '  contoso: ContosoSchema;\n', to: '  contoso: ContosoSchema;\n  pareto: ParetoSchema;\n' }],
         errors: 1,
-        see: 'A red line under `configs`: `pareto` is missing.',
+        see: 'Scroll down to `configs`: a red line under it, because `pareto` is missing.',
         why: '`configs` must have every connector in the schema, under the same name.',
       },
       {
@@ -1590,19 +1592,26 @@ export const lessons = [
         find: 'function filters(year?: number, country?: string): string[] {',
         edits: [{ file: DATA, from: '\nfunction filters(year?: number, country?: string): string[] {', to: '\nexport function filters(year?: number, country?: string): string[] {' }],
         see: 'Nothing changes.',
-        why: 'The Pareto model is built on the same tables, so the same filter text works there: `\'date\'[Year]` is in both. A filter is only DAX text: it works in any model that has that column.',
+        why: '`export` lets other files use it: `src/pareto.ts`, next, will import it. The Pareto model is built on the same tables, so the same filter text works there: `\'date\'[Year]` is in both. A filter is only DAX text: it works in any model that has that column.',
       },
       {
-        do: 'Create `src/pareto.ts` (**+ New file**) with its runner and one query:',
+        do: 'Click **+ New file**, at the right end of the file tabs, and type `pareto.ts` after the `src/` already there.',
+        edits: [{ file: PARETO_TS, from: '', to: '' }],
+        point: 'files',
+        see: 'A new, empty `src/pareto.ts`, open in the editor.',
+      },
+      {
+        do: 'Paste this into `src/pareto.ts`: its [[runner]] and one query.',
         code: C.PARETO_V1,
         edits: [{ file: PARETO_TS, from: '', to: C.PARETO_V1 }],
         find: 'rayfinClient.connectors.pareto.executeQuery',
         see: 'No red lines.',
-        why: '`runPareto` has the same type as `runDax`, and is made once, outside any page, for the reason in **The redraw trap**. Only the connector differs.',
+        why: '`runPareto` is a runner: the function a page passes to `useDax`, which picks the connector, and so the model. It has the same type as `runDax`, and is made once, outside any page, for the reason in **The redraw trap**. Only the connector differs.',
       },
       {
         do: 'Add the page as **Categories**: **Do it for me** writes `src/ParetoPage.tsx` (a year slicer and the headline) and adds the page to the report (page id, import and `PAGES` entry); this is the line it adds to `PAGES`:',
         code: "pareto: { title: 'Categories', Component: ParetoPage },",
+        copy: false,
         edits: [
           { file: PARETO_PAGE, from: '', to: C.PARETO_PAGE_V1 },
           { from: "type PageId = 'overview' | 'years' | 'agent';", to: "type PageId = 'overview' | 'years' | 'agent' | 'pareto';" },
@@ -1615,33 +1624,33 @@ export const lessons = [
         do: 'Click **Categories**.',
         point: 'preview',
         see: 'The page draws, but the headline card is empty: no sentence, no error panel, no red line. The **Log** shows the `pareto` query, answered with raw bytes, not decoded.',
-        why: 'Without a `runtime` entry, `executeQuery` hands the page the raw payload the connector received (the model\'s answer, still in Apache Arrow form), not a result with a `status`. The page finds no `error` to show, and `toHeadline` finds no `success`, so it shows nothing. Rayfin\'s own CLI calls this failing silently.',
+        why: 'Without a `runtime` entry, `executeQuery` hands the page the raw payload the connector received, not the result the types promise: there is no `status: \'success\'` or `\'error\'` for the page to read. The page finds no `error` to show, and `toHeadline` finds no `success`, so it shows nothing. Rayfin\'s own CLI calls this failing silently.',
       },
       {
-        do: 'A slip on purpose: add the runtime, with a capital P. The marked line becomes:',
+        do: 'A slip on purpose: add the runtime with a capital P, so the marked line becomes the one below. Then open **Categories** (the page starts again on **Overview**).',
         code: 'runtime: { contoso: fabricSemanticModel(), Pareto: fabricSemanticModel() },',
         file: CLIENT,
         find: 'runtime: { contoso: fabricSemanticModel() },',
         edits: [{ file: CLIENT, from: 'runtime: { contoso: fabricSemanticModel() },', to: RUNTIME_CASE_SLIP }],
-        see: 'No red line. The page starts again on **Overview**: open **Categories**, and the headline is still empty.',
+        see: 'No red line, and the headline is still empty.',
         why: 'The client finds a connector by its name in any case, but then looks up its runtime by the exact name in `configs`: `pareto`. `Pareto` is never found.',
       },
       {
-        do: 'Fix the name, so the marked line reads:',
+        do: 'Fix the name, so the marked line reads as below. Then open **Categories** again.',
         code: RUNTIME_BOTH.trim(),
         file: CLIENT,
         find: RUNTIME_CASE_SLIP,
         edits: [{ file: CLIENT, from: RUNTIME_CASE_SLIP, to: RUNTIME_BOTH }],
-        see: 'Open **Categories** again: **It takes 4 of 8 categories to reach 80% of revenue**.',
-        why: 'One runtime per semantic model, under its own connector name: the same name in all three places.',
+        see: '**It takes 4 of 8 categories to reach 80% of revenue**.',
+        why: 'One runtime per semantic model, under its own connector name: the same name in four places, `rayfin.yml`, the schema type, `configs` and `runtime`.',
       },
       {
-        do: 'A slip on purpose: in `src/pareto.ts`, change the marked `connectors.pareto` to `connectors.Pareto`.',
+        do: 'A slip on purpose: in `src/pareto.ts`, change the marked `connectors.pareto` to `connectors.Pareto`. Then open **Categories**.',
         file: PARETO_TS,
         find: 'connectors.pareto',
         edits: [{ file: PARETO_TS, from: 'rayfinClient.connectors.pareto.executeQuery', to: 'rayfinClient.connectors.Pareto.executeQuery' }],
         errors: 1,
-        see: 'A red line: `Property \'Pareto\' does not exist on type …`, ending `Did you mean \'pareto\'?` Open **Categories**: the headline is still there.',
+        see: 'A red line: `Property \'Pareto\' does not exist on type …`, ending `Did you mean \'pareto\'?` And the headline is still there.',
         why: 'At run time, a name that differs only by case finds the one connector it matches (two such connectors would throw `AMBIGUOUS_CONNECTOR`). The types want the exact name. As in **Types**, the red line is a check, not a gate: fix it anyway.',
       },
       {
@@ -1677,11 +1686,11 @@ export const lessons = [
         why: '`paretoQuery` names the model\'s own measures (`[Revenue Share %]`, `[Revenue Cumulative %]`): the running share stays in the model, as **Measure or query** advised.',
       },
       {
-        do: '**Do it for me** replaces `src/ParetoPage.tsx` with the full page.',
+        do: '**Do it for me** replaces `src/ParetoPage.tsx` with the full page. Then open **Categories**.',
         code: C.PARETO_PAGE,
         file: PARETO_PAGE,
         edits: [{ file: PARETO_PAGE, from: C.PARETO_PAGE_V1, to: C.PARETO_PAGE }],
-        see: 'Open **Categories**: two cards, **Revenue, contoso model** and **Revenue, pareto model**, both 150.6M; the headline; eight bars, the first four starred: `★ Computers (46.1%)`, `★ Cell phones (61%)`, `★ Home Appliances (72.4%)`, `★ Cameras and camcorders (83%)`.',
+        see: 'Two cards, **Revenue, contoso model** and **Revenue, pareto model**, both 150.6M; the headline; eight bars (scroll inside their card for the rest), the first four starred: `★ Computers (46.1%)`, `★ Cell phones (61%)`, `★ Home Appliances (72.4%)`, `★ Cameras and camcorders (83%)`.',
       },
       {
         do: 'Look at the four `useDax` lines, from the marked one down.',
@@ -1697,18 +1706,18 @@ export const lessons = [
         why: 'The number of vital categories is 4 in every year, but which four changes: try **2023**, where Cameras is second. The stars use the model\'s count, `[# Categories to 80%]`: the page doesn\'t redo the maths.',
       },
       {
-        do: 'A slip on purpose: in the marked line, change `runPareto` to `runDax`.',
+        do: 'A slip on purpose: in the marked line, change `runPareto` to `runDax`. Then open **Categories** (the page starts again on **Overview**).',
         file: PARETO_PAGE,
         find: 'useDax(runPareto, paretoQuery(year))',
         edits: [{ file: PARETO_PAGE, from: 'useDax(runPareto, paretoQuery(year))', to: 'useDax(runDax, paretoQuery(year))' }],
         queryFails: true,
-        see: 'No red line. The page starts again on **Overview**: open **Categories**, and it shows its error panel: `The value for \'Revenue Cumulative %\' cannot be determined. Either the column doesn\'t exist, or there is no current row for this column.`',
+        see: 'No red line, and the page shows its error panel: `Query (4, 73) The value for \'Revenue Cumulative %\' cannot be determined. Either the column doesn\'t exist, or there is no current row for this column.`',
         why: 'The query went to `contoso`, which has no Pareto measures. TypeScript can\'t catch it: both runners have the same type, and the DAX is text. Only the model can.',
       },
       {
-        do: UNDO,
+        do: `${UNDO} Then open **Categories**.`,
         edits: [{ file: PARETO_PAGE, from: 'useDax(runDax, paretoQuery(year))', to: 'useDax(runPareto, paretoQuery(year))' }],
-        see: 'Open **Categories**: the bars come back.',
+        see: 'The bars come back.',
       },
       {
         do: 'Compare the two Revenue cards for each choice in the slicer.',
@@ -1717,18 +1726,23 @@ export const lessons = [
         why: 'Same name, same number. A good sign, not proof: two different formulas can agree on today\'s data and part ways tomorrow.',
       },
       {
-        do: 'Open the **Queries** tab, and find **Where [Revenue] lives**, saved once for each model.',
+        do: 'In the **Queries** tab, type `lives` in the **Find a query** box at the top.',
+        point: 'queries',
+        see: 'Two entries left: **Where [Revenue] lives in pareto, and its formula**, and the same for contoso.',
+      },
+      {
+        do: 'Open both entries.',
         point: 'queries',
         see: 'In both, the formula is `SUMX ( sales, sales[Quantity] * sales[NetPrice] )`. The home table differs: `_Measures` in contoso, `sales` in pareto.',
         why: 'These were saved in Power BI Desktop, by the models\' owner. `INFO.VIEW.MEASURES()` shows `[Expression]` only to people with write permission on the model, so a viewer can\'t compare formulas this way (and whether the connector lets `INFO` functions through isn\'t documented). Compare formulas where the models are built.',
       },
       {
         do: 'What else must match before two `[Revenue]` measures are the same? Read this card.',
-        see: 'The formula (it does), the data (the same files and relationships), the refresh (each model cuts its sales at the day it last refreshed) and any RLS roles (neither model has one).',
+        see: 'The formula (it does), the data (the same files and relationships), the refresh (each model only has sales up to its last refresh) and any RLS roles (neither model has one).',
         why: 'Same name isn\'t proof of same meaning. Here it holds, and now we know why, instead of hoping.',
       },
       {
-        do: 'In the **Log**, open a `contoso` query and a `pareto` query.',
+        do: 'In the **Log**, open a `pareto` query and the `contoso · revenue` query, both near the top (the newest entries come first).',
         point: 'log',
         see: 'Each names its connector, and both say `runs as: the signed-in user (delegated)`.',
         why: 'Each query runs as the person, in each model separately: they need access to both models, and each model\'s own RLS applies to its own queries.',
@@ -1740,8 +1754,8 @@ export const lessons = [
       'Both semantic model connectors run as the signed-in person, each in its own model.',
     ],
     fabric: {
-      text: 'In a real app each user needs access to both models, and each delegated connector sets up the user\'s own connection the first time it is used. What a user without access to one of the two models sees isn\'t documented.',
-      links: [rayfin.connectorAuth, learn.modelPermissions, learn.infoViewMeasures],
+      text: 'In a real app each user needs access to both models, and each delegated connector sets up the user\'s own connection the first time it is used. Rayfin\'s docs say a permissions failure comes back as an error with category `api`; the exact message isn\'t documented. On the Execute DAX Queries API, which Rayfin\'s CLI path calls, a 403 means the caller lacks Build and Read permission on the model.',
+      links: [rayfin.connectorAuth, learn.modelPermissions, learn.daxErrors, learn.infoViewMeasures],
     },
   },
 
@@ -1804,7 +1818,7 @@ export const lessons = [
     ],
     summary: [
       '`connector add --type fabric-sqlanalytics` writes the connector, its `metadata.json` and a placeholder schema, and installs nothing.',
-      'A lakehouse connector only reads, and by default runs as the app (`application`).',
+      'A lakehouse connector only reads, and by default runs as the app\'s owner (`application`).',
       '`connector inspect` proves your own access to the source, before any app code.',
     ],
     fabric: {
@@ -2071,7 +2085,7 @@ export const lessons = [
     goal: 'say whose permissions a lakehouse query runs with, and how to change it safely',
     builds: ['rows-or-measures', 'to-fabric'],
     pbi: 'Like a data source with stored credentials versus single sign-on. With stored credentials, every viewer sees what that one account sees. With single sign-on, each viewer\'s own access counts.',
-    idea: 'Our semantic models run as the person using the app; the lakehouse runs as the app. We look at both kinds, try a write, then see what re-adding the lakehouse as `delegated` would do, with a slip on the way, and keep `application`.',
+    idea: 'Our semantic models run as the person using the app; the lakehouse runs as the app\'s owner. We look at both kinds, try a write, then see what re-adding the lakehouse as `delegated` would do, with a slip on the way, and keep `application`.',
     steps: [
       {
         do: 'Open `rayfin/rayfin.yml` and look at the `lake` connector\'s `auth`.',

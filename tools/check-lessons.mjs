@@ -80,7 +80,7 @@ const numOf = (l) => {
 };
 
 const LESSON_FIELDS = ['id', 'title', 'goal', 'builds', 'pbi', 'idea', 'steps', 'summary', 'fabric'];
-const STEP_FIELDS = ['do', 'code', 'run', 'see', 'why', 'file', 'find', 'point', 'edits', 'errors', 'done', 'queryFails', 'commandFails', 'nth'];
+const STEP_FIELDS = ['do', 'code', 'run', 'see', 'why', 'file', 'find', 'point', 'edits', 'errors', 'done', 'queryFails', 'commandFails', 'nth', 'copy'];
 const POINTS = ['editor', 'files', 'preview', 'status', 'terminal', 'log', 'queries', 'terms', 'run', 'reset', 'data', 'signin'];
 const LINK_HOSTS = ['learn.microsoft.com', 'rayfin.ai'];
 

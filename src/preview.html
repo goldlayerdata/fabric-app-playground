@@ -11,6 +11,8 @@
       /* In a layer, so the page's own Tailwind classes (text-*, bg-*) still win: buttons get dark text by default. */
       @layer base { #page button { color: #111827; } }
       #page { min-height: 100vh; box-sizing: border-box; padding: 14px; }
+      /* A visual taller than its grid cell scrolls inside its card, as a Power BI visual does, so the page keeps its 16:9 shape. */
+      .aspect-video.grid > :not(header) { min-height: 0; overflow: auto; scrollbar-width: thin; scrollbar-color: #9aa6bd transparent; }
       .outline-cells .grid > * { outline: 1.5px dashed #d29e00; outline-offset: -1px; }
     </style>
     <script src="tailwind.js"></script>

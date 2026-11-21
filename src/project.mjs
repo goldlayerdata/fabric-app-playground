@@ -905,7 +905,8 @@ export function stepIsDone(p, step) {
     const text = squash(p.files[e.file ?? PAGE_FILE] ?? '');
     const to = squash(e.to);
     const from = squash(e.from);
-    if (e.from === '') return to === '' || text.includes(to);
+    // from '' and to '': a new, empty file (made with + New file): done once it exists.
+    if (e.from === '') return to === '' ? p.files[e.file ?? PAGE_FILE] !== undefined : text.includes(to);
     return (!to || text.includes(to)) && (!from || to.includes(from) || !text.includes(from));
   });
 }

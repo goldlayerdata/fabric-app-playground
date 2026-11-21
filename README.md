@@ -31,7 +31,7 @@ npm run check      # checks the course, then builds it from an empty folder, ste
 | Preview: sandboxed iframe (`allow-scripts`, no same-origin) that links the modules, simulates the Rayfin packages, and draws `src/App.tsx` | `src/preview.html`, `src/runtime.tsx` |
 | Saved answers: the iframe asks the parent page, which answers from the snapshots of the connector's model after a short delay and logs every query | `src/stand-in.ts`, `src/app.ts` (`onQuery`) |
 | Connector names, runtimes and the raw payload, as Rayfin 2.0 resolves them; shared by the preview and the checker | `src/connectors-sim.mjs`, `src/runtime.tsx` (`semanticConnector`) |
-| Cut-off: more than 20 queries in 10 seconds stops the page | `src/app.ts` (`CUTOFF`) |
+| Cut-off: more than 40 queries in 10 seconds stops the page | `src/app.ts` (`CUTOFF`) |
 | Course: chapters, modules, their order, knowledge checks | `src/course.mjs` |
 | Lakehouse reads (filter, sort, pages) | `src/stand-in.ts` (`readLakehouse`), `src/runtime.tsx` (`entityConnector`) |
 | The app's own database: decorators read, `db apply`, permission policies, claim rules | `src/app-data.mjs`; `src/runtime.tsx` (`client.data`, the session, the claims function); `src/app.ts` (`onData`, the Data tab, the **Signed in as** switch) |
