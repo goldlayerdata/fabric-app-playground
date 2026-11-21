@@ -58,8 +58,9 @@
         <span class="course-count" id="course-count"></span>
       </button>
       <span class="top-gap"></span>
-      <button type="button" class="sim-chip" id="btn-version" title="Nothing here talks to Fabric or Power BI. Results are saved snapshots from a Contoso model. Click for the About tab.">
-        Simulated connector · mirrors Rayfin 2.0 · unofficial
+      <div class="signin" id="signin" hidden></div>
+      <button type="button" class="sim-chip" id="btn-version" title="Nothing here talks to Fabric or Power BI: the connectors answer from saved results, and the app's database, sign-in and permissions run in this browser. Click for the About tab.">
+        Simulated · mirrors Rayfin 2.0 · unofficial
       </button>
     </header>
     <div class="drawer-backdrop" id="course-backdrop" hidden></div>
@@ -110,6 +111,7 @@
             <button type="button" role="tab" data-tab="terminal" aria-selected="true">Terminal</button>
             <button type="button" role="tab" data-tab="log" aria-selected="false">Log <span class="count" id="log-count">0</span></button>
             <button type="button" role="tab" data-tab="queries" aria-selected="false">Queries</button>
+            <button type="button" role="tab" data-tab="data" aria-selected="false">Data</button>
             <button type="button" role="tab" data-tab="terms" aria-selected="false">Terms</button>
             <button type="button" role="tab" data-tab="help" aria-selected="false">Help</button>
             <button type="button" role="tab" data-tab="about" aria-selected="false">About</button>
@@ -118,6 +120,7 @@
           <div class="panel-body terminal" id="tab-terminal" role="tabpanel"></div>
           <div class="panel-body" id="tab-log" role="tabpanel" hidden></div>
           <div class="panel-body" id="tab-queries" role="tabpanel" hidden></div>
+          <div class="panel-body data-tab" id="tab-data" role="tabpanel" hidden></div>
           <div class="panel-body" id="tab-terms" role="tabpanel" hidden></div>
           <div class="panel-body" id="tab-help" role="tabpanel" hidden></div>
           <div class="panel-body" id="tab-about" role="tabpanel" hidden></div>

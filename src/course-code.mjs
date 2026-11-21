@@ -850,3 +850,345 @@ export function addLine() {
   });
 }
 `;
+
+// ================================================================== Store your own data
+// ---------------------------------------------------------------- model a sales target
+export const TARGET_IMPORTS = `import { entity, authenticated, uuid, text, int, decimal, date } from '@microsoft/rayfin-core';
+`;
+
+export const TARGET_RULE_ALL = "@authenticated('*')\n";
+
+export const TARGET_CLASS = `
+@entity()
+${TARGET_RULE_ALL}export class SalesTarget {
+  @uuid() id!: string;
+  @text({ max: 50 }) country!: string;
+  @int({ min: 2023, max: 2030 }) year!: number;
+  @decimal({ precision: 18, scale: 2 }) amount!: number;
+  @date() updatedAt!: Date;
+}
+`;
+
+// ---------------------------------------------------------------- register and apply
+export const DATA_SCHEMA = `import { SalesTarget } from './SalesTarget.js';
+
+export type AppSchema = {
+  SalesTarget: SalesTarget;
+};
+
+export const schema = [SalesTarget];
+`;
+
+// ---------------------------------------------------------------- read and write targets
+export const CLIENT_DATA_IMPORTS = `import { dataService } from '@microsoft/rayfin-data';
+import type { AppSchema } from '../../rayfin/data/schema';
+`;
+
+export const TARGETS_LOAD = `import { rayfinClient } from './services/rayfinClient';
+
+// The targets of one year, from the app's own database.
+export function loadTargets(year: number) {
+  return rayfinClient.data.SalesTarget
+    .select(['id', 'country', 'year', 'amount'])
+    .where({ year: { eq: year } })
+    .orderBy({ country: 'asc' })
+    .execute();
+}
+`;
+
+export const ADD_TARGET = `// A new target. The server makes its id; we send the fields.
+export function addTarget(country: string, year: number, amount: number) {
+  return rayfinClient.data.SalesTarget.create({ country, year, amount, updatedAt: new Date() });
+}
+`;
+
+export const TARGETS_WRITES = `
+${ADD_TARGET}
+// A new amount: a patch, found by id.
+export function changeTarget(id: string, amount: number) {
+  return rayfinClient.data.SalesTarget.update({ id }, { amount, updatedAt: new Date() });
+}
+`;
+
+const TARGETS_HEAD = `      <header className="col-span-12 row-span-1 flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Sales targets</h1>
+        <YearSlicer value={year} onChange={(y) => y && setYear(y)} />
+      </header>
+`;
+
+export const TARGETS_PAGE = `import { useState } from 'react';
+import { ErrorPanel, YearSlicer } from './components';
+import { useLoad } from './lake';
+import { loadTargets } from './targets';
+
+// Sales targets, one row per country and year, from the app's own database.
+export default function TargetsPage() {
+  const [year, setYear] = useState(2026);
+  const targets = useLoad(() => loadTargets(year), String(year));
+
+  if (targets.status === 'loading') return <p className="p-4">Loading…</p>;
+  if (targets.status === 'error') return <ErrorPanel message={targets.message} />;
+
+  return (
+    <div className="mx-auto aspect-video w-full max-w-6xl grid grid-cols-12 grid-rows-6 gap-4 p-4">
+${TARGETS_HEAD}      <section className="col-span-8 row-span-5 overflow-auto rounded-lg border border-gray-200 bg-white p-4">
+        {targets.value.length === 0 ? (
+          <p className="text-sm text-gray-500">No targets for {year} yet.</p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-gray-500">
+                <th>Country</th>
+                <th className="text-right">Target (USD)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {targets.value.map((t) => (
+                <tr key={t.id} className="border-t border-gray-100">
+                  <td>{t.country}</td>
+                  <td className="text-right">{t.amount.toLocaleString('en-US')}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+    </div>
+  );
+}
+`;
+
+export const TARGETS_KEY = '`${year}:${saved}`';
+export const TARGETS_ADD_BUTTON = `          <button type="button" className="rounded bg-yellow-400 px-3 py-1 text-sm font-semibold" onClick={() => save(() => addTarget(country, year, Number(amount)))}>
+            Add
+          </button>
+`;
+
+export const TARGETS_PAGE_EDIT = `import { useState } from 'react';
+import { ErrorPanel, YearSlicer } from './components';
+import { useLoad } from './lake';
+import { addTarget, changeTarget, loadTargets } from './targets';
+
+// Sales targets, one row per country and year, from the app's own database.
+export default function TargetsPage() {
+  const [year, setYear] = useState(2026);
+  const [saved, setSaved] = useState(0); // counts the writes, so the list loads again after each one
+  const [message, setMessage] = useState('');
+  const [country, setCountry] = useState('');
+  const [amount, setAmount] = useState('');
+  const [editing, setEditing] = useState<{ id: string; amount: string } | undefined>(undefined);
+  const targets = useLoad(() => loadTargets(year), ${TARGETS_KEY});
+
+  // Runs a write, then loads the list again. A refused write shows its message.
+  async function save(write: () => Promise<unknown>) {
+    setMessage('');
+    try {
+      await write();
+      setEditing(undefined);
+      setSaved((n) => n + 1);
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  if (targets.status === 'loading') return <p className="p-4">Loading…</p>;
+  if (targets.status === 'error') return <ErrorPanel message={targets.message} />;
+
+  return (
+    <div className="mx-auto aspect-video w-full max-w-6xl grid grid-cols-12 grid-rows-6 gap-4 p-4">
+${TARGETS_HEAD}      <section className="col-span-8 row-span-5 overflow-auto rounded-lg border border-gray-200 bg-white p-4">
+        {targets.value.length === 0 ? (
+          <p className="text-sm text-gray-500">No targets for {year} yet.</p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-gray-500">
+                <th>Country</th>
+                <th className="text-right">Target (USD)</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {targets.value.map((t) => (
+                <tr key={t.id} className="border-t border-gray-100">
+                  <td>{t.country}</td>
+                  <td className="text-right">
+                    {editing?.id === t.id ? (
+                      <input
+                        className="w-32 rounded border border-gray-300 px-1 text-right"
+                        value={editing.amount}
+                        onChange={(e) => setEditing({ id: t.id, amount: e.target.value })}
+                      />
+                    ) : (
+                      t.amount.toLocaleString('en-US')
+                    )}
+                  </td>
+                  <td className="text-right">
+                    {editing?.id === t.id ? (
+                      <button type="button" className="rounded border px-2" onClick={() => save(() => changeTarget(t.id, Number(editing.amount)))}>
+                        Save
+                      </button>
+                    ) : (
+                      <button type="button" className="rounded border px-2" onClick={() => setEditing({ id: t.id, amount: String(t.amount) })}>
+                        Edit
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+      <section className="col-span-4 row-span-5 rounded-lg border border-gray-200 bg-white p-4">
+        <h2 className="mb-2 font-semibold">Add a target for {year}</h2>
+        <div className="space-y-2">
+          <input className="w-full rounded border border-gray-300 px-2 py-1" placeholder="Country" value={country} onChange={(e) => setCountry(e.target.value)} />
+          <input className="w-full rounded border border-gray-300 px-2 py-1" placeholder="Amount (USD)" value={amount} onChange={(e) => setAmount(e.target.value)} />
+${TARGETS_ADD_BUTTON}        </div>
+        {message && <p className="mt-2 text-sm text-red-700">{message}</p>}
+      </section>
+    </div>
+  );
+}
+`;
+
+// ---------------------------------------------------------------- change the model
+export const NOTE_FIELD = '  @text({ optional: true, max: 500 }) note?: string;\n';
+export const NOTE_FIELD_SLIP = '  @text({ max: 500 }) note?: string;\n';
+
+// ================================================================== Who is using it
+// ---------------------------------------------------------------- signed in as
+export const SESSION_READ = `import { useEffect, useState } from 'react';
+import { rayfinClient } from './services/rayfinClient';
+
+// Who is signed in, read once.
+export function signedInEmail(): string {
+  const session = rayfinClient.auth.getSession();
+  return session.isAuthenticated && session.user ? session.user.email : 'Not signed in';
+}
+`;
+
+export const USE_SESSION = `
+// The session as state: the page draws again at each sign-in, sign-out or refresh.
+export function useSession() {
+  const [session, setSession] = useState(() => rayfinClient.auth.getSession());
+  useEffect(() => rayfinClient.auth.onSessionChange(() => setSession(rayfinClient.auth.getSession())), []);
+  return session;
+}
+`;
+
+export const SIGNED_IN_ONCE = '        <p className="break-all px-3 pb-2 text-xs text-gray-500">Signed in as {signedInEmail()}</p>\n';
+export const SIGNED_IN_LIVE =
+  "        <p className=\"break-all px-3 pb-2 text-xs text-gray-500\">{session.isAuthenticated && session.user ? `Signed in as ${session.user.email}` : 'Not signed in'}</p>\n";
+
+// ---------------------------------------------------------------- my rows only
+export const OWNER_FIELD = '  @text({ max: 128 }) owner_id!: string;\n';
+
+export const ADD_TARGET_STAMPED = `// A new target, stamped with who added it: the id policies compare as claims.sub.
+export function addTarget(country: string, year: number, amount: number) {
+  const session = rayfinClient.auth.getSession();
+  if (!session.isAuthenticated || !session.user) throw new Error('Sign in before adding a target.');
+  return rayfinClient.data.SalesTarget.create({ country, year, amount, updatedAt: new Date(), owner_id: session.user.id });
+}
+`;
+
+export const OWNER_RULES = `@authenticated(['read', 'create'])
+@authenticated(['update', 'delete'], {
+  policy: (claims, item) => claims.sub.eq(item.owner_id),
+})
+`;
+
+// ---------------------------------------------------------------- two identities (read only)
+export const IDENTITIES_FUNCTION = `import { AudienceType, UserDataFunctions, type RayfinContext } from '@microsoft/fabric-user-data-functions';
+
+export type AppSchema = {
+  SalesTarget: { id: string; country: string };
+};
+
+const udf = new UserDataFunctions();
+
+udf.func(
+  'targetsAndWorkspaces',
+  async (ctx: RayfinContext<AppSchema, AudienceType.Fabric>): Promise<{ targets: number; workspaces: number }> => {
+    // Runs as the signed-in caller: SalesTarget's policies apply.
+    const targets = await ctx.getDataClient().SalesTarget.select(['id']).execute();
+
+    // Runs as the app identity, the owner of the Fabric app item: it needs access in Fabric.
+    const response = await fetch('https://api.fabric.microsoft.com/v1/workspaces', {
+      headers: { Authorization: \`Bearer \${ctx.Tokens.Fabric}\` },
+    });
+    if (!response.ok) throw new Error(\`Fabric API returned \${response.status}\`);
+    const body = (await response.json()) as { value: unknown[] };
+    return { targets: targets.length, workspaces: body.value.length };
+  },
+  [],
+);`;
+
+// ---------------------------------------------------------------- roles the business knows
+export const DYNAMIC_CLAIMS_YML = '    dynamicClaims:\n      enabled: true\n';
+
+export const CLAIMS_RETURN = 'Promise<{ salesRole: string; country: string }>';
+export const CLAIMS_RETURN_SLIP = 'Promise<{ role: string; country: string }>';
+export const CLAIMS_VALUE = 'return { salesRole: entitlement.salesRole, country: entitlement.country };';
+export const CLAIMS_VALUE_SLIP = 'return { role: entitlement.salesRole, country: entitlement.country };';
+
+export const CLAIMS_FUNCTION = `import { UserDataFunctions, type AuthClaimsContext } from '@microsoft/fabric-user-data-functions';
+
+const udf = new UserDataFunctions();
+
+// Who manages what. A real app reads this from its entitlement source: an HR system, a group, a table.
+const ENTITLEMENTS: Record<string, { salesRole: 'director' | 'countryManager'; country: string }> = {
+  'alice@contoso.example': { salesRole: 'countryManager', country: 'Germany' },
+  'carol@contoso.example': { salesRole: 'countryManager', country: 'France' },
+  'bob@contoso.example': { salesRole: 'director', country: 'All' },
+};
+
+// Rayfin calls this at each sign-in and refresh, and adds what it returns to the person's token.
+udf.authClaims(
+  async (ctx: AuthClaimsContext): ${CLAIMS_RETURN} => {
+    const entitlement = ENTITLEMENTS[ctx.auth.email.toLowerCase()];
+    if (!entitlement) ctx.denySignIn('You have no sales role in this app. Ask your administrator.');
+    ${CLAIMS_VALUE}
+  },
+);
+`;
+
+// ---------------------------------------------------------------- each country, its own targets
+export const COUNTRY_READ_RULE = `@authenticated('read', {
+  policy: (claims, item) => claims.country.eq(item.country).or(claims.salesRole.eq('director')),
+})
+`;
+export const COUNTRY_READ_RULE_SLIP = `@authenticated('read', {
+  policy: (claims, item) => claims.country.eq(item.country),
+})
+`;
+export const COUNTRY_RULES = `${COUNTRY_READ_RULE}@authenticated(['create', 'update', 'delete'], {
+  policy: (claims) => claims.salesRole.eq('director'),
+})
+`;
+
+export const IS_DIRECTOR = `
+// A hint for what to show. In the browser, claims come back as text; the policies on the server decide.
+export async function isDirector(): Promise<boolean> {
+  const claims = await rayfinClient.auth.getClaims();
+  return claims.salesRole === 'director';
+}
+`;
+
+export const TARGETS_KEY_SESSION = "`${year}:${saved}:${session.user?.id ?? ''}`";
+export const DIRECTOR_STATE = `  const [director, setDirector] = useState(false);
+  useEffect(() => {
+    isDirector().then(setDirector, () => setDirector(false));
+  }, [session]);
+`;
+
+// Lines the lessons of these chapters edit.
+export const COUNTRY_TEXT = '  @text({ max: 50 }) country!: string;\n';
+export const COUNTRY_TEXT_SLIP = '  @text() country!: string;\n';
+export const TARGETS_ADD_BUTTON_DIRECTOR = `          {director && (
+            <button type="button" className="rounded bg-yellow-400 px-3 py-1 text-sm font-semibold" onClick={() => save(() => addTarget(country, year, Number(amount)))}>
+              Add
+            </button>
+          )}
+`;

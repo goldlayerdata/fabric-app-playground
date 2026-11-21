@@ -34,7 +34,7 @@
 // Text formatting: inline `code`, **bold**, and [[term]] or [[shown text|term-id]] for a word in the
 // glossary (terms.mjs). Nothing else.
 import * as C from './course-code.mjs';
-import { PLACEHOLDER, sqlPlaceholder } from './project.mjs';
+import { FUNCTION_APP, FUNCTION_APP_TEMPLATE, PLACEHOLDER, sqlPlaceholder } from './project.mjs';
 
 const LEARN = 'https://learn.microsoft.com/fabric/apps';
 const learn = {
@@ -48,6 +48,10 @@ const learn = {
   copilotReview: { href: `${LEARN}/create-app-with-github-copilot#review-the-generated-changes`, label: 'Review the generated changes (Microsoft Learn)' },
   entityConnector: { href: `${LEARN}/connectors#configure-an-entity-connector`, label: 'Configure an entity connector (Microsoft Learn)' },
   secureConnector: { href: `${LEARN}/connectors#secure-connector-access`, label: 'Secure connector access (Microsoft Learn)' },
+  dataModels: { href: `${LEARN}/data-models`, label: 'Define data models (Microsoft Learn)' },
+  applySchema: { href: `${LEARN}/data-models#apply-schema-changes`, label: 'Apply schema changes (Microsoft Learn)' },
+  dataPermissions: { href: `${LEARN}/data-permissions`, label: 'Define data permissions (Microsoft Learn)' },
+  authentication: { href: `${LEARN}/authentication`, label: 'Authentication (Microsoft Learn)' },
 };
 const rayfin = {
   docs: { href: 'https://rayfin.ai/docs', label: 'Rayfin docs overview (rayfin.ai)' },
@@ -63,6 +67,30 @@ const rayfin = {
   onePage: { href: 'https://rayfin.ai/docs/reference/known-limitations#collection-queries-return-only-one-page-unless-you-paginate', label: 'Known limitations: one page (rayfin.ai)' },
   connectorAuth: { href: 'https://rayfin.ai/docs/connectors/auth', label: 'Connector authentication (rayfin.ai)' },
   cliConnector: { href: 'https://rayfin.ai/docs/reference/cli/connector', label: 'rayfin connector (rayfin.ai)' },
+  data: { href: 'https://rayfin.ai/docs/data', label: 'Data (rayfin.ai)' },
+  dataClient: { href: 'https://rayfin.ai/docs/data#set-up-the-client', label: 'Set up the client (rayfin.ai)' },
+  childServices: { href: 'https://rayfin.ai/docs/deploy/fabric-apps#child-services', label: 'Fabric apps: child services (rayfin.ai)' },
+  ymlData: { href: 'https://rayfin.ai/docs/reference/config/rayfin-yml#servicesdata', label: 'rayfin.yml: services.data (rayfin.ai)' },
+  modeling: { href: 'https://rayfin.ai/docs/data/modeling', label: 'Modeling entities (rayfin.ai)' },
+  fieldTypes: { href: 'https://rayfin.ai/docs/data/field-types', label: 'Field types (rayfin.ai)' },
+  textMax: { href: 'https://rayfin.ai/docs/data/field-types#text-length-and-mssql', label: 'Text length and MSSQL (rayfin.ai)' },
+  nullable: { href: 'https://rayfin.ai/docs/data/field-types#the-nullable-pattern', label: 'The nullable pattern (rayfin.ai)' },
+  noDecorator: { href: 'https://rayfin.ai/docs/data/permissions#entities-without-a-permission-decorator', label: 'Entities without a permission decorator (rayfin.ai)' },
+  migrations: { href: 'https://rayfin.ai/docs/data/migrations', label: 'Schema changes (rayfin.ai)' },
+  querying: { href: 'https://rayfin.ai/docs/data/querying', label: 'Querying (rayfin.ai)' },
+  mutations: { href: 'https://rayfin.ai/docs/data/mutations', label: 'Creating, updating and deleting (rayfin.ai)' },
+  policies: { href: 'https://rayfin.ai/docs/data/permissions#row-level-policies-with-the-policy-dsl', label: 'Row-level policies (rayfin.ai)' },
+  stampOwner: { href: 'https://rayfin.ai/docs/data/permissions#stamp-owner-fields-from-functions', label: 'Stamp owner fields (rayfin.ai)' },
+  sessions: { href: 'https://rayfin.ai/docs/auth/sessions', label: 'Sessions (rayfin.ai)' },
+  fabricSso: { href: 'https://rayfin.ai/docs/auth/fabric-sso', label: 'Fabric SSO (rayfin.ai)' },
+  delegatedAccess: { href: 'https://rayfin.ai/docs/auth/delegated-access#which-identity-each-surface-uses', label: 'Which identity each surface uses (rayfin.ai)' },
+  functionTokens: { href: 'https://rayfin.ai/docs/auth/delegated-access#function-connections-run-as-the-app', label: 'Function connections run as the app (rayfin.ai)' },
+  localTokens: { href: 'https://rayfin.ai/docs/reference/known-limitations#local-function-connections-use-your-own-identity', label: 'Known limitations: local tokens are yours (rayfin.ai)' },
+  dynamicClaims: { href: 'https://rayfin.ai/docs/auth/dynamic-claims', label: 'Dynamic auth claims (rayfin.ai)' },
+  claimRules: { href: 'https://rayfin.ai/docs/auth/dynamic-claims#claim-rules', label: 'Claim rules (rayfin.ai)' },
+  regionLimit: { href: 'https://rayfin.ai/docs/reference/known-limitations#dynamic-auth-claims-depend-on-the-workspaces-region', label: 'Known limitations: region (rayfin.ai)' },
+  filterClaims: { href: 'https://rayfin.ai/docs/auth/dynamic-claims#filter-data-with-claims', label: 'Filter data with claims (rayfin.ai)' },
+  browserClaims: { href: 'https://rayfin.ai/docs/auth/dynamic-claims#read-claims-in-the-browser', label: 'Read claims in the browser (rayfin.ai)' },
 };
 
 const APP = 'src/App.tsx';
@@ -114,6 +142,25 @@ const LAKE_CLIENT_IMPORT = "import { connectorConfig as lakeConfig, type LakeSch
 const LATEST_LINES_END = '    .first(20)\n    .execute();\n}\n';
 const LINES_HOOK = '  const lines = useLoad(async () => latestLines(await storeKeysIn(country)), country);\n';
 const LINES_END = '      </section>\n    </div>\n  );\n}\n';
+
+// The app's own data, sign-in and claims.
+const TARGET = 'rayfin/data/SalesTarget.ts';
+const DATA_SCHEMA = 'rayfin/data/schema.ts';
+const TARGETS_TS = 'src/targets.ts';
+const TARGETS_PAGE = 'src/TargetsPage.tsx';
+const SESSION_TS = 'src/session.ts';
+const DB_APPLY = 'npx rayfin up db apply';
+const DATA_OFF = '  data:\n    enabled: false\n';
+const DATA_ON = '  data:\n    enabled: true\n    dialect: mssql\n';
+const FABRIC_AUTH = '    fabric:\n      enabled: true\n';
+const AMOUNT_FIELD = '  @decimal({ precision: 18, scale: 2 }) amount!: number;\n';
+const AMOUNT_RENAMED = '  @decimal({ precision: 18, scale: 2 }) targetAmount!: number;\n';
+const UPDATED_FIELD = '  @date() updatedAt!: Date;\n';
+const SESSION_ANCHOR_IMPORT = "import TargetsPage from './TargetsPage';\n";
+const NAV_OPEN = '      <nav className="w-36 shrink-0 space-y-1 p-4">\n';
+const APP_PAGE_STATE = "  const [page, setPage] = useState<PageId>('overview');\n";
+const SESSION_ONCE_FN = C.SESSION_READ.slice(C.SESSION_READ.indexOf('\n// Who is signed in'));
+const TARGETS_STATE_END = '  const [editing, setEditing] = useState<{ id: string; amount: string } | undefined>(undefined);\n';
 
 export const lessons = [
   // ================================================================== 0 Start here
@@ -1792,6 +1839,791 @@ export const lessons = [
     fabric: {
       text: 'Changing the identity grants no permission: with `application`, give the app\'s identity access to the lakehouse; with `delegated`, each user needs their own. Microsoft Learn: client-side types aren\'t an authorization boundary; limit operations and use `@role`.',
       links: [rayfin.connectorAuth, learn.secureConnector, learn.addConnector],
+    },
+  },
+  // ================================================================== Chapter 3: Store your own data
+  // ================================================================== Model it
+  {
+    id: 'data-service',
+    title: 'Turn on the data service',
+    goal: 'give the app a database of its own',
+    builds: ['to-fabric', 'lakehouse-connector'],
+    pbi: 'So far every number was borrowed: the model\'s and the lakehouse\'s. Sales targets don\'t exist anywhere yet. The app will own them, in a database of its own, a bit like a translytical task flow writing to a SQL database in Fabric, except that here the app creates and keeps the database.',
+    idea: 'Our story from here on: country managers set sales targets, a director signs them off, and reports show actuals against targets. First, the app needs somewhere to keep them. One setting turns the [[data service|data-service]] on; then we look at where the data will live.',
+    steps: [
+      {
+        do: 'Open `rayfin/rayfin.yml` and find the marked `data:` under `services`.',
+        file: YML,
+        find: '  data:',
+        see: '`enabled: false`.',
+        why: 'The data app template starts without a database of its own: it was made for apps that only read a semantic model.',
+      },
+      {
+        do: 'Rayfin\'s docs turn services on with `rayfin init`. Try it:',
+        run: 'npx rayfin init --services auth,data',
+        commandFails: true,
+        point: 'terminal',
+        see: 'The playground stops, and says why.',
+        why: 'Rerunning `init` in a project that has a `rayfin.yml` "reruns configuration". What that writes in a data app project like ours isn\'t documented, and the Rayfin CLI 2.0.0\'s code asks before overwriting `rayfin.yml` with a new one from defaults, which would drop our connectors. Before running a command on a real project, check what it changes.',
+      },
+      {
+        do: 'Turn the service on by hand: **Do it for me** sets `enabled: true` under `data:` and adds `dialect: mssql`.',
+        file: YML,
+        edits: [{ file: YML, from: DATA_OFF, to: DATA_ON }],
+        see: 'The two lines under `data:`.',
+        why: 'Microsoft Learn: when you configure Data by hand for Fabric, set `enabled: true` and `dialect: mssql`. Without the dialect, Rayfin stops with "Dialect is required when Data module is enabled". In a real project you type this yourself: the playground keeps `rayfin.yml` read-only to keep the course on track.',
+      },
+      {
+        do: 'Open `package.json` and find the marked `@microsoft/rayfin-data`.',
+        file: 'package.json',
+        find: '"@microsoft/rayfin-data"',
+        see: '`@microsoft/rayfin-data` and `@microsoft/rayfin-core` are already in `dependencies`.',
+        why: 'The template lists them, and our first `npm install` installed them. Nothing to install this time.',
+      },
+      {
+        do: 'Where will the data live? Read this card.',
+        see: 'When we apply our [[schema|schema-apply]], Rayfin creates tables in the app\'s own SQL database, which belongs to the Fabric app item. The page reaches it through the app\'s data API (Data API builder), as the person signed in.',
+        why: 'The tables come from our code, so we change them with Rayfin commands, not in the Fabric portal: Microsoft Learn warns that changes made there are overwritten at the next deploy. A connector can\'t point at this database: `connector add` rejects it. Connectors are for data the app doesn\'t own.',
+      },
+      {
+        do: 'Open the new **Data** tab.',
+        point: 'data',
+        see: 'No tables yet. The tab will show each table, its rows, and who may do what. In the top bar: **Signed in as: Alice**.',
+        why: 'Both are the playground\'s. The Data tab shows every row, whatever the permissions: no real app has this view. Sign-in is simulated too: on Fabric, people sign in with Microsoft Entra ID, and **Who is using it** comes back to it.',
+      },
+    ],
+    summary: [
+      'The data service is one setting in `rayfin.yml`: `enabled: true`, with `dialect: mssql`.',
+      'The database belongs to the Fabric app item, and its tables come from code.',
+      'Connectors are for data the app doesn\'t own; they can\'t point at the app\'s own database.',
+    ],
+    fabric: {
+      text: 'In a real project, `rayfin dev` applies the declared schema when it starts, and `npx rayfin up` deploys it with the app. The app\'s SQL database is one of the app item\'s child services.',
+      links: [rayfin.data, rayfin.childServices, rayfin.ymlData, learn.dataModels],
+    },
+  },
+
+  {
+    id: 'sales-target',
+    title: 'Model a sales target',
+    goal: 'write an entity with field decorators and an explicit permission',
+    builds: ['data-service', 'lakehouse-entities'],
+    pbi: 'Like designing a table: columns, data types, which ones are required. The [[decorators|decorator]] are the table design.',
+    idea: 'One class, `SalesTarget`: a country, a year, an amount. Then a slip that shows why every entity names its permissions.',
+    steps: [
+      {
+        do: 'Create `rayfin/data/SalesTarget.ts` (**+ New file**), and paste the import:',
+        code: C.TARGET_IMPORTS.trim(),
+        edits: [{ file: TARGET, from: '', to: C.TARGET_IMPORTS }],
+        point: 'files',
+        see: 'No red lines.',
+        why: 'The same package as the lakehouse entities, `@microsoft/rayfin-core`, with more decorators: `uuid` for the key, `authenticated` for who may do what.',
+      },
+      {
+        do: 'Under the import, add the class:',
+        code: C.TARGET_CLASS.trim(),
+        edits: [{ file: TARGET, from: C.TARGET_IMPORTS, to: C.TARGET_IMPORTS + C.TARGET_CLASS }],
+        see: 'No red lines.',
+        why: 'Each decorator sets a column\'s type and rules: text up to 50 characters, a whole number from 2023 to 2030, an amount with two decimals. No `Source` this time: Rayfin creates the table. `id` is the key, generated on create. The `!` tells TypeScript the value is filled in for us.',
+      },
+      {
+        do: 'Look at the marked `@authenticated(\'*\')`.',
+        file: TARGET,
+        find: "@authenticated('*')",
+        see: 'Every signed-in person may create, read, update and delete every target. For now.',
+        why: '`\'*\'` means all four actions. **Who is using it** narrows it down.',
+      },
+      {
+        do: 'A slip on purpose: delete the marked `@authenticated(\'*\')` line, then look at **Access** for `SalesTarget` in the **Data** tab.',
+        file: TARGET,
+        edits: [{ file: TARGET, from: C.TARGET_RULE_ALL, to: '' }],
+        point: 'data',
+        see: 'No red line. **Access** still says: any signed-in person: create, read, update and delete.',
+        why: 'An entity with no permission decorator isn\'t locked: it silently gets full access for every signed-in person (Rayfin\'s docs). So we name the permissions on every entity, even when the default looks right.',
+      },
+      {
+        do: UNDO,
+        edits: [{ file: TARGET, from: '@entity()\nexport class SalesTarget', to: `@entity()\n${C.TARGET_RULE_ALL}export class SalesTarget` }],
+        see: 'The decorator is back. **Access** looks the same, but now it\'s written down.',
+      },
+    ],
+    summary: [
+      'An entity is a class with a decorator per field: type, length, range, required or not.',
+      '`id` is the key, and the server generates it.',
+      'With no permission decorator, every signed-in person gets full access, so always write one.',
+    ],
+    fabric: {
+      text: 'Rayfin\'s docs: start every entity with an explicit permission decorator, and never rely on the default.',
+      links: [rayfin.modeling, rayfin.fieldTypes, rayfin.noDecorator],
+    },
+  },
+
+  {
+    id: 'register-apply',
+    title: 'Register and apply',
+    goal: 'register the entity, apply the schema, and check that it really arrived',
+    builds: ['sales-target'],
+    pbi: 'Like publishing a model change: the definition is ready, but nothing changes in the service until it\'s applied, and a successful publish doesn\'t prove the report works yet.',
+    idea: 'We list the entity in the schema, [[apply|schema-apply]] it, and check the deployment. Then a slip that a successful apply hides.',
+    steps: [
+      {
+        do: 'Create `rayfin/data/schema.ts` (**+ New file**), and paste:',
+        code: C.DATA_SCHEMA,
+        edits: [{ file: DATA_SCHEMA, from: '', to: C.DATA_SCHEMA }],
+        point: 'files',
+        see: 'No red lines.',
+        why: 'Two lists, kept in step: the type `AppSchema` (for the client\'s types) and the array `schema` (what Rayfin applies). Every new entity goes in both. As in **Entities from the metadata**, imports under `rayfin/` end in `.js`.',
+      },
+      {
+        do: 'Apply the schema:',
+        run: DB_APPLY,
+        point: 'terminal',
+        see: '`create table SalesTarget (…)`. The **Data** tab shows `SalesTarget`, with no rows.',
+        why: 'Writing a class changes nothing until it\'s applied. `db apply` applies only the database part (tables and permissions) to an app that already exists: we deployed in **Take it to Fabric**.',
+      },
+      {
+        do: 'Check the deployment:',
+        run: 'npx rayfin up status',
+        see: 'Healthy.',
+        why: 'Rayfin\'s docs warn that a successful apply doesn\'t guarantee the data API can read the entity yet. Check the status before testing.',
+      },
+      {
+        do: 'A slip on purpose: in `SalesTarget.ts`, change the marked `@text({ max: 50 })` to `@text()`.',
+        file: TARGET,
+        edits: [{ file: TARGET, from: C.COUNTRY_TEXT, to: C.COUNTRY_TEXT_SLIP }],
+        see: 'No red line.',
+      },
+      {
+        do: 'Apply again:',
+        run: DB_APPLY,
+        see: 'It reports success: `country` becomes `NVARCHAR(MAX)`.',
+        why: 'Wider text loses nothing, so nothing stops it.',
+      },
+      {
+        do: 'In the **Data** tab, press **Read SalesTarget**.',
+        point: 'data',
+        see: '"Internal server error".',
+        why: 'Text with no `max` becomes `NVARCHAR(MAX)` in the database, which can break the data API\'s schema. It shows up only now, after a successful apply. The playground replays the failure Rayfin\'s docs describe.',
+      },
+      {
+        do: 'Put the length back: change `@text()` to `@text({ max: 50 })`.',
+        file: TARGET,
+        edits: [{ file: TARGET, from: C.COUNTRY_TEXT_SLIP, to: C.COUNTRY_TEXT }],
+      },
+      {
+        do: 'Apply again:',
+        run: DB_APPLY,
+        commandFails: true,
+        see: 'Stopped: `country` would get narrower, which is potentially destructive. Nothing was applied.',
+        why: 'Going from unlimited text to 50 characters could cut data, so the command lists what it would do and stops.',
+      },
+      {
+        do: 'The table is empty, so nothing can be lost. Apply with `--force`:',
+        run: `${DB_APPLY} --force`,
+        see: 'Applied. **Read SalesTarget** now returns an empty list.',
+        why: '`--force` only after reading what it lists. On a table with data, think twice.',
+      },
+    ],
+    summary: [
+      'Register each entity twice: in the `AppSchema` type and in the `schema` array.',
+      '`db apply` changes the database; `up status` checks the deployment. Neither proves every query works.',
+      'Every `@text()` needs a `max`. `--force` only after reading what it lists.',
+    ],
+    fabric: {
+      text: 'Rayfin\'s fix for the `NVARCHAR(MAX)` failure is the one we used: add `max`, then `npx rayfin up db apply --force`. During development, restarting `npm run dev` applies the declared schema too.',
+      links: [rayfin.migrations, rayfin.textMax, learn.applySchema],
+    },
+  },
+
+  // ================================================================== Use it
+  {
+    id: 'read-write',
+    title: 'Read and write targets',
+    goal: 'list, add and change targets from a page',
+    builds: ['register-apply', 'lakehouse-rows'],
+    pbi: 'A table visual you can type into. The data API checks every write against the entity\'s permissions, as row-level security checks every query.',
+    idea: 'We register the data service in the client, read the targets with the query chain from **Rows on a page**, and add a **Targets** page that can add and change them.',
+    steps: [
+      {
+        do: 'In `src/services/rayfinClient.ts`, add these imports on new lines under the marked `lake` import:',
+        code: C.CLIENT_DATA_IMPORTS.trim(),
+        edits: [{ file: CLIENT, from: LAKE_CLIENT_IMPORT, to: LAKE_CLIENT_IMPORT + C.CLIENT_DATA_IMPORTS }],
+        see: 'Nothing changes.',
+      },
+      {
+        do: 'In `services`, add a line above `connectors:`, under the marked `services: {`:',
+        code: 'data: dataService<AppSchema>(),',
+        edits: [{ file: CLIENT, from: '  services: {\n', to: '  services: {\n    data: dataService<AppSchema>(),\n' }],
+        see: 'No red lines. `rayfinClient.data.SalesTarget` now exists.',
+        why: 'The client has only the services we register: until now, connectors. `<AppSchema>` gives it our entities\' types.',
+      },
+      {
+        do: 'Create `src/targets.ts` (**+ New file**) with a read:',
+        code: C.TARGETS_LOAD,
+        edits: [{ file: TARGETS_TS, from: '', to: C.TARGETS_LOAD }],
+        see: 'No red lines.',
+        why: 'The same chain as the lakehouse: `select`, `where`, `orderBy`, `execute`. `execute()` returns one page (100 rows), which is plenty here: at most one target per country and year.',
+      },
+      {
+        do: 'Add the page: **Do it for me** writes `src/TargetsPage.tsx` and adds it to the report as **Targets** (page id, `PAGES` entry and import).',
+        code: "targets: { title: 'Targets', Component: TargetsPage },",
+        edits: [
+          { file: TARGETS_PAGE, from: '', to: C.TARGETS_PAGE },
+          { from: "type PageId = 'overview' | 'years' | 'agent' | 'lines';", to: "type PageId = 'overview' | 'years' | 'agent' | 'lines' | 'targets';" },
+          { from: "  lines: { title: 'Order lines', Component: LinesPage },\n", to: "  lines: { title: 'Order lines', Component: LinesPage },\n  targets: { title: 'Targets', Component: TargetsPage },\n" },
+          { from: "import LinesPage from './LinesPage';\n", to: "import LinesPage from './LinesPage';\nimport TargetsPage from './TargetsPage';\n" },
+        ],
+        see: 'Click **Targets** in the page list: "No targets for 2026 yet." The Log shows the read, and who it ran as.',
+      },
+      {
+        do: 'At the end of `src/targets.ts`, add the writes:',
+        code: C.TARGETS_WRITES.trimStart(),
+        edits: [{ file: TARGETS_TS, from: C.TARGETS_LOAD, to: C.TARGETS_LOAD + C.TARGETS_WRITES }],
+        see: 'No red lines.',
+        why: '`create` gets the fields, but no `id`: the server makes one. `update` changes only the fields we send, and finds the row by `id` only. Both return the key plus the fields we sent, not the whole row.',
+      },
+      {
+        do: 'Let the page use them: **Do it for me** gives **Targets** an **Add** form and an **Edit** button on each row.',
+        file: TARGETS_PAGE,
+        edits: [{ file: TARGETS_PAGE, from: C.TARGETS_PAGE, to: C.TARGETS_PAGE_EDIT }],
+        see: 'The form on the right.',
+        why: 'After each write, `saved` goes up by one. It\'s part of the load key, so the list loads again, as a new key did in **Rows on a page**. A refused write shows its message under the form.',
+      },
+      {
+        do: 'On **Targets**, type `Germany` and `3000000`, and press **Add**.',
+        point: 'preview',
+        see: 'The row appears: Germany, 3,000,000. The **Data** tab shows one row, and the **Log** the create.',
+      },
+      {
+        do: 'A slip on purpose: in `src/targets.ts`, delete `\'amount\', ` from the marked `select` list.',
+        file: TARGETS_TS,
+        find: "    .select(['id', 'country', 'year', 'amount'])",
+        edits: [{ file: TARGETS_TS, from: "    .select(['id', 'country', 'year', 'amount'])", to: "    .select(['id', 'country', 'year'])" }],
+        errors: 2,
+        see: 'Red lines in `TargetsPage.tsx`, where the page reads `t.amount`.',
+        why: 'A result has only the fields we select (with no `select` at all, only `id`). TypeScript knows, so reading an unselected field is a red line, not a quiet `undefined`.',
+      },
+      {
+        do: UNDO,
+        edits: [{ file: TARGETS_TS, from: "    .select(['id', 'country', 'year'])", to: "    .select(['id', 'country', 'year', 'amount'])" }],
+        see: 'The red lines go.',
+      },
+      {
+        do: 'Press **Edit** on the Germany row, type `3200000`, and press **Save**.',
+        point: 'preview',
+        see: '3,200,000 in the table. In the Log: an update with `amount` and `updatedAt`.',
+      },
+    ],
+    summary: [
+      'Register `dataService<AppSchema>()` once, then read with the same chain as the lakehouse.',
+      '`create` and `update` take typed fields; writes return the key and what you sent.',
+      'A result has only the fields you select: reading another one is a red line.',
+    ],
+    fabric: {
+      text: 'On Fabric, each call goes to the app\'s data API as the person signed in, and the entity\'s permissions decide. Microsoft Learn\'s pages still show the 1.x client (`new RayfinClient<…>`); Rayfin 2.0 uses `RayfinClient.create` with `dataService`.',
+      links: [rayfin.dataClient, rayfin.querying, rayfin.mutations],
+    },
+  },
+
+  {
+    id: 'change-model',
+    title: 'Change the model',
+    goal: 'add a field safely, and see why a rename costs data',
+    builds: ['read-write', 'register-apply'],
+    pbi: 'Like changing a table in a model that already has data: adding a column is easy, renaming one breaks what used it.',
+    idea: 'An optional note on each target, with a slip on the way. Then a rename, and what it would do to our targets.',
+    steps: [
+      {
+        do: 'A slip on purpose: in `SalesTarget.ts`, add a note on a new line under the marked `amount`:',
+        code: C.NOTE_FIELD_SLIP.trim(),
+        file: TARGET,
+        edits: [{ file: TARGET, from: AMOUNT_FIELD, to: AMOUNT_FIELD + C.NOTE_FIELD_SLIP }],
+        see: 'No red line.',
+        why: 'The `?` tells TypeScript the note may be missing, so `addTarget` doesn\'t have to send one.',
+      },
+      {
+        do: 'In the **Data** tab, look at the `note` column of `SalesTarget`.',
+        point: 'data',
+        see: '`note NVARCHAR(500) NOT NULL`, not applied yet.',
+        why: 'The column would still be required. `?` changes only TypeScript: once applied, a target added without a note would be refused. Rayfin\'s docs: set `{ optional: true }` and mark the property `?`; either one alone is not enough.',
+      },
+      {
+        do: 'Fix it: make the marked line `@text({ optional: true, max: 500 }) note?: string;`.',
+        file: TARGET,
+        edits: [{ file: TARGET, from: C.NOTE_FIELD_SLIP, to: C.NOTE_FIELD }],
+        see: 'In the **Data** tab: `note NVARCHAR(500)`, nullable.',
+      },
+      {
+        do: 'Apply it:',
+        run: DB_APPLY,
+        point: 'terminal',
+        see: '`add column SalesTarget.note NVARCHAR(500)`. Nothing destructive.',
+        why: 'A new optional column loses nothing: existing targets get no note.',
+      },
+      {
+        do: 'A slip on purpose: rename the marked `amount` to `targetAmount`.',
+        file: TARGET,
+        edits: [{ file: TARGET, from: AMOUNT_FIELD, to: AMOUNT_RENAMED }],
+        errors: '1+',
+        see: 'Red lines in `src/targets.ts` and `src/TargetsPage.tsx`: every use of `amount`.',
+        why: 'TypeScript finds every place the old name is used. The database is another matter.',
+      },
+      {
+        do: 'Apply it:',
+        run: DB_APPLY,
+        commandFails: true,
+        see: 'Stopped: `drop column SalesTarget.amount`. Nothing was applied.',
+        why: 'The playground compares columns by name, so a rename is a dropped column and a new one, and the targets we typed would lose their amounts. Rayfin\'s docs list dropping a column as potentially destructive; whether the real CLI recognizes a rename isn\'t documented. Don\'t add `--force` here.',
+      },
+      {
+        do: UNDO,
+        edits: [{ file: TARGET, from: AMOUNT_RENAMED, to: AMOUNT_FIELD }],
+        see: '`amount` again, the red lines go, and the database never changed.',
+      },
+    ],
+    summary: [
+      'Adding an optional field is safe. Optional means `optional: true` and `?`, together.',
+      'A rename looks like a dropped column to the database, and the CLI stops to say so.',
+      'TypeScript finds every use of a renamed field; the database keeps the old column until you apply.',
+    ],
+    fabric: {
+      text: 'To rename a field without losing data, plan it: add the new field, copy the values, update the code, then drop the old one. Rayfin\'s docs don\'t describe a rename step.',
+      links: [rayfin.nullable, rayfin.migrations, learn.dataModels],
+    },
+  },
+
+  // ================================================================== Chapter 4: Who is using it
+  // ================================================================== Sign-in and claims
+  {
+    id: 'signed-in-as',
+    title: 'Signed in as',
+    goal: 'show who is signed in, and follow changes',
+    builds: ['read-write', 'slicer'],
+    pbi: 'Like **View as** in Power BI: test a report as someone else. Here the playground\'s **Signed in as** switch plays that part.',
+    idea: 'Every call to our own data runs as the person signed in. We show who that is on the page, and make the page notice when it changes.',
+    steps: [
+      {
+        do: 'Click the **Signed in as: Alice** switch in the top bar.',
+        point: 'signin',
+        see: 'Four people: Alice, Carol, Bob and Dan.',
+        why: 'Simulated. On Fabric, people sign in with Microsoft Entra ID through Fabric, and nobody can switch to someone else.',
+      },
+      {
+        do: 'Create `src/session.ts` (**+ New file**):',
+        code: C.SESSION_READ,
+        edits: [{ file: SESSION_TS, from: '', to: C.SESSION_READ }],
+        see: 'No red lines.',
+        why: '`getSession()` says who is signed in right now. `isAuthenticated` is true only while the sign-in is still valid. `user` has an `id` and an `email`.',
+      },
+      {
+        do: 'Show it: **Do it for me** adds `Signed in as {signedInEmail()}` above the page list in `App.tsx`, with its import.',
+        edits: [
+          { from: SESSION_ANCHOR_IMPORT, to: SESSION_ANCHOR_IMPORT + "import { signedInEmail } from './session';\n" },
+          { from: NAV_OPEN, to: NAV_OPEN + C.SIGNED_IN_ONCE },
+        ],
+        see: '"Signed in as alice@contoso.example".',
+      },
+      {
+        do: 'Switch to Bob.',
+        point: 'signin',
+        see: 'The page still says Alice.',
+        why: 'The page read the session once, when it drew, and didn\'t hear about the change. We need [[state]] that listens, as **State as a slicer** taught.',
+      },
+      {
+        do: 'At the end of `src/session.ts`, add a hook:',
+        code: C.USE_SESSION.trimStart(),
+        edits: [{ file: SESSION_TS, from: C.SESSION_READ, to: C.SESSION_READ + C.USE_SESSION }],
+        see: 'No red lines.',
+        why: '`onSessionChange` calls us back at each sign-in, sign-out or refresh, and returns a function that stops listening. Returning it from `useEffect` stops it when the page goes away.',
+      },
+      {
+        do: 'Use it: **Do it for me** makes the page list use `useSession()`, and takes out `signedInEmail`, which nothing uses any more.',
+        edits: [
+          { from: "import { signedInEmail } from './session';\n", to: "import { useSession } from './session';\n" },
+          { from: APP_PAGE_STATE, to: `${APP_PAGE_STATE}  const session = useSession();\n` },
+          { from: C.SIGNED_IN_ONCE, to: C.SIGNED_IN_LIVE },
+          { file: SESSION_TS, from: SESSION_ONCE_FN, to: '' },
+        ],
+        done: { file: SESSION_TS, absent: 'signedInEmail' },
+        see: '"Signed in as bob@contoso.example". Switch to Carol, and it follows.',
+      },
+      {
+        do: 'Read this card on [[claims|claim]].',
+        see: 'A sign-in carries claims: `sub`, the person\'s id (the same value as `session.user.id`), `email`, and `role`.',
+        why: 'Permissions compare claims with the fields of each row. `sub` stays the same for a person, so it\'s the one to store. It\'s still personal data: don\'t log it.',
+      },
+      {
+        do: 'How does a real app sign in? Read this card.',
+        see: 'A button calls `ensureSignedInWithFabric(…)` from `@microsoft/rayfin-auth-provider-fabric`, which opens a Fabric sign-in window. Inside the Fabric portal, `initEmbeddedAuth()` at startup signs in with no click.',
+        why: 'The data app template comes with this. The playground skips it, and signs in whoever the switch says.',
+      },
+    ],
+    summary: [
+      '`getSession()` says who is signed in; `onSessionChange` follows changes.',
+      'A page that reads the session once doesn\'t notice a new one: keep it in state.',
+      '`claims.sub` is the stable id that permissions compare.',
+    ],
+    fabric: {
+      text: 'On Fabric, Microsoft Entra ID signs people in through Fabric single sign-on. `onSessionChange` is the callback: there is no `onAuthStateChange`.',
+      links: [rayfin.sessions, rayfin.fabricSso, learn.authentication],
+    },
+  },
+
+  {
+    id: 'my-rows',
+    title: 'My rows only',
+    goal: 'stamp an owner on each row and let only the owner change it',
+    builds: ['signed-in-as', 'change-model'],
+    pbi: 'Like row-level security with `[Owner] = USERPRINCIPALNAME()`, except that RLS only filters what people read. Here each action has its own rule: everyone reads, only the owner changes.',
+    idea: 'Each target gets an owner, stamped when it\'s added. Then a [[policy]] lets only the owner change it. And a slip that no red line catches.',
+    steps: [
+      {
+        do: 'Empty the table first: in the **Data** tab, press **Delete all rows**.',
+        point: 'data',
+        see: '`SalesTarget`: no rows. (Undo is offered.)',
+        why: 'We\'re adding a required field, and existing rows would have no value for it. What the real apply does with them isn\'t documented, so the playground stops if there are any. On a real project, decide what existing rows should get first.',
+      },
+      {
+        do: 'In `SalesTarget.ts`, add an owner on a new line under the marked `updatedAt`:',
+        code: C.OWNER_FIELD.trim(),
+        file: TARGET,
+        edits: [{ file: TARGET, from: UPDATED_FIELD, to: UPDATED_FIELD + C.OWNER_FIELD }],
+        errors: 1,
+        see: 'A red line in `src/targets.ts`: `create` is missing `owner_id`.',
+        why: 'The field is required, and TypeScript checks every create.',
+      },
+      {
+        do: 'Stamp the person signed in: click **Show me in the code** to select `addTarget`, and paste this over it:',
+        code: C.ADD_TARGET_STAMPED,
+        file: TARGETS_TS,
+        edits: [{ file: TARGETS_TS, from: C.ADD_TARGET, to: C.ADD_TARGET_STAMPED }],
+        see: 'The red line goes.',
+        why: '`session.user.id` is the value permissions see as `claims.sub`. Policies check the owner but never fill it in: the code that writes the row does.',
+      },
+      {
+        do: 'Replace the marked `@authenticated(\'*\')` with two rules:',
+        code: C.OWNER_RULES.trim(),
+        file: TARGET,
+        edits: [{ file: TARGET, from: C.TARGET_RULE_ALL, to: C.OWNER_RULES }],
+        see: 'No red lines. In the **Data** tab, **Access** shows the new rules, not applied yet.',
+        why: 'A `policy` is a test on each row: here, "the row\'s `owner_id` is the person signed in". `item.owner_id` is checked against the entity\'s fields, so a typo is a red line.',
+      },
+      {
+        do: 'Apply both changes:',
+        run: DB_APPLY,
+        point: 'terminal',
+        see: 'A new column, `owner_id`, and the new permissions.',
+      },
+      {
+        do: 'As Alice, on **Targets**, add Germany at `3000000`.',
+        point: 'preview',
+        see: 'The row appears. The Log: the create, run as alice@contoso.example, allowed by the `read, create` rule.',
+      },
+      {
+        do: 'Switch to Carol.',
+        point: 'signin',
+        see: 'Carol sees Germany too: everyone reads.',
+      },
+      {
+        do: 'As Carol, press **Edit** on Germany, type `3100000`, and press **Save**.',
+        point: 'preview',
+        see: 'Refused: the message says the row doesn\'t pass `claims.sub.eq(item.owner_id)` for this person. *(Playground wording.)*',
+        why: 'Carol may read every row, but her update reaches only rows that pass the policy, and this one doesn\'t. The data API refused it, not the page. What the real data API answers here isn\'t documented: Rayfin\'s guide says such a request matches nothing.',
+      },
+      {
+        do: 'A slip on purpose: switch back to Alice, and in `addTarget` change `owner_id: session.user.id` to `owner_id: session.user.email`.',
+        file: TARGETS_TS,
+        edits: [{ file: TARGETS_TS, from: 'owner_id: session.user.id', to: 'owner_id: session.user.email' }],
+        see: 'No red line.',
+      },
+      {
+        do: 'As Alice, add France at `1000000`, then press **Edit** on it and **Save**.',
+        point: 'preview',
+        see: 'Refused: Alice can\'t change the row she just added.',
+        why: 'The policy compares the id (`claims.sub`), and we stored the email. Both are text, so there\'s no red line: the values just never match.',
+      },
+      {
+        do: UNDO,
+        edits: [{ file: TARGETS_TS, from: 'owner_id: session.user.email', to: 'owner_id: session.user.id' }],
+        see: '`session.user.id` again.',
+      },
+      {
+        do: 'In the **Data** tab, press **×** on the France row to delete it.',
+        point: 'data',
+        see: 'Only Germany is left. (The Data tab can do this because it ignores permissions: no real app has it.)',
+      },
+      {
+        do: 'Why is `create` outside the policy? Read this card.',
+        see: 'We kept `create` out of the policy on purpose. Rayfin\'s examples put policies on `create`, but Microsoft\'s Data API builder pages disagree on whether a create policy is enforced.',
+        why: 'So here, anyone signed in may add a target, and the code stamps the owner. **Each country, its own targets** puts a rule on `create` anyway, and says how to test it.',
+      },
+    ],
+    summary: [
+      'Stamp the owner on create, from `session.user.id`: policies check it but don\'t fill it in.',
+      'A policy decides, per action, which rows a person may touch: everyone reads, only the owner changes.',
+      'A wrong value in the owner field gives no red line, just a row nobody can change.',
+    ],
+    fabric: {
+      text: 'On Fabric the data API (Data API builder) runs the policy for every request, on the server. The playground runs it in this browser, from your decorators.',
+      links: [rayfin.policies, rayfin.stampOwner, learn.dataPermissions],
+    },
+  },
+
+  {
+    id: 'two-identities',
+    title: 'Two identities',
+    goal: 'say, for every call in the app, whether it runs as the signed-in person or as the app',
+    builds: ['my-rows', 'who-runs-it'],
+    pbi: 'The same question as a data source\'s credentials: single sign-on (each viewer\'s own access) or stored credentials (one account for everyone).',
+    idea: 'No code to write in this lesson: we read the Log and one function, and sort every kind of call by the identity it runs as.',
+    steps: [
+      {
+        do: 'As Alice, open **Overview**, and open a `contoso` query in the **Log**.',
+        point: 'log',
+        see: '`runs as: the signed-in user (delegated)`, then alice@contoso.example.',
+        why: 'Semantic model queries always run as the person, so Power BI\'s own security applies: Read and Build permission, and the model\'s RLS roles. The Contoso model has none, so everyone gets the same numbers.',
+      },
+      {
+        do: 'Open **Order lines**, and open a `lake` read in the **Log**.',
+        point: 'log',
+        see: '`runs as: the app owner (application)`.',
+      },
+      {
+        do: 'Open **Targets**, and open a `SalesTarget` read in the **Log**.',
+        point: 'log',
+        see: '`runs as: the signed-in user`, alice@contoso.example, and the rule that allowed it.',
+        why: 'The app\'s own data always runs as the person, and its policies decide.',
+      },
+      {
+        do: 'Read this function, adapted from Rayfin\'s docs. It isn\'t in our project.',
+        code: C.IDENTITIES_FUNCTION,
+        see: 'In one function, two identities: `ctx.getDataClient()` reads targets, then `ctx.Tokens.Fabric` calls a Fabric API.',
+        why: 'The data client runs as the person who called the function. The token is the app\'s: the owner of the Fabric app item, whoever calls.',
+      },
+      {
+        do: 'What does that mean for the app\'s owner? Read this card.',
+        see: 'Everything the app does with `ctx.Tokens` (Fabric APIs, OneLake, SQL) can reach what the owner of the app item can reach, for every user. Give that account only what the app needs.',
+        why: 'Rayfin\'s docs: for current Fabric apps, the app identity is the owner of the Fabric app item. There is no separate service identity, and Functions accept only application auth for their connections.',
+      },
+      {
+        do: 'Works on my machine? Read this card.',
+        see: 'While developing (`rayfin dev`), `ctx.Tokens` hold **your** tokens. A call that works locally can fail once deployed, if the app\'s owner lacks the access you have.',
+        why: 'Test function connections on the deployed app.',
+      },
+      {
+        do: 'Sort every call by identity. Read this card.',
+        see: 'The signed-in person: semantic model connectors, `client.data`, `ctx.getDataClient()`, and SQL connectors set to `delegated`. The app (the item\'s owner): `ctx.Tokens.*`, `ctx.sql`, and SQL connectors set to `application`.',
+        why: 'The knowledge check at the end of this module asks about it.',
+      },
+    ],
+    summary: [
+      'Two identities: the person (semantic models, the app\'s own data, delegated connectors) and the app\'s owner (function tokens, application connectors).',
+      'The app identity is the owner of the Fabric app item: it reaches what that account reaches, for every user.',
+      'Test function connections on the deployed app: locally, the tokens are yours.',
+    ],
+    fabric: {
+      text: 'Rayfin\'s delegated access page has the full table, including `ctx.sql` (Experimental), which runs as the app and skips entity policies.',
+      links: [rayfin.delegatedAccess, rayfin.functionTokens, rayfin.localTokens],
+    },
+  },
+
+  // ================================================================== Roles from the business
+  {
+    id: 'business-roles',
+    title: 'Roles the business knows',
+    goal: 'add a sales role and a country to each person\'s sign-in with dynamic claims',
+    builds: ['two-identities', 'my-rows'],
+    pbi: 'Dynamic RLS usually needs a security table: who belongs to which country. [[Dynamic claims|dynamic-claim]] are that table, read at sign-in and carried in the person\'s sign-in token.',
+    idea: 'Microsoft Entra ID knows who someone is, not that Alice manages Germany. A small function answers that at sign-in.',
+    steps: [
+      {
+        do: 'Why not `claims.role`? Read this card.',
+        see: 'Rayfin\'s base `role` is a platform class (signed in or not), not a job, and permission decorators accept only `anonymous` and `authenticated`.',
+        why: 'How a Fabric sign-in would carry a business role in `claims.role` isn\'t documented. Business roles come from the app, and that\'s what dynamic claims are for.',
+      },
+      {
+        do: 'Set up [[functions|function]]:',
+        run: 'npx rayfin functions init',
+        point: 'terminal',
+        see: 'A new `rayfin/functions/src/function_app.ts`, and in `rayfin.yml`, Functions on with `auth` of type `application`.',
+        why: 'The claims provider is a function, and Functions use the app identity for their connections.',
+      },
+      {
+        do: 'Turn dynamic claims on: **Do it for me** adds `dynamicClaims:` with `enabled: true` under `auth:` in `rayfin.yml`.',
+        file: YML,
+        edits: [{ file: YML, from: FABRIC_AUTH, to: FABRIC_AUTH + C.DYNAMIC_CLAIMS_YML }],
+        see: 'The two lines under `fabric:`.',
+        why: 'Rayfin\'s docs: `services.auth.dynamicClaims` is the only switch.',
+      },
+      {
+        do: 'Open `rayfin/functions/src/function_app.ts`, click **Show me in the code** to select all of it, and paste this over it:',
+        code: C.CLAIMS_FUNCTION,
+        file: FUNCTION_APP,
+        edits: [{ file: FUNCTION_APP, from: FUNCTION_APP_TEMPLATE, to: C.CLAIMS_FUNCTION }],
+        see: 'No red lines.',
+        why: 'Rayfin calls it at each sign-in and refresh, and adds what it returns to the token. `ctx.auth.email` comes from the sign-in, never typed by the person. No entitlement means no sign-in at all: never a broad default.',
+      },
+      {
+        do: 'A slip on purpose: **Do it for me** renames the claim `salesRole` to `role`, in the return type and in the returned object.',
+        file: FUNCTION_APP,
+        edits: [
+          { file: FUNCTION_APP, from: C.CLAIMS_RETURN, to: C.CLAIMS_RETURN_SLIP },
+          { file: FUNCTION_APP, from: C.CLAIMS_VALUE, to: C.CLAIMS_VALUE_SLIP },
+        ],
+        see: 'No red line.',
+      },
+      {
+        do: 'Generate the claim types:',
+        run: 'npx rayfin functions init',
+        commandFails: true,
+        see: 'It stops: `"role" is a reserved claim name`. *(Playground wording.)*',
+        why: '`role`, `sub`, `email`, `name` and a few more belong to the platform. The CLI checks the names when it generates the types, and the backend checks every result at sign-in.',
+      },
+      {
+        do: 'Undo it: **Do it for me** puts `salesRole` back.',
+        edits: [
+          { file: FUNCTION_APP, from: C.CLAIMS_RETURN_SLIP, to: C.CLAIMS_RETURN },
+          { file: FUNCTION_APP, from: C.CLAIMS_VALUE_SLIP, to: C.CLAIMS_VALUE },
+        ],
+        see: '`salesRole` again.',
+      },
+      {
+        do: 'Generate the claim types again:',
+        run: 'npx rayfin functions init',
+        see: 'A new file, `rayfin/auth/claims.generated.d.ts`: `claims.salesRole` and `claims.country` now exist for policies.',
+        why: 'Until it exists, `claims.salesRole` in a policy is a red line.',
+      },
+      {
+        do: 'Switch to Dan.',
+        point: 'signin',
+        see: 'Sign-in refused: "You have no sales role in this app. Ask your administrator." The page says "Not signed in".',
+        why: 'The playground runs your claims function at each switch. A real app gets the error code `SIGN_IN_DENIED` with the reason as its message, and should show that message.',
+      },
+      {
+        do: 'Before relying on it, read this card.',
+        see: 'Dynamic claims need Functions, which aren\'t in every region or tenant, and the backend must have them on for your workspace\'s region: until then, sign-in carries only the base claims. If the function throws, nobody signs in. The first sign-in after a deploy can time out once (`AUTH_CLAIMS_UNAVAILABLE`). A changed entitlement counts from the next sign-in or refresh.',
+        why: 'Test with the deployed app: `rayfin dev` runs your functions locally, but sign-in still calls the deployed claims function.',
+      },
+    ],
+    summary: [
+      'Business roles come from a `udf.authClaims` function at sign-in, turned on with `dynamicClaims` in `rayfin.yml`.',
+      'Claim names avoid the reserved ones, such as `role`; `functions init` generates their types.',
+      'It fails closed, and depends on Functions and your workspace\'s region.',
+    ],
+    fabric: {
+      text: 'Look people up by `ctx.auth.userId` (stable) or a normalized `ctx.auth.email`, keep secrets out of the deny reason, and throw on any lookup failure rather than return a default.',
+      links: [rayfin.dynamicClaims, rayfin.claimRules, rayfin.regionLimit],
+    },
+  },
+
+  {
+    id: 'country-targets',
+    title: 'Each country, its own targets',
+    goal: 'scope targets by country, and see why hiding a button isn\'t security',
+    builds: ['business-roles', 'my-rows'],
+    pbi: 'Dynamic RLS by country, but per action: country managers read their own country, and only the director changes targets.',
+    idea: 'New rules that compare the claims from our function with each row. Then we hide **Add** from people who can\'t use it, and try the API anyway.',
+    steps: [
+      {
+        do: 'Click **Show me in the code** to select the two rules on `SalesTarget`, and paste this over them:',
+        code: C.COUNTRY_RULES.trim(),
+        file: TARGET,
+        edits: [{ file: TARGET, from: C.OWNER_RULES, to: C.COUNTRY_RULES }],
+        see: 'No red lines.',
+        why: 'A country manager reads their own country\'s rows; the director reads everything and is the only one who writes. `owner_id` stays: it still records who added a row.',
+      },
+      {
+        do: 'Apply it:',
+        run: DB_APPLY,
+        point: 'terminal',
+        see: 'The new permissions of `SalesTarget`.',
+      },
+      {
+        do: 'Make **Targets** load again when someone else signs in: **Do it for me** adds `useSession()` to the page and puts the user\'s id in the load key.',
+        file: TARGETS_PAGE,
+        edits: [
+          { file: TARGETS_PAGE, from: "import { addTarget, changeTarget, loadTargets } from './targets';\n", to: "import { useSession } from './session';\nimport { addTarget, changeTarget, loadTargets } from './targets';\n" },
+          { file: TARGETS_PAGE, from: TARGETS_STATE_END, to: `${TARGETS_STATE_END}  const session = useSession();\n` },
+          { file: TARGETS_PAGE, from: C.TARGETS_KEY, to: C.TARGETS_KEY_SESSION },
+        ],
+        see: 'No red lines.',
+        why: 'What a person may read now depends on who they are, so a new person means a new read. The key decides when `useLoad` runs again.',
+      },
+      {
+        do: 'Switch to Bob. On **Targets**, add France at `1000000`, and Germany at `3000000` if it isn\'t there.',
+        point: 'signin',
+        see: 'Both rows.',
+        why: 'Bob is the director, so the create rule lets him.',
+      },
+      {
+        do: 'Switch to Alice, then to Carol, on **Targets**.',
+        point: 'signin',
+        see: 'Alice sees Germany; Carol sees France.',
+      },
+      {
+        do: 'A slip on purpose: in the read rule, delete the marked `.or(claims.salesRole.eq(\'director\'))`.',
+        file: TARGET,
+        edits: [{ file: TARGET, from: C.COUNTRY_READ_RULE, to: C.COUNTRY_READ_RULE_SLIP }],
+        see: 'No red line.',
+      },
+      {
+        do: 'Apply it:',
+        run: DB_APPLY,
+        see: 'The new permissions.',
+      },
+      {
+        do: 'Switch to Bob.',
+        point: 'signin',
+        see: 'No targets for 2026.',
+        why: 'Bob\'s country claim is `All`, which matches no row. The director needs a rule of his own.',
+      },
+      {
+        do: 'Undo it: put back `.or(claims.salesRole.eq(\'director\'))` (or **Do it for me**).',
+        edits: [{ file: TARGET, from: C.COUNTRY_READ_RULE_SLIP, to: C.COUNTRY_READ_RULE }],
+      },
+      {
+        do: 'Apply it again:',
+        run: DB_APPLY,
+        see: 'The director\'s rule is back. Bob sees both rows at the page\'s next read: switch to Alice and back to Bob.',
+      },
+      {
+        do: 'Hide **Add** from people who can\'t use it. At the end of `src/session.ts`, add:',
+        code: C.IS_DIRECTOR.trimStart(),
+        edits: [{ file: SESSION_TS, from: C.USE_SESSION, to: C.USE_SESSION + C.IS_DIRECTOR }],
+        see: 'No red lines.',
+        why: 'In the browser, claims come back as text (`\'director\'`), and they\'re a hint for what to show. They decide nothing.',
+      },
+      {
+        do: 'Use it: **Do it for me** shows **Add** on **Targets** only when `isDirector()` says so.',
+        file: TARGETS_PAGE,
+        edits: [
+          { file: TARGETS_PAGE, from: "import { useState } from 'react';\n", to: "import { useEffect, useState } from 'react';\n" },
+          { file: TARGETS_PAGE, from: "import { useSession } from './session';\n", to: "import { isDirector, useSession } from './session';\n" },
+          { file: TARGETS_PAGE, from: '  const session = useSession();\n', to: `  const session = useSession();\n${C.DIRECTOR_STATE}` },
+          { file: TARGETS_PAGE, from: C.TARGETS_ADD_BUTTON, to: C.TARGETS_ADD_BUTTON_DIRECTOR },
+        ],
+        see: 'As Bob, **Add** is there. Switch to Alice: no **Add** button.',
+      },
+      {
+        do: 'As Alice, in the **Data** tab, use **Send directly** to send the create it suggests: Germany 2027.',
+        point: 'data',
+        see: 'Refused by the data API.',
+        why: 'Hiding a button stops nobody who calls the API another way. The policy on the server is the security: without the create rule, this would have worked.',
+      },
+      {
+        do: 'Read the watch-out card.',
+        see: 'Our create rule relies on create policies being enforced. Rayfin\'s examples use them, but Microsoft\'s Data API builder pages disagree: one says `create` doesn\'t support policies, another says it does for SQL Server.',
+        why: 'Before relying on it, test it on the deployed app: sign in as a country manager, and send a create from outside the page. **Approvals**, a later chapter, stamps who asked in a function instead.',
+      },
+    ],
+    summary: [
+      'A policy can compare dynamic claims with row fields, per action. The director needs his own `.or`.',
+      'What a person may read depends on who they are: load again when the session changes.',
+      'Hiding a button is a hint; the policy on the server is the security.',
+    ],
+    fabric: {
+      text: 'In the browser, `getClaims()` returns claims as strings, for UI hints only. If dynamic claims are off for your region, `claims.salesRole` is missing from the token, and Data API builder refuses every request whose policy names it (403).',
+      links: [rayfin.filterClaims, rayfin.browserClaims, learn.secureConnector],
     },
   },
 ];

@@ -5,8 +5,14 @@
 import * as React from 'react';
 import * as jsxRuntime from 'react/jsx-runtime';
 import { createRoot, type Root } from 'react-dom/client';
+import { checkClaimsResult } from './app-data.mjs';
 
 type ExecuteQueryInput = { query: string; resultSetRowCountLimit?: number };
+
+/** Who the playground's "Signed in as" switch says is signing in. */
+type Persona = { userId: string; email: string };
+/** How sign-in works in this project: the claims function, when rayfin.yml turns dynamic claims on. */
+type SignIn = { persona: Persona; claimsFile?: string; contract?: { name: string; type: string }[] };
 
 type RunMessage = {
   type: 'run';
@@ -16,10 +22,12 @@ type RunMessage = {
   installed: string[];
   connectors: string[];
   env: Record<string, string>;
+  signIn: SignIn;
 };
 type FromParent =
   | RunMessage
   | { type: 'outline'; on: boolean }
+  | { type: 'signIn'; runId: number; signIn: SignIn }
   | { type: 'queryResult'; runId: number; id: number; result?: unknown; thrown?: string };
 
 const post = (msg: Record<string, unknown>) => parent.postMessage({ source: 'playground-preview', ...msg }, '*');
@@ -51,8 +59,9 @@ function makePackages(run: RunMessage): Record<string, unknown> {
   };
 
   const rayfinAuth = {
-    // Sign-in is simulated: the page behaves as if the user were signed in.
-    browserSession: () => () => ({ signOut: async () => {} }),
+    // Sign-in is simulated: the session is whoever the playground's switch says, with the claims the
+    // project's claims function returned (run here, in this sandbox).
+    browserSession: () => () => auth,
   };
 
   const SEMANTIC_MODEL_RUNTIME = Symbol('fabricSemanticModel');
@@ -108,7 +117,21 @@ function makePackages(run: RunMessage): Record<string, unknown> {
 
   // Decorators record metadata for the Rayfin CLI; in the page they change nothing, so here they do nothing.
   const decorator = () => () => undefined;
-  const rayfinCore = { entity: decorator, role: decorator, int: decorator, decimal: decorator, text: decorator, date: decorator };
+  const rayfinCore = Object.fromEntries(
+    ['entity', 'role', 'authenticated', 'anonymous', 'uuid', 'int', 'decimal', 'text', 'email', 'date', 'boolean', 'set'].map((n) => [n, decorator]),
+  );
+
+  // The functions package, as a claims function sees it: `authClaims` records the handler for sign-in.
+  const userDataFunctions = {
+    AudienceType: { Sql: 'Sql', Storage: 'Storage', Fabric: 'Fabric', AzureAI: 'AzureAI', ADO: 'ADO' },
+    UserDataFunctions: class {
+      func() {}
+      authClaims(handler: ClaimsHandler) {
+        if (claimsHandler) throw new Error('At most one udf.authClaims per app: a second registration fails.');
+        claimsHandler = handler;
+      }
+    },
+  };
 
   return {
     react: React,
@@ -118,10 +141,157 @@ function makePackages(run: RunMessage): Record<string, unknown> {
     '@microsoft/rayfin-connectors': rayfinConnectors,
     '@microsoft/rayfin-connector-fabric-semanticmodel': connectorPackage,
     '@microsoft/rayfin-core': rayfinCore,
+    '@microsoft/rayfin-data': { dataService: () => () => dataApi() },
+    '@microsoft/fabric-user-data-functions': userDataFunctions,
     // Types only: the package has no runtime code.
     '@microsoft/rayfin-connector-fabric-graphql': {},
-    '@microsoft/rayfin-data': {},
   };
+}
+
+// ---------------------------------------------------------------- the app's own data (client.data)
+// Each call goes to the parent page, which answers as the app's data API would, as the person signed in:
+// it checks the entity's permission rules against their claims (Playground: on Fabric, the data API
+// does this on the server, and the real client sends GraphQL).
+type DataState = { select?: string[]; where?: unknown; orderBy?: Record<string, string>; first?: number; after?: string };
+
+function sendData(msg: Record<string, unknown>): Promise<unknown> {
+  const id = nextQueryId++;
+  post({ type: 'data', runId: currentRun, id, ...msg });
+  return new Promise((resolve, reject) => pending.set(id, { resolve, reject }));
+}
+
+function dataApi() {
+  const cache = new Map<string, unknown>();
+  return new Proxy(
+    {},
+    {
+      get(_t, entity) {
+        if (typeof entity !== 'string' || entity === 'then') return undefined;
+        if (!cache.has(entity)) cache.set(entity, entityData(entity));
+        return cache.get(entity);
+      },
+    },
+  );
+}
+
+function entityData(entity: string): Record<string, unknown> {
+  const read = (state: DataState, kind: 'execute' | 'paged' | 'first') => sendData({ entity, op: 'read', kind, state });
+  const builder = (state: DataState): Record<string, unknown> => ({
+    select: (fields: string[]) => builder({ ...state, select: [...fields] }),
+    where: (where: unknown) => builder({ ...state, where }),
+    orderBy: (orderBy: Record<string, string>) => builder({ ...state, orderBy }),
+    first: (first: number) => builder({ ...state, first }),
+    after: (after: string) => builder({ ...state, after }),
+    execute: () => read(state, 'execute'),
+    executePaginated: () => read(state, 'paged'),
+    findFirst: () => read({ ...state, first: 1 }, 'first'),
+  });
+  return {
+    ...builder({}),
+    // These return only the primary key (rayfin.ai: Querying).
+    findMany: (filter?: unknown) => read({ where: filter }, 'execute'),
+    findFirst: (filter?: unknown) => read({ where: filter, first: 1 }, 'first'),
+    findById: (id: string) => read({ where: { id: { eq: id } }, first: 1 }, 'first'),
+    create: (input: Record<string, unknown>) => sendData({ entity, op: 'create', input }),
+    update: (where: { id: string }, input: Record<string, unknown>) => sendData({ entity, op: 'update', recordId: where?.id, input }),
+    delete: (where: { id: string }) => sendData({ entity, op: 'delete', recordId: where?.id }),
+  };
+}
+
+// ---------------------------------------------------------------- sign-in (simulated)
+type Session = { user: { id: string; email: string } | null; isAuthenticated: boolean; isAnonymous: boolean; expiresAt?: Date };
+type ClaimsHandler = (ctx: unknown) => unknown;
+
+const signedOut: Session = { user: null, isAuthenticated: false, isAnonymous: false };
+let session: Session = signedOut;
+let claims: Record<string, unknown> = {};
+let claimsHandler: ClaimsHandler | undefined;
+let loadModule: ((id: string) => Record<string, unknown>) | undefined;
+const listeners = new Set<(s: Session | null) => void>();
+
+/** The real Auth SDK's error: a code and a message (rayfin.ai: Dynamic auth claims, handle sign-in errors). */
+function authError(code: string, message: string) {
+  const e = new Error(message) as Error & { code: string };
+  e.name = 'AuthError';
+  e.code = code;
+  return e;
+}
+
+const auth = {
+  getSession: () => session,
+  onSessionChange(cb: (s: Session | null) => void) {
+    listeners.add(cb);
+    return () => {
+      listeners.delete(cb);
+    };
+  },
+  // Tokens carry every app-defined claim as a string, so the browser gets strings (rayfin.ai: read claims in the browser).
+  async getClaims() {
+    if (!session.isAuthenticated) throw authError('NO_SESSION', 'No one is signed in.');
+    return Object.fromEntries(Object.entries(claims).map(([k, v]) => [k, String(v)]));
+  },
+  async refreshSession() {
+    if (!session.isAuthenticated) throw authError('NO_SESSION', 'No one is signed in.');
+    return { accessToken: 'simulated', tokenType: 'Bearer', expiresIn: 3600 };
+  },
+  async signOut() {
+    setSession(signedOut, {});
+  },
+};
+
+function setSession(next: Session, nextClaims: Record<string, unknown>) {
+  session = next;
+  claims = nextClaims;
+  for (const cb of [...listeners]) cb(next.isAuthenticated ? next : null);
+}
+
+class SignInDenied extends Error {}
+
+/**
+ * Sign in the switch's person: the base claims, plus the claims function's result when rayfin.yml turns
+ * dynamic claims on. Fails closed, as Rayfin's docs describe: a denial, a throw or a bad result means no
+ * session. Tells the parent page who is signed in, for the Log and the permission checks.
+ */
+async function signIn(runId: number, s: SignIn) {
+  const base = { sub: s.persona.userId, email: s.persona.email, role: 'authenticated' };
+  let error: { code: string; message: string } | undefined;
+  let extra: Record<string, unknown> = {};
+  if (s.claimsFile) {
+    try {
+      if (!claimsHandler && loadModule) loadModule(s.claimsFile);
+      if (!claimsHandler) throw new Error('The claims function is not registered: no udf.authClaims(...) ran.');
+      const ctx = Object.freeze({
+        auth: Object.freeze({ userId: s.persona.userId, email: s.persona.email }),
+        getSecret: () => undefined,
+        denySignIn: (reason?: string): never => {
+          throw new SignInDenied(String(reason ?? 'Sign-in was denied by the app.').trim().slice(0, 256));
+        },
+      });
+      const result = await Promise.race([
+        Promise.resolve().then(() => (claimsHandler as ClaimsHandler)(ctx)),
+        new Promise((_, reject) => setTimeout(() => reject(authError('AUTH_CLAIMS_UNAVAILABLE', 'The claims function did not answer within 10 seconds.')), 10_000)),
+      ]);
+      const bad = checkClaimsResult(result, s.contract);
+      if (bad) error = { code: 'AUTH_CLAIMS_INVALID_OUTPUT', message: `The claims function returned claims that don't match the rules: ${bad}.` };
+      else extra = result as Record<string, unknown>;
+    } catch (e) {
+      error =
+        e instanceof SignInDenied
+          ? { code: 'SIGN_IN_DENIED', message: e.message }
+          : (e as { code?: string }).code === 'AUTH_CLAIMS_UNAVAILABLE'
+            ? { code: 'AUTH_CLAIMS_UNAVAILABLE', message: (e as Error).message }
+            : { code: 'AUTH_CLAIMS_FAILED', message: `The claims function threw: ${(e as Error)?.message ?? e}` };
+    }
+  }
+  if (runId !== currentRun) return;
+  if (error) setSession(signedOut, {});
+  else {
+    setSession(
+      { user: { id: s.persona.userId, email: s.persona.email }, isAuthenticated: true, isAnonymous: false, expiresAt: new Date(Date.now() + 3_600_000) },
+      { ...base, ...extra },
+    );
+  }
+  post({ type: 'identity', runId, signedIn: !error, claims: error ? {} : { ...base, ...extra }, error });
 }
 
 // ---------------------------------------------------------------- simulated entity connectors (Category A)
@@ -225,7 +395,7 @@ type Registration = {
   ) => { setters: ((m: unknown) => void)[]; execute?: () => void };
 };
 
-function link(run: RunMessage): Record<string, unknown> {
+function link(run: RunMessage): (id: string) => Record<string, unknown> {
   const packages = makePackages(run);
   const cache = new Map<string, Record<string, unknown>>();
   const env = { ...run.env, MODE: 'development', DEV: true, PROD: false, BASE_URL: '/' } as Record<string, any>;
@@ -238,7 +408,8 @@ function link(run: RunMessage): Record<string, unknown> {
       else if (p !== '.') parts.push(p);
     }
     const base = parts.join('/');
-    for (const ext of ['', '.tsx', '.ts', '/index.tsx', '/index.ts']) if (run.files[base + ext] !== undefined) return base + ext;
+    const noJs = base.replace(/\.js$/, '');
+    for (const b of [base, noJs]) for (const ext of ['', '.tsx', '.ts', '/index.tsx', '/index.ts']) if (run.files[b + ext] !== undefined) return b + ext;
     throw simulated(`Cannot find "${spec}", imported from ${from}.`);
   };
 
@@ -277,7 +448,7 @@ function link(run: RunMessage): Record<string, unknown> {
     return exportsObj;
   };
 
-  return load(run.entry);
+  return load;
 }
 
 // ---------------------------------------------------------------- drawing
@@ -309,24 +480,36 @@ function run(msg: RunMessage) {
     post({ type: 'empty', runId: msg.runId });
     return;
   }
-  let Page: unknown;
+  listeners.clear();
+  claimsHandler = undefined;
   try {
-    Page = link(msg).default;
+    loadModule = link(msg);
   } catch (e) {
     post({ type: 'runtimeError', message: String((e as Error)?.message ?? e) });
     return;
   }
-  if (typeof Page !== 'function') {
-    post({ type: 'runtimeError', message: `${msg.entry} needs a default export: export default function App() { ... }` });
-    return;
-  }
-  const Component = Page as React.ComponentType;
-  root.render(
-    <ErrorBoundary>
-      <Component />
-    </ErrorBoundary>,
-  );
-  post({ type: 'ran', runId: msg.runId });
+  // Sign in first, so the page draws with a session (as the template's sign-in does before showing the app).
+  void signIn(msg.runId, msg.signIn).then(() => {
+    if (msg.runId !== currentRun) return;
+    let Page: unknown;
+    try {
+      Page = loadModule!(msg.entry).default;
+    } catch (e) {
+      post({ type: 'runtimeError', message: String((e as Error)?.message ?? e) });
+      return;
+    }
+    if (typeof Page !== 'function') {
+      post({ type: 'runtimeError', message: `${msg.entry} needs a default export: export default function App() { ... }` });
+      return;
+    }
+    const Component = Page as React.ComponentType;
+    root!.render(
+      <ErrorBoundary>
+        <Component />
+      </ErrorBoundary>,
+    );
+    post({ type: 'ran', runId: msg.runId });
+  });
 }
 
 window.addEventListener('message', (e: MessageEvent<FromParent>) => {
@@ -335,6 +518,7 @@ window.addEventListener('message', (e: MessageEvent<FromParent>) => {
   if (!msg || typeof msg !== 'object') return;
   if (msg.type === 'run') run(msg);
   if (msg.type === 'outline') document.body.classList.toggle('outline-cells', msg.on);
+  if (msg.type === 'signIn' && msg.runId === currentRun) void signIn(msg.runId, msg.signIn);
   if (msg.type === 'queryResult' && msg.runId === currentRun) {
     const p = pending.get(msg.id);
     if (!p) return;

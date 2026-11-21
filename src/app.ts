@@ -6,20 +6,38 @@ import { terms, help } from './terms.mjs';
 import editorLibs from 'virtual:editor-libs';
 import { answer, entries, readLakehouse, savedResult, snapshotsTakenAt, type Answer, type Mode, type ReadAnswer, type ReadRequest } from './stand-in';
 import {
+  CLAIMS_TYPES,
+  FUNCTION_APP,
   PAGE_FILE,
   SIMULATED_ENV,
   applyFileEdits,
   checkpoint,
   connectorAuth,
   connectorNames,
+  dynamicClaims,
   emptyProject,
+  functionsEnabled,
   isGenerated,
+  numberRuns,
   runCommand,
   stepIsDone,
 } from './project.mjs';
+import {
+  claimsContract,
+  columnOf,
+  dataService,
+  declared,
+  describeRule,
+  effectiveRules,
+  emptyDb,
+  entityFiles,
+  handleRequest,
+  sqlType,
+  unlimitedText,
+} from './app-data.mjs';
 
 type Edit = { file?: string; from: string; to: string; all?: boolean };
-type Point = 'editor' | 'files' | 'preview' | 'status' | 'terminal' | 'log' | 'queries' | 'terms' | 'run' | 'reset';
+type Point = 'editor' | 'files' | 'preview' | 'status' | 'terminal' | 'log' | 'queries' | 'terms' | 'run' | 'reset' | 'data' | 'signin';
 type Step = {
   do: string;
   code?: string;
@@ -47,7 +65,12 @@ type Lesson = {
 type Question = { q: string; options: string[]; answer: number; why: string; lesson: string; step: number };
 type Module = { id: string; title: string; goal: string; lessons: string[]; check?: Question[] };
 type Chapter = { id: string; title: string; goal: string; builds: string[]; modules?: string[]; coming?: string[] };
-type Project = { cwd: string | null; appDir: string | null; files: Record<string, string>; packages: string[]; dev: boolean; history: string[] };
+// The app's own database, as src/app-data.mjs keeps it (simulated, in this browser).
+type AppColumn = { kind: string; optional: boolean; max?: number | 'MAX'; min?: number; maxValue?: number; precision?: number; scale?: number; values?: string[] };
+type AppRule = { role: string; actions: string[]; source: string };
+type AppTable = { columns: Record<string, AppColumn>; rules: AppRule[] };
+type AppDb = { tables: Record<string, AppTable>; rows: Record<string, Record<string, unknown>[]> };
+type Project = { cwd: string | null; appDir: string | null; files: Record<string, string>; packages: string[]; dev: boolean; history: string[]; db: AppDb };
 
 // ---------------------------------------------------------------- settings
 const RUN_DELAY_MS = 700; // compile and run after a pause in typing
@@ -61,6 +84,7 @@ const course = modules as Module[]; // in course order: the live chapters' modul
 const byId = new Map((lessons as Lesson[]).map((l) => [l.id, l]));
 /** Every lesson, in course order. */
 const order: Lesson[] = course.flatMap((m) => m.lessons.map((id) => byId.get(id)!));
+numberRuns(order); // a command the course runs again is done once it is in the history that many times
 const moduleOf = (l: Lesson) => course.find((m) => m.lessons.includes(l.id))!;
 /** "2.1": module number, then the lesson's place in it. */
 function num(l: Lesson) {
@@ -172,6 +196,7 @@ function loadProject(): Project {
     const p = JSON.parse(store.get('project') ?? 'null') as Project | null;
     if (p && typeof p.files === 'object' && Array.isArray(p.packages)) {
       for (const f of Object.keys(p.files)) p.files[f] = p.files[f].replace(/\r\n/g, '\n');
+      p.db ??= emptyDb() as AppDb;
       return p;
     }
   } catch {
@@ -200,6 +225,8 @@ function replaceProject(next: Project, note: string, open?: string) {
   else showNoFiles();
   renderPrompt();
   updateDoneTick();
+  renderSignIn();
+  renderData();
   runNow();
   // Undo goes back to the file that was open, too.
   showUndo(note, () => replaceProject(previous, 'Undone.', wasOpen));
@@ -766,6 +793,8 @@ function pointAt(p?: Point) {
     terms: tabButton('terms'),
     run: $('btn-run'),
     reset: $('btn-reset'),
+    data: tabButton('data'),
+    signin: $('signin'),
   }[p];
   target?.classList.add('pointed');
 }
@@ -1008,6 +1037,7 @@ function syncModels() {
         project.files[path] = model!.getValue(monaco.editor.EndOfLinePreference.LF);
         revalidateAll();
         saveProject();
+        scheduleDataRender();
         updateDoneTick();
         clearTimeout(runTimer);
         runTimer = window.setTimeout(runNow, RUN_DELAY_MS);
@@ -1026,6 +1056,17 @@ function syncModels() {
   updateLibs();
   renderFiles();
   revalidateAll();
+  scheduleDataRender();
+}
+
+/** The Data tab reads the decorators: draw it again shortly after the code changes. */
+let dataRenderTimer: number | undefined;
+function scheduleDataRender() {
+  clearTimeout(dataRenderTimer);
+  dataRenderTimer = window.setTimeout(() => {
+    renderSignIn();
+    renderData();
+  }, 300);
 }
 
 function openFile(path: string) {
@@ -1263,6 +1304,7 @@ async function runNow() {
     installed: project.packages,
     connectors: connectorNames(project),
     env: SIMULATED_ENV,
+    signIn: signInSettings(),
   });
   showRunning();
 }
@@ -1291,6 +1333,12 @@ window.addEventListener('message', (e: MessageEvent) => {
   if (msg.type === 'empty') showIdle('No page yet: `src/App.tsx` is empty.');
   if (msg.type === 'query' && msg.runId === runId) onQuery(msg.runId, msg.id, String(msg.query), msg.limit);
   if (msg.type === 'read' && msg.runId === runId) onRead(msg.runId, msg.id, msg as ReadRequest);
+  if (msg.type === 'data' && msg.runId === runId) {
+    // Only what the page asked for: the message's own fields (its id, its run) stay out of the request.
+    const req: DataRequest = { entity: msg.entity, op: msg.op, kind: msg.kind, state: msg.state, input: msg.input, id: msg.recordId };
+    onData(msg.runId, msg.id, JSON.parse(JSON.stringify(req)));
+  }
+  if (msg.type === 'identity' && msg.runId === runId) onIdentity(msg);
 });
 
 /** Count a query or read against the cut-off; false when the page was stopped. */
@@ -1313,7 +1361,7 @@ function countQuery() {
 /** Simulated identity, from the connector's `auth` in rayfin.yml (a real app doesn't print it). */
 function runsAs(connector: string) {
   const auth = connectorAuth(project, connector);
-  if (auth === 'delegated') return 'runs as: the signed-in user (delegated)';
+  if (auth === 'delegated') return `runs as: the signed-in user (delegated)${dataService(project).enabled ? ` · ${who()}` : ''}`;
   if (auth === 'application') return 'runs as: the app owner (application)';
   return '';
 }
@@ -1391,6 +1439,7 @@ function submitCommand(line: string) {
   saveProject();
   renderPrompt();
   const filesChanged = JSON.stringify(before.files) !== JSON.stringify(project.files);
+  if (before.db !== project.db) renderData();
   if (filesChanged) {
     syncModels();
     if (!activeFile && project.files[PAGE_FILE] !== undefined) openFile(PAGE_FILE);
@@ -1685,6 +1734,18 @@ function renderAbout() {
       ' in the Rayfin docs.',
     ),
     p(
+      h('b', {}, 'The app\'s own data and sign-in. '),
+      'The app\'s database is simulated in this browser: `npx rayfin up db apply` reads the entities registered in rayfin/data/schema.ts (with a small parser of the decorators), compares them with what it applied last, and stops before the changes Rayfin\'s docs call potentially destructive; its output is the playground\'s wording. Each request from the page is checked against the entity\'s permission rules (`policy` with `.eq`, `.neq`, `.and`, `.or`; `include` and `exclude`) for the claims of the person on the Signed in as switch, here in the browser: on Fabric, the data API (Data API builder) checks them on the server. The people, ids and emails are made up; on Fabric, people sign in with Microsoft Entra ID and nobody switches. When rayfin.yml turns dynamic claims on, your claims function runs in the page\'s sandbox at each switch; on Fabric, the deployed function runs at sign-in and refresh, if the backend has dynamic claims for your workspace\'s region. Refusals and errors without documented wording start with Playground:. The Data tab shows every row, ignoring permissions: no real app has that view. The real thing: ',
+      a('https://rayfin.ai/docs/data', 'Data'),
+      ', ',
+      a('https://rayfin.ai/docs/data/permissions', 'Permissions'),
+      ' and ',
+      a('https://rayfin.ai/docs/auth/dynamic-claims', 'Dynamic auth claims'),
+      ' in the Rayfin docs, and ',
+      a('https://learn.microsoft.com/fabric/apps/data-permissions', 'Define data permissions'),
+      ' on Microsoft Learn.',
+    ),
+    p(
       h('b', {}, 'The course. '),
       'Its structure follows the way Microsoft Learn builds training (modules of short units, a knowledge check at the end of a module, summaries) and the way the Rayfin docs teach (numbered steps, then what to read next). Only the structure is borrowed.',
     ),
@@ -1706,6 +1767,344 @@ function renderAbout() {
       'are kept in this browser only. Reset takes a lesson back to its start; the course drawer can start the project over. Both offer Undo.',
     ),
   );
+}
+
+// ---------------------------------------------------------------- sign-in (simulated) and the app's own data
+// The "Signed in as" switch: made-up people, ids and emails. On Fabric, people sign in with Microsoft
+// Entra ID, and nobody can switch to someone else.
+type Persona = { id: string; name: string; email: string; userId: string; about: string };
+const PERSONAS: Persona[] = [
+  { id: 'alice', name: 'Alice', email: 'alice@contoso.example', userId: '6f1c2a0e-41b7-4c55-9a1e-a11ce0000001', about: 'country manager, Germany' },
+  { id: 'carol', name: 'Carol', email: 'carol@contoso.example', userId: '2d8e7b4f-0c3a-4e9d-8b6f-ca401000002a', about: 'country manager, France' },
+  { id: 'bob', name: 'Bob', email: 'bob@contoso.example', userId: '9a4b6c1d-7e2f-4a3b-b5c6-b0b000000003', about: 'sales director' },
+  { id: 'dan', name: 'Dan', email: 'dan@contoso.example', userId: '4e5f6a7b-8c9d-4e0f-a1b2-da9000000004', about: 'no sales role' },
+];
+let persona: Persona = PERSONAS.find((x) => x.id === store.get('persona')) ?? PERSONAS[0];
+
+/** Who is signed in, as the permission checks see it. The claims come from the preview, which runs the claims function. */
+type Identity = { signedIn: boolean; claims: Record<string, unknown>; error?: { code: string; message: string }; pending?: boolean };
+const baseClaims = (x: Persona) => ({ sub: x.userId, email: x.email, role: 'authenticated' });
+let identity: Identity = { signedIn: true, claims: baseClaims(persona), pending: true };
+
+/** Sign-in settings for the preview: the claims function runs only when rayfin.yml turns dynamic claims on. */
+function signInSettings() {
+  const on = dynamicClaims(project).enabled && functionsEnabled(project) && project.files[FUNCTION_APP] !== undefined;
+  const contract = project.files[CLAIMS_TYPES] !== undefined ? claimsContract(project.files[FUNCTION_APP]).claims : undefined;
+  return { persona: { userId: persona.userId, email: persona.email }, claimsFile: on ? FUNCTION_APP : undefined, contract };
+}
+
+function switchPersona(next: Persona) {
+  persona = next;
+  store.set('persona', next.id);
+  const settings = signInSettings();
+  identity = { signedIn: true, claims: baseClaims(next), pending: !!settings.claimsFile };
+  if (iframe && project.dev) toFrame({ type: 'signIn', runId, signIn: settings });
+  renderSignIn();
+  renderData();
+}
+
+function onIdentity(msg: { signedIn: boolean; claims: Record<string, unknown>; error?: { code: string; message: string } }) {
+  identity = { signedIn: msg.signedIn, claims: msg.claims, error: msg.error };
+  renderSignIn();
+  renderData();
+}
+
+function renderSignIn() {
+  const el = $('signin');
+  el.hidden = !dataService(project).enabled;
+  const label = identity.signedIn ? `Signed in as: ${persona.name}` : `Not signed in (${persona.name} refused)`;
+  const btn = h(
+    'button',
+    {
+      type: 'button',
+      class: `signin-btn${identity.signedIn ? '' : ' refused'}`,
+      'aria-haspopup': 'menu',
+      'aria-expanded': 'false',
+      title: 'Simulated sign-in: on Fabric, people sign in with Microsoft Entra ID, and nobody switches. Click to sign in as someone else.',
+    },
+    label,
+    h('span', { 'aria-hidden': 'true' }, ' ▾'),
+  );
+  const menu = h('div', { class: 'signin-menu', role: 'menu', hidden: '' });
+  for (const x of PERSONAS) {
+    const item = h(
+      'button',
+      { type: 'button', role: 'menuitem', class: x === persona ? 'on' : undefined },
+      h('b', {}, x.name),
+      ` · ${x.email}`,
+      h('span', { class: 'muted' }, ` (${x.about}, as the business sees it)`),
+    );
+    item.addEventListener('click', () => {
+      menu.hidden = true;
+      switchPersona(x);
+    });
+    menu.append(item);
+  }
+  btn.addEventListener('click', () => {
+    menu.hidden = !menu.hidden;
+    btn.setAttribute('aria-expanded', String(!menu.hidden));
+  });
+  const refused = identity.error ? `Sign-in refused (${identity.error.code}): ${identity.error.message}` : '';
+  const note = identity.error ? h('span', { class: 'signin-error', role: 'status', title: refused }, refused) : null;
+  el.replaceChildren(btn, menu, ...(note ? [note] : []));
+}
+document.addEventListener('click', (e) => {
+  if (!(e.target as HTMLElement).closest('#signin')) $('signin').querySelector<HTMLElement>('.signin-menu')?.setAttribute('hidden', '');
+});
+
+const who = () => (identity.signedIn ? persona.email : 'nobody signed in');
+
+/** A request to the app's own data, from the page: answered as the data API would, as the person signed in. */
+function onData(forRun: number, id: number, req: DataRequest) {
+  const started = new Date();
+  const r = handleRequest(project.db, req, identity);
+  if (r.ok && r.db !== project.db) {
+    project = { ...project, db: r.db };
+    saveProject();
+    renderData();
+  }
+  const row = logData(started, req, r, 'page');
+  if (!countQuery()) return;
+  const delay = QUERY_DELAY_MS[0] + Math.random() * (QUERY_DELAY_MS[1] - QUERY_DELAY_MS[0]);
+  window.setTimeout(() => {
+    if (forRun !== runId) return;
+    row.setDuration(Math.round(delay));
+    toFrame({ type: 'queryResult', runId: forRun, id, result: r.result, thrown: r.ok ? undefined : r.error });
+  }, delay);
+}
+
+type DataRequest = { entity: string; op: 'read' | 'create' | 'update' | 'delete'; kind?: string; state?: Record<string, unknown>; input?: Record<string, unknown>; id?: string };
+
+function logData(at: Date, req: DataRequest, r: ReturnType<typeof handleRequest>, from: 'page' | 'direct' | 'tab') {
+  logCount++;
+  $('log-count').textContent = String(logCount);
+  const what = `${req.entity}.${req.op}`;
+  const status = r.ok
+    ? h('span', { class: 'ok' }, `${what}${req.op === 'read' ? `: ${r.rows} row${r.rows === 1 ? '' : 's'}` : ''}`)
+    : h('span', { class: 'err' }, `${what}: ${r.error === 'Internal server error' ? 'Internal server error' : 'refused'}`);
+  const ms = h('span', { class: 't' }, from === 'page' ? '…' : from === 'direct' ? 'sent directly' : 'Data tab');
+  const details = h(
+    'details',
+    { class: 'log-row' },
+    h('summary', {}, h('span', { class: 'n' }, `#${logCount}`), h('span', { class: 't' }, fmtTime(at)), h('span', { class: 'what' }, status), ms),
+  );
+  details.addEventListener('toggle', () => {
+    if (details.querySelector('.log-detail')) return;
+    const result = r.result as unknown;
+    const shown = Array.isArray(result) && result.length > 12 ? [...result.slice(0, 12), `… ${result.length - 12} more rows`] : result;
+    details.append(
+      h(
+        'div',
+        { class: 'log-detail' },
+        h('div', { class: 'muted' }, `To the app's data API (Playground: the real client sends GraphQL) · runs as: the signed-in user · ${who()}`),
+        h('pre', { class: 'json' }, JSON.stringify(req, null, 2)),
+        h('div', { class: r.ok ? 'muted' : 'err' }, r.ok ? `Allowed by: ${r.rule}` : `Refused${r.rule ? ` (${r.rule})` : ''}`),
+        h('div', { class: 'muted' }, r.ok ? 'What came back' : 'The call threw'),
+        h('pre', { class: 'json' }, r.ok ? JSON.stringify(shown, null, 2) : String(r.error)),
+        h('div', { class: 'muted' }, 'Playground: permissions checked in this browser; on Fabric the data API checks them on the server.'),
+      ),
+    );
+  });
+  const firstRun = logEl.querySelector('.log-run');
+  if (firstRun) firstRun.after(details);
+  else logEl.prepend(details);
+  trimLog();
+  return { setDuration: (n: number) => (ms.textContent = `${n} ms`) };
+}
+
+/** Change the simulated database from the Data tab (ignoring permissions), with Undo. */
+function changeRows(note: string, change: (db: AppDb) => AppDb) {
+  const before = project;
+  project = { ...project, db: change(project.db) };
+  saveProject();
+  renderData();
+  showUndo(note, () => {
+    project = { ...project, db: before.db };
+    saveProject();
+    renderData();
+  });
+}
+
+let directResult = '';
+
+/** A suggested body for Send directly: every required field, with values that pass the field rules. */
+function suggestion(entity: string, op: string) {
+  const table = project.db.tables[entity];
+  if (!table) return '{}';
+  if (op === 'update') return JSON.stringify({ amount: 1 }, null, 2);
+  const out: Record<string, unknown> = {};
+  for (const [n, c] of Object.entries(table.columns) as [string, AppColumn][]) {
+    if (n === 'id' || c.optional) continue;
+    out[n] =
+      n === 'country' ? 'Germany'
+      : n === 'year' ? 2027
+      : n === 'owner_id' ? persona.userId
+      : c.kind === 'int' || c.kind === 'decimal' ? (typeof c.min === 'number' ? c.min : 1000000)
+      : c.kind === 'date' ? new Date().toISOString()
+      : c.kind === 'boolean' ? false
+      : c.kind === 'set' ? c.values?.[0]
+      : 'text';
+  }
+  return JSON.stringify(out, null, 2);
+}
+
+function renderData() {
+  const el = $('tab-data');
+  const svc = dataService(project);
+  const db = project.db;
+  const files = entityFiles(project);
+  const { entities } = declared(project);
+  const parts: (Node | string)[] = [
+    h(
+      'p',
+      { class: 'muted' },
+      'The app\'s own database, simulated in this browser. Playground view: every table and every row, whatever the permissions. No real app has this view.',
+    ),
+  ];
+  if (!svc.enabled) {
+    parts.push(h('p', {}, rich('The data service is off in `rayfin/rayfin.yml`: no database yet.')));
+    el.replaceChildren(...parts);
+    return;
+  }
+  const claimText = Object.entries(identity.claims).map(([k, v]) => `${k}: ${String(v)}`).join(' · ');
+  parts.push(
+    h(
+      'p',
+      { class: 'identity' },
+      h('b', {}, identity.signedIn ? `Signed in as ${persona.email}. ` : 'Nobody is signed in. '),
+      identity.signedIn ? `Claims: ${claimText}${identity.pending ? ' (the claims function runs when the page runs)' : ''}` : identity.error?.message ?? '',
+      h('span', { class: 'muted' }, rich(' (Playground: the value Fabric gives `role` isn\'t documented.)')),
+    ),
+  );
+  const names = [...new Set([...files.map((f) => f.name), ...Object.keys(db.tables)])];
+  if (!names.length) parts.push(h('p', {}, rich('No tables yet. Entities in `rayfin/data/` become tables once registered in `schema.ts` and applied.')));
+  const unlimited = unlimitedText(db);
+  for (const name of names) {
+    const e = files.find((x) => x.name === name);
+    const table = db.tables[name] as AppTable | undefined;
+    const registered = entities.some((x) => x.name === name);
+    const state = !table ? (registered ? 'registered, not applied yet' : e ? 'not in schema.ts yet' : '') : !e || !registered ? 'applied; no longer declared' : 'applied';
+    const section = h('section', { class: 'data-entity' }, h('h3', {}, name, h('span', { class: 'muted' }, ` · ${state}`)));
+    // Columns, from the decorators, marked where they differ from the applied table.
+    if (e) {
+      const cols = h('ul', { class: 'cols' });
+      for (const f of e.fields) {
+        const c = columnOf(f);
+        const applied = table?.columns[f.name];
+        const differs = table && (!applied || JSON.stringify(applied) !== JSON.stringify(c));
+        cols.append(
+          h(
+            'li',
+            {},
+            h('code', {}, `${f.name} ${sqlType(c)}${c.optional ? '' : ' NOT NULL'}`),
+            differs ? h('span', { class: 'pending' }, applied ? ' changed, not applied yet' : ' not applied yet') : null,
+          ),
+        );
+      }
+      section.append(h('p', { class: 'kicker' }, 'Columns (from your decorators)'), cols);
+      const rules = effectiveRules(e);
+      const access = h('ul', { class: 'access' });
+      for (const r of rules) access.append(h('li', {}, describeRule(r)));
+      const appliedRules = table ? JSON.stringify(table.rules.map((r: AppRule) => r.source)) === JSON.stringify(rules.map((r) => r.source)) : true;
+      section.append(h('p', { class: 'kicker' }, 'Access (read from your decorators)'));
+      if (!e.explicitRules) section.append(h('p', { class: 'warn' }, 'No permission decorator: the default applies, full access for every signed-in person.'));
+      section.append(access);
+      if (!appliedRules) section.append(h('p', { class: 'pending' }, rich('These rules are not applied yet: run `npx rayfin up db apply`.')));
+      section.append(...e.problems.map((x: string) => h('p', { class: 'warn' }, x)));
+    }
+    if (table) {
+      const rows = (db.rows[name] ?? []) as Record<string, unknown>[];
+      const read = h('button', { type: 'button' }, `Read ${name}`);
+      const out = h('pre', { class: 'json', hidden: '' });
+      read.addEventListener('click', () => {
+        const req: DataRequest = { entity: name, op: 'read', kind: 'execute', state: { select: Object.keys(table.columns) } };
+        const r = handleRequest(project.db, req, identity);
+        logData(new Date(), req, r, 'tab');
+        out.hidden = false;
+        out.textContent = r.ok ? JSON.stringify(r.result, null, 2) : String(r.error);
+        out.classList.toggle('err', !r.ok);
+      });
+      const clear = h('button', { type: 'button', title: 'Ignores permissions. Undo is offered.' }, 'Delete all rows');
+      clear.addEventListener('click', () => changeRows(`Deleted every row of ${name}.`, (d) => ({ ...d, rows: { ...d.rows, [name]: [] } })));
+      const cols = Object.keys(table.columns);
+      const tbl = h(
+        'table',
+        { class: 'snap' },
+        h('thead', {}, h('tr', {}, ...cols.map((c) => h('th', {}, c)), h('th', {}))),
+        h(
+          'tbody',
+          {},
+          ...rows.map((row) => {
+            const del = h('button', { type: 'button', class: 'row-del', title: 'Delete this row (ignores permissions; Undo is offered)', 'aria-label': 'Delete this row' }, '×');
+            del.addEventListener('click', () =>
+              changeRows(`Deleted a ${name} row.`, (d) => ({ ...d, rows: { ...d.rows, [name]: (d.rows[name] ?? []).filter((x: Record<string, unknown>) => x.id !== row.id) } })),
+            );
+            return h('tr', {}, ...cols.map((c) => h('td', { class: typeof row[c] === 'number' ? 'num' : undefined }, fmtCell(row[c] ?? null))), h('td', {}, del));
+          }),
+        ),
+      );
+      section.append(
+        h('p', { class: 'kicker' }, `Rows (${rows.length})`),
+        h('div', { class: 'actions' }, read, clear),
+        out,
+        rows.length ? tbl : h('p', { class: 'muted' }, 'No rows.'),
+      );
+      if (unlimited.some((u) => u.startsWith(`${name}.`))) {
+        section.append(h('p', { class: 'warn' }, 'Applied with a text column without max (NVARCHAR(MAX)).'));
+      }
+    }
+    parts.push(section);
+  }
+  // Send directly: a create or update straight to the data API, skipping the page.
+  const appliedNames = Object.keys(db.tables);
+  if (appliedNames.length) {
+    const entitySel = h('select', { 'aria-label': 'Entity' }, ...appliedNames.map((n) => h('option', { value: n }, n))) as HTMLSelectElement;
+    const opSel = h('select', { 'aria-label': 'Action' }, h('option', { value: 'create' }, 'create'), h('option', { value: 'update' }, 'update')) as HTMLSelectElement;
+    const idInput = h('input', { type: 'text', placeholder: 'id (for update)', 'aria-label': 'Row id', class: 'direct-id' }) as HTMLInputElement;
+    const body = h('textarea', { rows: '7', spellcheck: 'false', 'aria-label': 'Fields, as JSON' }) as HTMLTextAreaElement;
+    body.value = suggestion(appliedNames[0], 'create');
+    const refresh = () => {
+      body.value = suggestion(entitySel.value, opSel.value);
+      idInput.hidden = opSel.value !== 'update';
+    };
+    entitySel.addEventListener('change', refresh);
+    opSel.addEventListener('change', refresh);
+    idInput.hidden = true;
+    const send = h('button', { type: 'button' }, `Send as ${identity.signedIn ? persona.name : 'nobody'}`);
+    const result = h('p', { class: 'direct-result' }, directResult);
+    send.addEventListener('click', () => {
+      let input: Record<string, unknown>;
+      try {
+        input = JSON.parse(body.value);
+      } catch {
+        result.textContent = 'The fields must be JSON, such as {"country": "Germany"}.';
+        return;
+      }
+      const req: DataRequest = { entity: entitySel.value, op: opSel.value as 'create' | 'update', input, id: opSel.value === 'update' ? idInput.value.trim() : undefined };
+      const r = handleRequest(project.db, req, identity);
+      logData(new Date(), req, r, 'direct');
+      directResult = r.ok ? `Done: ${JSON.stringify(r.result)}` : `Refused: ${r.error}`;
+      if (r.ok && r.db !== project.db) {
+        project = { ...project, db: r.db };
+        saveProject();
+      }
+      renderData();
+    });
+    parts.push(
+      h(
+        'section',
+        { class: 'data-entity direct' },
+        h('h3', {}, 'Send directly'),
+        h('p', { class: 'muted' }, 'A request straight to the data API, as the person signed in, as if from outside the page: the permissions still apply.'),
+        h('div', { class: 'actions' }, entitySel, opSel, idInput, send),
+        body,
+        result,
+      ),
+    );
+  }
+  const scroll = el.scrollTop;
+  el.replaceChildren(...parts);
+  el.scrollTop = scroll;
 }
 
 // ---------------------------------------------------------------- wiring
@@ -1873,6 +2272,8 @@ $('brand').addEventListener('keydown', (e) => {
 });
 
 initTerminal();
+renderSignIn();
+renderData();
 renderQueries();
 renderTerms();
 renderHelp();

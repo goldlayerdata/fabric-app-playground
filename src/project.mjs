@@ -7,6 +7,7 @@
 // What the simulated CLI writes comes from real sources (see each command). Wording the real CLI
 // prints that we could not check is not imitated: those lines start with "Playground:".
 import lakehouse from '../data/lakehouse.json' with { type: 'json' };
+import { claimsContract, claimsTypesFile, dataService, emptyDb, planApply, unlimitedText } from './app-data.mjs';
 
 // ---------------------------------------------------------------- the data app template (Rayfin CLI 2.0.0)
 // From @microsoft/rayfin-cli 2.0.0 templates/data-app as bundled with the CLI (MIT, Microsoft Corporation):
@@ -152,14 +153,17 @@ const CONNECTOR_PACKAGES = [
   '@microsoft/rayfin-connectors',
   '@microsoft/rayfin-connector-fabric-graphql',
 ];
+/** Installed by `npx rayfin functions init`, in the functions package (rayfin/functions/). */
+const FUNCTIONS_PACKAGE = '@microsoft/fabric-user-data-functions';
 const KNOWN_PACKAGES = new Set([
   ...Object.keys(TEMPLATE_PACKAGE.dependencies),
   ...Object.keys(TEMPLATE_PACKAGE.devDependencies),
   ...CONNECTOR_PACKAGES,
+  FUNCTIONS_PACKAGE,
 ]);
 
 export function emptyProject() {
-  return { cwd: null, appDir: null, files: {}, packages: [], dev: false, history: [] };
+  return { cwd: null, appDir: null, files: {}, packages: [], dev: false, history: [], db: emptyDb() };
 }
 
 const clone = (p) => JSON.parse(JSON.stringify(p));
@@ -232,6 +236,7 @@ export function runCommand(start, line, answer) {
       '  npx rayfin connector inspect --name <name> --entity <schema.table> --rows <n>',
       '  npx rayfin up connector apply --name <name>',
       '  npx rayfin connector list          npx rayfin connector invoke <name> executeQuery --input \'{"query":"…"}\'',
+      '  npx rayfin up db apply [--force]          npx rayfin up status          npx rayfin functions init',
       '  npm run dev          npx rayfin up          ls          clear',
       ...(p.appDir ? [] : [PG('There is no project yet: the first one, `npm create …`, makes it, in the lesson "Create the project".')]),
     );
@@ -328,6 +333,10 @@ export function runCommand(start, line, answer) {
       return done(PG('Sign-in skipped. A real `npx rayfin login` opens your browser for Microsoft Entra ID sign-in.'));
     }
     if (sub === 'dev') return runDev(p, done);
+    if (sub === 'init') return initRerun(p, fail);
+    if (sub === 'up' && sub2 === 'db' && rayfin[2] === 'apply') return dbApply(p, flags(rayfin.slice(3)), done, fail);
+    if (sub === 'up' && sub2 === 'status') return upStatus(p, done, fail);
+    if (sub === 'functions' && sub2 === 'init') return functionsInit(p, flags(rayfin.slice(2)), done, fail);
     // `npx rayfin up connector apply [--name <name>]` (rayfin.ai: CLI reference, up connector apply; Preview).
     if (sub === 'up' && sub2 === 'connector' && rayfin[2] === 'apply') {
       const f = flags(rayfin.slice(3));
@@ -685,6 +694,142 @@ function connectorInvoke(p, args, answer, done, fail) {
   };
 }
 
+// ---------------------------------------------------------------- the app's own data and functions
+/**
+ * `npx rayfin init` in a project that already has rayfin/rayfin.yml (rayfin.ai: CLI reference, init:
+ * rerunning it "reruns configuration"). What a rerun writes in a data app project isn't documented. In the
+ * Rayfin CLI 2.0.0's code (commands/init.js), a rerun outside a template asks before overwriting
+ * rayfin.yml, and a yes writes a new one from defaults. The playground doesn't run it.
+ */
+function initRerun(p, fail) {
+  if (p.files['rayfin/rayfin.yml'] === undefined) return fail(PG('Only a rerun of init is simulated here, in a project that has rayfin/rayfin.yml.'));
+  return fail(
+    PG('Not run here. Rayfin\'s docs: rerunning init in a project with rayfin/rayfin.yml "reruns configuration".'),
+    PG('What a rerun writes in a project made from the dataapp template isn\'t documented. In the Rayfin CLI 2.0.0\'s'),
+    PG('code, a rerun outside a template asks "rayfin.yml already exists. Do you want to overwrite it?", and a yes'),
+    PG('writes a new rayfin.yml from defaults, without our connectors. So we make the change by hand.'),
+  );
+}
+
+/** Has the app been deployed (`npx rayfin up`) in this project? */
+const deployed = (p) => p.history.some((h) => /^(npx )?rayfin up$/.test(normCommand(h)));
+
+// `npx rayfin up db apply [--force]` (rayfin.ai: Schema changes; CLI reference, up db apply; Known limitations).
+// It generates and applies the Data API builder configuration (the schema and the permissions) to the deployed
+// app. The real CLI's output isn't documented word for word: these are `Playground:` lines, except the dialect
+// message, which Rayfin's known limitations quote.
+function dbApply(p, f, done, fail) {
+  const svc = dataService(p);
+  if (!svc.enabled) return fail(PG('The data service is off in rayfin/rayfin.yml (services.data.enabled: false): there is no database to apply to.'));
+  if (!svc.dialect) return fail('Dialect is required when Data module is enabled');
+  if (!deployed(p)) return fail(PG('The real CLI stops: the app must exist first. Run `npx rayfin up` once, then `npx rayfin up db apply`.'));
+  const plan = planApply(p, f.force === true);
+  if (plan.blocked) {
+    const destructive = plan.blocked[0] === 'potentially destructive';
+    return fail(
+      SIMULATED,
+      ...(destructive ? [PG('Stopped: these changes are potentially destructive (data may be lost):'), ...plan.destructive.map((op) => PG(`  ${op}`))] : []),
+      ...plan.blocked.filter((b) => b !== 'potentially destructive').map((b) => PG(b)),
+      PG(destructive ? 'Nothing was applied. Review the list; re-run with --force only once you accept the loss.' : 'Nothing was applied.'),
+    );
+  }
+  p.db = plan.db;
+  return done(
+    SIMULATED,
+    ...(plan.ops.length
+      ? [PG('Applied to the app\'s database (schema and permissions):'), ...plan.ops.map((op) => PG(`  ${op}`))]
+      : [PG('Nothing to change: the database already matches the entities.')]),
+    ...(f.force === true && plan.destructive.length ? [PG('--force: the potentially destructive changes above were applied.')] : []),
+    PG('Rayfin\'s docs: a successful apply doesn\'t prove the data API is ready. Check `npx rayfin up status` before testing.'),
+  );
+}
+
+// `npx rayfin up status` (rayfin.ai: CLI reference, up status: exits 0 when the recorded deployment is healthy).
+function upStatus(p, done, fail) {
+  if (!deployed(p)) return fail(PG('No deployment recorded yet: run `npx rayfin up` first.'));
+  return done(
+    SIMULATED,
+    PG('The recorded deployment is healthy. (The real command prints the app\'s address and the state of each'),
+    PG('service, in a layout not shown here. It exits 0 when healthy.)'),
+  );
+}
+
+/** The scaffold's function file: @microsoft/rayfin-cli 2.0.0 assets/functions/function_app.ts.template, verbatim. */
+export const FUNCTION_APP_TEMPLATE = [
+  "import { UserDataFunctions } from '@microsoft/fabric-user-data-functions';",
+  '',
+  'const udf = new UserDataFunctions();',
+  '',
+  '/**',
+  ' * A simple greeting function.',
+  ' *',
+  ' * The input/output types for this function are autogenerated in ./types.ts so that',
+  ' * RayfinClient can invoke it with full type-safety from your frontend app.',
+  ' */',
+  "udf.func('helloWorld', (firstName: string, lastName: string): string => {",
+  '  console.log(`helloWorld invoked for ${firstName} ${lastName}`);',
+  '  return `Hello ${firstName} ${lastName}!`;',
+  '}, []);',
+  '',
+].join('\n');
+export const FUNCTION_APP = 'rayfin/functions/src/function_app.ts';
+export const CLAIMS_TYPES = 'rayfin/auth/claims.generated.d.ts';
+
+/** Are dynamic claims declared, and on, in rayfin.yml? (rayfin.ai: Dynamic auth claims, enable) */
+export function dynamicClaims(p) {
+  const yml = p.files['rayfin/rayfin.yml'] ?? '';
+  return { declared: /^ {4}dynamicClaims:/m.test(yml), enabled: /^ {4}dynamicClaims:\n {6}enabled: true\s*$/m.test(yml) };
+}
+
+/** Are Functions on in rayfin.yml? */
+export const functionsEnabled = (p) => /^ {2}functions:\n {4}enabled: true\s*$/m.test(p.files['rayfin/rayfin.yml'] ?? '');
+
+// `npx rayfin functions init` (rayfin.ai: CLI reference, functions init; Dynamic auth claims, generate the claim
+// types). The lines that aren't `Playground:` lines are the Rayfin CLI 2.0.0's own (commands/functions/functions-init.js).
+function functionsInit(p, f, done, fail) {
+  const lines = [SIMULATED];
+  if (p.files[FUNCTION_APP] === undefined || f.force === true) {
+    lines.push('⚡ Scaffolding Rayfin functions project...', '');
+    p.files[FUNCTION_APP] = FUNCTION_APP_TEMPLATE;
+    const block = '  functions:\n    enabled: true\n    buildCommand: npm run build\n    auth:\n      type: application\n';
+    const yml = p.files['rayfin/rayfin.yml'];
+    const re = /^ {2}functions:\n(?: {4}.*\n?)*/m;
+    p.files['rayfin/rayfin.yml'] = re.test(yml) ? yml.replace(re, block) : `${yml.trimEnd()}\n${block}`;
+    if (!p.packages.includes(FUNCTIONS_PACKAGE)) p.packages.push(FUNCTIONS_PACKAGE);
+    lines.push(
+      '✅ Functions project scaffolded successfully!',
+      '📁 Directory: rayfin/functions',
+      PG(`Shown here: ${FUNCTION_APP}. The real scaffold also writes package.json, tsconfig.json, host.json,`),
+      PG('local.settings.json, src/types.ts and src/secrets.generated.ts.'),
+    );
+  } else {
+    lines.push('ℹ️  rayfin/functions/ already exists — skipping scaffold to preserve your code.', '   Pass --force to overwrite the scaffold with the template defaults.');
+  }
+  lines.push('', '📦 Installing dependencies...', '✅ Dependencies installed.', '', '📝 Generating types.ts...', '✅ types.ts generated.');
+  // Claim types: generated only when rayfin.yml declares services.auth.dynamicClaims.
+  if (dynamicClaims(p).declared) {
+    const contract = claimsContract(p.files[FUNCTION_APP]);
+    if (contract.found && contract.problems.length) {
+      return fail(
+        ...lines,
+        PG('Stopped: the claims function breaks Rayfin\'s claim rules (the real wording may differ):'),
+        ...contract.problems.map((x) => PG(`  ${x}`)),
+        PG('Nothing was generated. Fix the return type of the claims function, then run `npx rayfin functions init` again.'),
+      );
+    }
+    if (contract.found) {
+      p.files[CLAIMS_TYPES] = claimsTypesFile(contract.claims);
+      lines.push(PG(`Wrote ${CLAIMS_TYPES}: ${contract.claims.map((c) => `claims.${c.name}`).join(' and ')} now type-check in policies.`));
+      lines.push(PG('The real command also writes rayfin/auth/claims.contract.json and rayfin/functions/claims.contract.json.'));
+    } else if (p.files[CLAIMS_TYPES] !== undefined) {
+      delete p.files[CLAIMS_TYPES];
+      lines.push(PG(`No udf.authClaims function: removed ${CLAIMS_TYPES}.`));
+    }
+  }
+  lines.push('✅ Build complete.', '', '🎉 Functions project is ready!');
+  return done(...lines);
+}
+
 // ---------------------------------------------------------------- steps
 /**
  * Apply a step's file edits. Each edit is { file?, from, to, all? }; file defaults to the page file.
@@ -722,7 +867,7 @@ const squash = (s) => s.replace(/\s+/g, ' ').trim();
 
 /** Is a step done in this project? Commands: run before (however spaced). Edits: their result is there. */
 export function stepIsDone(p, step) {
-  if (step.run) return p.history.some((h) => normCommand(h) === normCommand(step.run));
+  if (step.run) return p.history.filter((h) => normCommand(h) === normCommand(step.run)).length >= (step.nth ?? 1);
   if (!step.edits) return false;
   if (step.done?.absent) return !(p.files[step.done.file ?? PAGE_FILE] ?? '').includes(step.done.absent);
   if (step.done?.before) {
@@ -753,8 +898,25 @@ export function doStep(p, step, answer) {
   return { project: p };
 }
 
+/**
+ * Number the steps that run a command the course has run before (such as `npx rayfin up db apply`):
+ * such a step is done once the command is in the history that many times. Call it with the course order.
+ */
+export function numberRuns(order) {
+  const seen = new Map();
+  for (const lesson of order) {
+    for (const step of lesson.steps) {
+      if (!step.run) continue;
+      const key = normCommand(step.run);
+      seen.set(key, (seen.get(key) ?? 0) + 1);
+      step.nth = seen.get(key);
+    }
+  }
+}
+
 /** The project at the start of a lesson: every step of every earlier lesson done, from empty. */
 export function checkpoint(order, lessonIndex, answer) {
+  numberRuns(order);
   let p = emptyProject();
   for (const lesson of order.slice(0, lessonIndex)) {
     for (const step of lesson.steps) {

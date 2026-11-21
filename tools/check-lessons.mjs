@@ -19,8 +19,10 @@ import ts from 'typescript';
 import { lessons } from '../src/lesson-list.mjs';
 import { chapters, modules } from '../src/course.mjs';
 import { terms, help } from '../src/terms.mjs';
-import { emptyProject, doStep, stepIsDone, PAGE_FILE } from '../src/project.mjs';
+import { emptyProject, doStep, numberRuns, stepIsDone, PAGE_FILE } from '../src/project.mjs';
 import lakehouse from '../data/lakehouse.json' with { type: 'json' };
+import * as C from '../src/course-code.mjs';
+import { checkClaimsResult, claimsContract, entityFiles, handleRequest, parseEntity, planApply } from '../src/app-data.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const catalog = JSON.parse(readFileSync(join(root, 'data', 'catalog.json'), 'utf8'));
@@ -68,8 +70,8 @@ const numOf = (l) => {
 };
 
 const LESSON_FIELDS = ['id', 'title', 'goal', 'builds', 'pbi', 'idea', 'steps', 'summary', 'fabric'];
-const STEP_FIELDS = ['do', 'code', 'run', 'see', 'why', 'file', 'find', 'point', 'edits', 'errors', 'done', 'queryFails', 'commandFails'];
-const POINTS = ['editor', 'files', 'preview', 'status', 'terminal', 'log', 'queries', 'terms', 'run', 'reset'];
+const STEP_FIELDS = ['do', 'code', 'run', 'see', 'why', 'file', 'find', 'point', 'edits', 'errors', 'done', 'queryFails', 'commandFails', 'nth'];
+const POINTS = ['editor', 'files', 'preview', 'status', 'terminal', 'log', 'queries', 'terms', 'run', 'reset', 'data', 'signin'];
 const LINK_HOSTS = ['learn.microsoft.com', 'rayfin.ai'];
 
 for (const l of order) {
@@ -157,6 +159,7 @@ const PACKAGE_TYPES = {
   '@microsoft/rayfin-core': ['rayfin-core.d.ts'],
   '@microsoft/rayfin-data': ['rayfin-data.d.ts'],
   '@microsoft/rayfin-connector-fabric-graphql': ['rayfin-connector-fabric-graphql.d.ts'],
+  '@microsoft/fabric-user-data-functions': ['fabric-user-data-functions.d.ts', 'fabric-user-data-functions-claims.d.ts'],
   vite: ['vite-client.d.ts'],
 };
 const vroot = join(root, '.virtual-project').replace(/\\/g, '/');
@@ -222,6 +225,7 @@ function queriesOf(project) {
 }
 
 // ---------------------------------------------------------------- building the course from empty
+numberRuns(order); // a command the course runs again is done once it is in the history that many times
 const errorsOk = (expected = 0, n) => (expected === '1+' ? n >= 1 : n === expected);
 let project = emptyProject();
 const after = {}; // project after each lesson, by id (for the controls below)
@@ -363,6 +367,127 @@ console.log('\ncontrols');
   if (Math.abs(all - model) > 0.01) fail(`${numOf(lesson)}: the lakehouse lines don't add up to the model's [Revenue]`);
   const text = JSON.stringify(lesson.steps);
   for (const shown of [compact(first), compact(model)]) if (!text.includes(shown)) fail(`${numOf(lesson)}: the steps don't show ${shown}`);
+}
+
+// ---------------------------------------------------------------- the app's own data: apply, permissions, claims
+// The simulated data API, run on the projects the course builds, against what the lessons say happens.
+{
+  const person = (name, extra = {}) => ({
+    signedIn: true,
+    claims: { sub: `${name}-0000-0000-0000-000000000000`, email: `${name}@contoso.example`, role: 'authenticated', ...extra },
+  });
+  const expect = (ok, label) => {
+    console.log(`   ${ok ? 'ok  ' : 'FAIL'} ${label}`);
+    if (!ok) fail(label);
+  };
+  const create = (db, who, fields) =>
+    handleRequest(db, { entity: 'SalesTarget', op: 'create', input: { year: 2026, updatedAt: new Date(), ...fields } }, who);
+  const readAll = (db, who) => handleRequest(db, { entity: 'SalesTarget', op: 'read', state: { select: ['id', 'country', 'amount'] } }, who);
+
+  // Register and apply: text without max applies, then every read fails; the fix needs --force.
+  {
+    const lesson = byId.get('register-apply');
+    let p = after['sales-target'];
+    const slipApplied = lesson.steps.findIndex((s, i) => s.run === 'npx rayfin up db apply' && i > 2);
+    for (const s of lesson.steps.slice(0, slipApplied + 1)) p = doStep(p, s, answer).project;
+    const r = readAll(p.db, person('alice'));
+    expect(!r.ok && r.error === 'Internal server error', `${numOf(lesson)} @text() without max: reads say "Internal server error"`);
+    const fixed = readAll(after['register-apply'].db, person('alice'));
+    expect(fixed.ok && fixed.result.length === 0, `${numOf(lesson)} after --force: the read returns an empty list`);
+  }
+
+  // Read and write targets: create returns the key plus the fields sent; update patches by id.
+  {
+    const lesson = byId.get('read-write');
+    const alice = person('alice');
+    const c = create(after['read-write'].db, alice, { country: 'Germany', amount: 3000000 });
+    expect(c.ok && Object.keys(c.result).sort().join() === 'amount,country,id,updatedAt,year', `${numOf(lesson)} create returns the id plus the fields sent`);
+    const u = handleRequest(c.db, { entity: 'SalesTarget', op: 'update', id: c.result.id, input: { amount: 3200000 } }, alice);
+    expect(u.ok && u.db.rows.SalesTarget[0].amount === 3200000 && u.db.rows.SalesTarget[0].country === 'Germany', `${numOf(lesson)} update patches only the fields sent`);
+  }
+
+  // Change the model: `?` alone leaves the column required; a rename is blocked as destructive.
+  {
+    const lesson = byId.get('change-model');
+    let p = after['read-write'];
+    p = doStep(p, lesson.steps[0], answer).project;
+    const note = parseEntity(p.files['rayfin/data/SalesTarget.ts']).fields.find((f) => f.name === 'note');
+    expect(note && !note.optional, `${numOf(lesson)} \`note?\` without optional: true is a required column`);
+  }
+
+  // My rows only: Alice changes her row, Carol can't; the email slip locks Alice out of her own row.
+  {
+    const lesson = byId.get('my-rows');
+    const alice = person('alice');
+    const carol = person('carol');
+    const db = after['my-rows'].db;
+    const c = create(db, alice, { country: 'Germany', amount: 3000000, owner_id: alice.claims.sub });
+    expect(c.ok, `${numOf(lesson)} Alice adds Germany`);
+    const asCarol = handleRequest(c.db, { entity: 'SalesTarget', op: 'update', id: c.result.id, input: { amount: 3100000 } }, carol);
+    expect(!asCarol.ok && /refused/.test(asCarol.error), `${numOf(lesson)} Carol's update is refused`);
+    const carolReads = readAll(c.db, carol);
+    expect(carolReads.ok && carolReads.result.length === 1, `${numOf(lesson)} Carol still reads the row`);
+    const asAlice = handleRequest(c.db, { entity: 'SalesTarget', op: 'update', id: c.result.id, input: { amount: 3100000 } }, alice);
+    expect(asAlice.ok, `${numOf(lesson)} Alice's update passes`);
+    const slip = create(c.db, alice, { country: 'France', amount: 1000000, owner_id: alice.claims.email });
+    const locked = handleRequest(slip.db, { entity: 'SalesTarget', op: 'update', id: slip.result.id, input: { amount: 1 } }, alice);
+    expect(slip.ok && !locked.ok, `${numOf(lesson)} the email in owner_id: Alice can't change her own row`);
+  }
+
+  // Roles the business knows: run the project's own claims function, as the preview does at each switch.
+  const final = after['country-targets'];
+  const fnText = final.files['rayfin/functions/src/function_app.ts'];
+  const runClaims = async (email) => {
+    const js = ts.transpileModule(fnText, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+    let handler;
+    const udf = { UserDataFunctions: class { func() {} authClaims(h) { handler = h; } } };
+    const mod = { exports: {} };
+    vm.runInNewContext(js, { module: mod, exports: mod.exports, require: () => udf });
+    const denied = Symbol('denied');
+    try {
+      return await handler({ auth: { userId: 'x', email }, getSecret: () => undefined, denySignIn: (reason) => { throw { [denied]: reason }; } });
+    } catch (e) {
+      if (e && e[denied]) return { denied: e[denied] };
+      throw e;
+    }
+  };
+  const contract = claimsContract(fnText);
+  expect(contract.found && !contract.problems.length && contract.claims.map((c) => c.name).join() === 'salesRole,country', `${numOf(byId.get('business-roles'))} the claims function declares salesRole and country`);
+  const claimsOf = {};
+  for (const name of ['alice', 'carol', 'bob', 'dan']) claimsOf[name] = await runClaims(`${name}@contoso.example`);
+  expect(claimsOf.alice.salesRole === 'countryManager' && claimsOf.alice.country === 'Germany', `${numOf(byId.get('business-roles'))} Alice is a country manager for Germany`);
+  expect(claimsOf.bob.salesRole === 'director', `${numOf(byId.get('business-roles'))} Bob is the director`);
+  expect(typeof claimsOf.dan.denied === 'string', `${numOf(byId.get('business-roles'))} Dan is refused sign-in`);
+  expect(!checkClaimsResult(claimsOf.alice, contract.claims), `${numOf(byId.get('business-roles'))} Alice's claims pass the claim rules`);
+  expect(!!checkClaimsResult({ role: 'director', country: 'All' }), `${numOf(byId.get('business-roles'))} a claim named role is refused`);
+
+  // Each country, its own targets.
+  {
+    const lesson = byId.get('country-targets');
+    const as = (name) => person(name, claimsOf[name]);
+    let db = final.db;
+    let r = create(db, as('bob'), { country: 'France', amount: 1000000, owner_id: as('bob').claims.sub });
+    expect(r.ok, `${numOf(lesson)} Bob adds France`);
+    r = create(r.db, as('bob'), { country: 'Germany', amount: 3000000, owner_id: as('bob').claims.sub });
+    db = r.db;
+    const countries = (name) => (readAll(db, as(name)).result ?? []).map((x) => x.country).sort().join();
+    expect(countries('alice') === 'Germany', `${numOf(lesson)} Alice reads Germany only`);
+    expect(countries('carol') === 'France', `${numOf(lesson)} Carol reads France only`);
+    expect(countries('bob') === 'France,Germany', `${numOf(lesson)} Bob reads both`);
+    const sent = create(db, as('alice'), { country: 'Germany', year: 2027, amount: 1000000, owner_id: as('alice').claims.sub });
+    expect(!sent.ok, `${numOf(lesson)} Alice's create, sent directly, is refused`);
+    const noClaims = readAll(db, person('alice'));
+    expect(!noClaims.ok && /403/.test(noClaims.error), `${numOf(lesson)} without dynamic claims, a policy that names claims.salesRole is refused (403)`);
+    // The slip: without the director's .or, Bob reads nothing.
+    const slipStep = lesson.steps.find((s) => s.edits?.[0]?.to === C.COUNTRY_READ_RULE_SLIP);
+    const slipped = { ...final, db, files: { ...final.files } };
+    const withSlip = doStep(slipped, slipStep, answer).project;
+    const plan = planApply(withSlip);
+    expect(!plan.blocked && (readAll(plan.db, as('bob')).result ?? []).length === 0, `${numOf(lesson)} without the director's rule, Bob reads no targets`);
+  }
+
+  // Every entity the course writes is read without problems.
+  for (const e of entityFiles(final)) expect(!e.problems.length && e.explicitRules, `${e.file}: decorators read, permissions explicit`);
 }
 
 console.log(failures ? `\n${failures} failure(s)` : `\nall checks passed (TypeScript ${ts.version})`);

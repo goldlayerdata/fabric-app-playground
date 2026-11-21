@@ -35,6 +35,10 @@ const editorLibsPlugin = {
         '@microsoft/rayfin-connector-fabric-graphql': {
           'playground-types/rayfin-connector-fabric-graphql.d.ts': pkgTypes('rayfin-connector-fabric-graphql.d.ts'),
         },
+        '@microsoft/fabric-user-data-functions': {
+          'playground-types/fabric-user-data-functions.d.ts': pkgTypes('fabric-user-data-functions.d.ts'),
+          'playground-types/fabric-user-data-functions-claims.d.ts': pkgTypes('fabric-user-data-functions-claims.d.ts'),
+        },
         vite: { 'node_modules/vite/client.d.ts': pkgTypes('vite-client.d.ts') },
       };
       const read = (map) => Object.fromEntries(Object.entries(map).map(([k, f]) => [k, readFileSync(f, 'utf8')]));

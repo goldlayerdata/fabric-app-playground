@@ -21,9 +21,41 @@ export const terms = [
   { id: 'metadata', term: 'metadata.json', means: 'The tables and columns `connector add` found in a SQL source (schema discovery): names, types, keys. Regenerated, never edited by hand.', pbi: "What the Navigator shows in Get data: a source's tables and columns.", lesson: 'lakehouse-connector' },
   { id: 'entity', term: 'Entity', means: "A TypeScript class that stands for a table: one property per column, with decorators (`@int`, `@text`…) saying each column's type.", pbi: 'A table in the model, with its columns and data types.', lesson: 'lakehouse-entities' },
   { id: 'page-of-rows', term: 'Page of rows', means: "What one read returns: 100 rows by default, or `first(n)`. `execute()` returns one page and doesn't say there are more; `executePaginated()` gives a cursor for the next.", pbi: "No direct match: a visual's query returns its whole result.", lesson: 'rows-or-measures' },
+  { id: 'data-service', term: 'Data service', means: "The app's own database: a SQL database that belongs to the Fabric app item. Its tables come from the entities in `rayfin/data/`, and the page reaches it as `rayfinClient.data`.", pbi: 'No direct match: like a SQL database in Fabric that a translytical task flow writes to, owned by the app.', lesson: 'data-service' },
+  { id: 'decorator', term: 'Decorator', means: 'An `@…` line above a class or a property, such as `@entity()` or `@text({ max: 50 })`. It describes the class to Rayfin: the table, a column\'s type and rules, who may do what.', pbi: "A column's data type and properties in the model view.", lesson: 'sales-target' },
+  { id: 'schema-apply', term: 'Schema apply', means: '`npx rayfin up db apply`: creates or changes the tables (and permissions) to match the entities. It stops before potentially destructive changes unless `--force` is given.', pbi: 'Publishing a model change: nothing changes in the service until it is published.', lesson: 'register-apply' },
+  { id: 'claim', term: 'Claim', means: "A fact carried in a person's sign-in token: `sub` (their id), `email`, `role`, and any the app adds. Policies compare claims with row fields.", pbi: 'What `USERPRINCIPALNAME()` returns in an RLS rule, and more.', lesson: 'signed-in-as' },
+  { id: 'policy', term: 'Policy', means: 'A test on each row in a permission rule, such as `claims.sub.eq(item.owner_id)`. The data API runs it for every request, per action.', pbi: "An RLS role's DAX filter, except it can apply to writes too.", lesson: 'my-rows' },
+  { id: 'function', term: 'Function', means: 'Server-side TypeScript in `rayfin/functions/`, run by Fabric\'s function host. Its connections run as the app identity, the owner of the Fabric app item.', pbi: 'Like a user data function in a translytical task flow.', lesson: 'business-roles' },
+  { id: 'dynamic-claim', term: 'Dynamic claim', means: 'A claim the app adds at sign-in, from a `udf.authClaims` function, such as `salesRole`. Turned on with `dynamicClaims` in `rayfin.yml`; it depends on Functions and the workspace\'s region.', pbi: 'A security table for dynamic RLS, read once at sign-in.', lesson: 'business-roles' },
 ];
 
 export const help = [
+  {
+    symptom: '"Internal server error" from the app\'s own data, after `db apply` succeeded',
+    cause: 'A `@text()` with no `max` became `NVARCHAR(MAX)`, which can break the data API\'s schema.',
+    fix: 'Add `max` to every `@text()`, then run `npx rayfin up db apply --force`.',
+  },
+  {
+    symptom: '"The data API refused …" on a write or a read',
+    cause: 'No permission rule lets this person do it, or the row doesn\'t pass the rule\'s policy for them.',
+    fix: 'Read the rule in the **Data** tab (**Access**) and the Log entry, and check who is signed in.',
+  },
+  {
+    symptom: '"Sign-in refused" when switching people',
+    cause: 'The claims function denied the sign-in (or threw, or returned claims that break the rules).',
+    fix: 'Read the reason; check `rayfin/functions/src/function_app.ts`.',
+  },
+  {
+    symptom: '`db apply` stops: "potentially destructive"',
+    cause: 'The change would drop a column or table, or narrow a type.',
+    fix: 'Read the list. Undo the change, or, only if the loss is fine, add `--force`.',
+  },
+  {
+    symptom: '"Dialect is required when Data module is enabled"',
+    cause: '`services.data` is on in `rayfin.yml` without `dialect: mssql`.',
+    fix: 'Add `dialect: mssql` under `data:`.',
+  },
   {
     symptom: '**A read requires an explicit .select([...])** on a lakehouse page',
     cause: 'A query chain reached `execute()` without `select` (`SELECTION_REQUIRED`).',
