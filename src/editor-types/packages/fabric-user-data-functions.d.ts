@@ -24,7 +24,11 @@ declare module '@microsoft/fabric-user-data-functions' {
     ADO = 'ADO',
   }
 
-  /** A resource with no `AudienceType` member: its application id (a GUID), or an https:// or api:// resource URI. */
+  /**
+   * A resource with no `AudienceType` member: its application id (a GUID), or an https:// or api://
+   * resource URI. Whose token it is, the sources disagree: this package says the function item's own
+   * identity, the Rayfin guide says the app identity.
+   */
   export type CustomAudience = `https://${string}` | `api://${string}` | `${string}-${string}-${string}-${string}-${string}`;
 
   export type ConnectionAudience = AudienceType | CustomAudience;
@@ -36,7 +40,8 @@ declare module '@microsoft/fabric-user-data-functions' {
   }
 
   /**
-   * What a function receives first. Declare the audiences it needs as the second type argument:
+   * What Rayfin supplies to a parameter annotated with this type, wherever it is declared (usually
+   * first). Declare the audiences it needs as the second type argument:
    * `RayfinContext<AppSchema, AudienceType.Storage>`. The annotation is the declaration.
    */
   export class RayfinContext<
@@ -66,7 +71,8 @@ declare module '@microsoft/fabric-user-data-functions' {
     constructor();
     /**
      * Registers a function. `name` becomes its route. Rayfin supplies the `RayfinContext`
-     * parameter; callers pass the rest. Keep the third argument `[]` in new code.
+     * parameter; callers pass the rest. Keep the third argument `[]` in new code: connections
+     * passed there still work (generic ones join the annotated audiences) but add no typed tokens.
      */
     func(name: string, fn: (...args: any[]) => any, connections?: readonly unknown[]): void;
   }

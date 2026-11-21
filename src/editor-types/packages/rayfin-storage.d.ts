@@ -86,7 +86,10 @@ declare module '@microsoft/rayfin-core' {
      * replaces the object and requires an authenticated role with `update`.
      */
     onConflict?: 'error' | 'overwrite';
-    /** Maximum object size: bytes, or a string with a unit. Omit for the service limit. */
+    /**
+     * Maximum object size: a positive whole number of bytes, or a string with a binary unit
+     * (`'2mb'` is 2 x 1024 x 1024). At most 5,000 MiB. Omit for the global service limit.
+     */
     maxSize?: number | ByteSize;
     /** Allowed content types as MIME globs. Omit to allow any type. */
     allowedContentTypes?: MimeGlob[];

@@ -148,7 +148,7 @@ import { RayfinClient } from '@microsoft/rayfin-client';
 import { browserSession } from '@microsoft/rayfin-auth';
 import { connectorsService } from '@microsoft/rayfin-connectors';
 import {
-  createFabricIqMcpConnectorClient, fabricIqMcp, FabricIqMcpAdapterError,
+  createFabricIqMcpConnectorClient, fabricIqMcp, FabricIqMcpAdapterError, FabricIqMcpHttpError, FabricIqMcpContractError,
   type FabricIqMcpChatMessage, type FabricIqMcpToolResult,
 } from '@microsoft/rayfin-connector-fabric-iq-mcp';
 import { connectorConfig as assistantConfig, type AssistantSchema } from './connectors/assistant/schema';
@@ -185,6 +185,8 @@ export async function listAssistantTools() {
   return tools.map((tool) => tool.name);
 }
 export const isAdapterError = (e: unknown) => e instanceof FabricIqMcpAdapterError;
+export const retryAfter = (e: unknown) => (e instanceof FabricIqMcpHttpError && e.status === 429 ? e.getResponseHeader('Retry-After') : undefined);
+export const contractCode = (e: unknown) => (e instanceof FabricIqMcpContractError ? e.code : undefined);
 // @ts-expect-error a system role is not a conversation entry
 assistant.ask('x', [{ role: 'system', content: 'hi' }]);
 `,
@@ -205,6 +207,8 @@ udf.func('both', async (ctx: RayfinContext<AppSchema, AudienceType.Sql | Audienc
   return { sql: ctx.Tokens.Sql.length, storage: ctx.Tokens.Storage.length, owner: ctx.user.id };
 }, []);
 udf.func('custom', async (ctx: RayfinContext<AppSchema, 'api://contoso-api'>) => ctx.Tokens['api://contoso-api'], []);
+udf.func('byAppId', async (ctx: RayfinContext<AppSchema, '11111111-2222-3333-4444-555555555555'>) => ctx.Tokens['11111111-2222-3333-4444-555555555555'], []);
+udf.func('ctxSecond', async (name: string, ctx: RayfinContext<AppSchema>) => \`\${name} \${ctx.user.id}\`, []);
 udf.func('undeclared', async (ctx: RayfinContext<AppSchema, AudienceType.Storage>) => {
   // @ts-expect-error AzureAI is not declared on this context
   return ctx.Tokens.AzureAI;
@@ -294,6 +298,53 @@ test('storage: folder declarations are checked like storage apply', () => {
   assert.equal(S.defineFolder({ className: 'X', blob: { maxSize: '2mb' }, rules: [ownRule] }).maxSize, 2 * 1024 * 1024);
   assert.equal(S.mb(5), 5 * 1024 * 1024);
   assert.equal(S.kb(2), 2048);
+  // rayfin-core's own messages for rules 6 and 7
+  assert.throws(() => S.defineFolder({ className: 'Pub', rules: [{ role: 'anonymous', actions: 'read' }, ownRule] }), {
+    message: "@blob('Pub'): anonymous permissions are not supported for storage folders. Remove the anonymous role and grant access to the authenticated role instead.",
+  });
+  assert.throws(() => S.defineFolder({ className: 'W', blob: { onConflict: 'overwrite' }, rules: [{ role: 'authenticated', actions: 'read' }] }), {
+    message: "@blob('W'): onConflict: 'overwrite' requires at least one authenticated role to grant the 'update' action. Add 'update' to a role or set onConflict: 'error'.",
+  });
+});
+
+test('storage: maxSize is parsed and checked like rayfin-core (rule 8)', () => {
+  const size = (maxSize) => S.defineFolder({ className: 'Docs', blob: { maxSize }, rules: [ownRule] }).maxSize;
+  // binary units, any case, spaces, no unit, rounded to the nearest byte
+  assert.equal(size('2MB'), 2 * 1024 ** 2);
+  assert.equal(size(' 2 mb '), 2 * 1024 ** 2);
+  assert.equal(size('500Kb'), 500 * 1024);
+  assert.equal(size('2048'), 2048);
+  assert.equal(size('1.5b'), 2);
+  assert.equal(size('0.0005kb'), 1); // 0.512 rounds to 1
+  assert.equal(size('.5kb'), 512);
+  assert.equal(size(5000 * 1024 ** 2), S.MAX_OBJECT_SIZE_BYTES);
+  assert.equal(size('5000mb'), S.MAX_OBJECT_SIZE_BYTES);
+  // not a positive whole number of bytes
+  for (const bad of [0, -1, 1.5, Number.NaN, Infinity, '0b', '0.4b', '2megs', '5.', '.', 'mb', '1e3', '+2mb', '2 m b']) {
+    assert.throws(() => size(bad), { message: `@blob('Docs'): maxSize must be a positive whole byte count or size string (e.g. '2mb'); got ${JSON.stringify(bad)}.` }, String(bad));
+  }
+  // over 5,000 MiB
+  assert.throws(() => size('5001mb'), {
+    message: `@blob('Docs'): maxSize (${5001 * 1024 ** 2} bytes) exceeds the maximum supported object size of ${S.MAX_OBJECT_SIZE_BYTES} bytes (5,000 MiB). Uploads are single-request PUTs and cannot exceed the Azure single-upload limit.`,
+  });
+  assert.throws(() => size(S.gb(5)), /exceeds the maximum supported object size/);
+});
+
+test('storage: MIME globs and declared field names are checked like rayfin-core (rules 8, 9)', () => {
+  const types = (allowedContentTypes) => S.defineFolder({ className: 'Docs', blob: { allowedContentTypes }, rules: [ownRule] }).allowedContentTypes;
+  assert.deepEqual(types(['image/*', '*/*', 'application/vnd.ms-excel', 'image/svg+xml', 'Text/CSV']), ['image/*', '*/*', 'application/vnd.ms-excel', 'image/svg+xml', 'Text/CSV']);
+  for (const bad of ['pdf', '*/png', 'image/', '/png', 'image/png/x', 'image/p*g', 'text/plain; charset=utf-8', 'image /png', 'ïmage/png']) {
+    assert.throws(() => types(['image/png', bad]), { message: `@blob('Docs'): allowedContentTypes contains malformed MIME glob(s): ${bad}. Use forms like 'image/*' or 'application/pdf'.` }, bad);
+  }
+  assert.equal(S.isMimeGlob('*/*'), true);
+  assert.equal(S.isMimeGlob('*/*x'), false);
+  // field names may not collide with a built-in field, ignoring case; user_metadata is reserved too
+  assert.equal(S.defineFolder({ className: 'TeamDocument', fields: ['team_id'], rules: [ownRule] }).name, 'teamdocument');
+  for (const bad of ['user_metadata', 'Owner_ID', 'SIZE', 'etag']) {
+    assert.throws(() => S.defineFolder({ className: 'TeamDocument', fields: ['team_id', bad], rules: [ownRule] }), {
+      message: `@blob('TeamDocument'): field '${bad}' conflicts with a built-in StorageObject field. Built-in fields (cache_control, content_disposition, content_type, created_at, etag, folder, id, last_accessed_at, name, owner_id, path, size, updated_at, user_metadata) are managed by the service; rename the field on the @blob class.`,
+    });
+  }
 });
 
 test('storage: path rules throw InvalidName (400) before anything else', async () => {
@@ -419,9 +470,11 @@ test('storage: folder keys, unknown folders, fields, abort', async () => {
   const { sim } = storageWith([{ className: 'TeamDocument', rules: [ownRule] }, { className: 'X', blob: 'profile-images', rules: [ownRule] }]);
   await sim.storage['profile-images'].upload('p.png', 'x');
   await rejects(sim.storage.ProfileImage.list(), 'NotFound'); // the class name is not the key when the folder has a name
-  await sim.storage.TeamDocument.upload('t1/plan.pdf', 'x', { fields: { team_id: 't1', owner_id: 'spoofed' } });
+  await sim.storage.TeamDocument.upload('t1/plan.pdf', 'x', { fields: { team_id: 't1', owner_id: 'spoofed', OWNER_ID: 'spoofed', user_metadata: { a: 1 }, Size: 9 } });
   const [item] = (await sim.storage.TeamDocument.list('t1')).items;
   assert.equal(item.team_id, 't1');
+  assert.equal(item.size, 1);
+  for (const k of ['owner_id', 'OWNER_ID', 'user_metadata', 'Size']) assert.equal(k in item, false, k);
   assert.equal(sim.inspect().find((o) => o.path === 't1/plan.pdf').owner_id, 'sub-alice');
   const c = new AbortController();
   c.abort();
@@ -430,6 +483,42 @@ test('storage: folder keys, unknown folders, fields, abort', async () => {
   const none = S.createStorageSim({ folders: [], getClaims: () => alice });
   await rejects(none.storage.Attachment.list(), 'NoStorageEntitiesConfigured');
   assert.equal(typeof sim.serviceFactory()({}, { onDispose() {} }).TeamDocument.upload, 'function');
+});
+
+test('storage: a policy that throws is a playground-only Unexpected (400)', async () => {
+  const { sim } = storageWith([{ className: 'Odd', rules: [{ role: 'authenticated', actions: '*', policy: () => { throw new Error('boom'); } }] }]);
+  const e = await rejects(sim.storage.Odd.upload('a.txt', 'x'), 'Unexpected');
+  assert.equal(e.status, 400);
+  assert.match(e.message, /^Playground: The folder's policy threw: boom\. This happens only here/);
+});
+
+test('storage: interrupted delete and upload (Deleting state, blocked path)', async () => {
+  let t = Date.parse('2026-11-21T10:00:00Z');
+  const sim = S.createStorageSim({ folders: [{ className: 'Docs', blob: { onConflict: 'overwrite' }, rules: [ownRule] }], getClaims: () => alice, now: () => new Date(t) });
+  await sim.storage.Docs.upload('a.txt', 'A');
+  sim.interrupt('delete', 'Docs', 'a.txt');
+  // still listed, in a Deleting state
+  assert.deepEqual((await sim.storage.Docs.list()).items.map((i) => i.path), ['a.txt']);
+  assert.equal(sim.inspect()[0].state, 'Deleting');
+  const up = await rejects(sim.storage.Docs.upload('a.txt', 'B'), 'Conflict');
+  assert.equal(up.status, 409);
+  assert.match(up.message, /^Playground: .*can't be uploaded/);
+  await rejects(sim.storage.Docs.download('a.txt'), 'Conflict');
+  // the retry is blocked for about 70 minutes, then goes through
+  await rejects(sim.storage.Docs.delete('a.txt'), 'Conflict');
+  t += S.INTERRUPTED_BLOCK_MS - 1;
+  await rejects(sim.storage.Docs.delete('a.txt'), 'Conflict');
+  await rejects(sim.storage.Docs.download('a.txt'), 'Conflict'); // still Deleting
+  t += 1;
+  assert.equal((await sim.storage.Docs.delete('a.txt')).deleted, 1);
+  assert.deepEqual((await sim.storage.Docs.list()).items, []);
+  // an interrupted upload blocks the path, without a listed file
+  sim.interrupt('upload', 'Docs', 'b.txt', 1000);
+  await rejects(sim.storage.Docs.upload('b.txt', 'B'), 'Conflict');
+  assert.deepEqual((await sim.storage.Docs.list()).items, []);
+  t += 1000;
+  await sim.storage.Docs.upload('b.txt', 'B');
+  assert.throws(() => sim.interrupt('delete', 'Docs', 'nope.txt'), /^Error: Playground:/);
 });
 
 test('storage: drag and drop helper reads dropped files', () => {
@@ -536,8 +625,13 @@ test('fabric iq: the documented checks run before any request', async () => {
 test('fabric iq: not-enabled mode, abort, close, tools', async () => {
   let mode = 'not-enabled';
   const iq = new F.SimFabricIqClient({ delayMs: 50, mode: () => mode });
-  await assert.rejects(iq.ask(ID, [{ role: 'user', content: 'What was total revenue?' }]), (e) => e instanceof F.FabricIqMcpAdapterError && /not enabled/.test(e.message));
+  // the real error carries only the HTTP status; the explanation is a playground note beside it
+  await assert.rejects(
+    iq.ask(ID, [{ role: 'user', content: 'What was total revenue?' }]),
+    (e) => e instanceof F.FabricIqMcpAdapterError && e.message === 'Fabric IQ MCP connector invocation failed (HTTP 404).' && /^Playground: .*not enabled/.test(e.playgroundNote),
+  );
   await assert.rejects(iq.listTools(), F.FabricIqMcpAdapterError);
+  await assert.rejects(iq.callTool(''), /HTTP 404/); // connecting fails before the name is checked
   // validation still comes first
   await assert.rejects(iq.ask('', [{ role: 'user', content: 'x' }]), /nonempty artifact GUID/);
   mode = 'normal';
@@ -551,9 +645,63 @@ test('fabric iq: not-enabled mode, abort, close, tools', async () => {
   assert.equal((await iq.callTool('SomethingElse', {})).isError, true);
   await iq.close();
   await assert.rejects(iq.ask(ID, [{ role: 'user', content: 'x' }]), /connector is closed/);
+  await assert.rejects(iq.listTools(), /connector is closed/);
+});
+
+test('fabric iq: package shape, lazy connect, callTool argument checks', async () => {
   const pkg = F.fabricIqPackage({ delayMs: 0 });
-  assert.throws(() => pkg.createFabricIqMcpConnectorClient({}), /executeQuery/);
-  assert.ok(pkg.createFabricIqMcpConnectorClient({ executeQuery() {} }) instanceof F.SimFabricIqClient);
+  // every class the package exports exists at run time
+  assert.equal(new pkg.FabricIqMcpHttpError(429, { 'Retry-After': '10' }).message, 'Fabric IQ MCP returned HTTP 429.');
+  assert.equal(new pkg.FabricIqMcpHttpError(429, { 'Retry-After': '10' }).getResponseHeader('retry-after'), '10');
+  assert.equal(new pkg.FabricIqMcpHttpError(429).name, 'FabricIqMcpHttpError');
+  const contract = new pkg.FabricIqMcpContractError('LIMIT_EXCEEDED', 'too big');
+  assert.deepEqual([contract.name, contract.code, contract.message], ['FabricIqMcpContractError', 'LIMIT_EXCEEDED', 'too big']);
+  assert.equal(typeof pkg.fabricIqMcp().operations.executeQuery.invoke, 'function');
+  await assert.rejects(pkg.fabricIqMcp().operations.executeQuery.invoke({}, () => {}), /^Error: Playground:/);
+  // creating the wrapper checks nothing; the first call does
+  const broken = pkg.createFabricIqMcpConnectorClient({});
+  assert.ok(broken instanceof F.SimFabricIqClient);
+  await assert.rejects(broken.listTools(), /^TypeError: Playground: .*executeQuery/);
+  const iq = pkg.createFabricIqMcpConnectorClient({ executeQuery() {} });
+  await assert.rejects(iq.callTool(''), { name: 'FabricIqMcpAdapterError', message: 'Tool name must be non-empty.' });
+  await assert.rejects(iq.callTool('   '), { message: 'Tool name must be non-empty.' });
+  await assert.rejects(iq.callTool('AskPowerBI', []), { message: 'Tool arguments must be an object.' });
+  await assert.rejects(iq.callTool('AskPowerBI', new Map()), { message: 'Tool arguments must be an object.' });
+});
+
+test('fabric iq: a task that ends failed throws, cancelled is an AbortError', async () => {
+  let mode = 'task-failed';
+  const iq = new F.SimFabricIqClient({ delayMs: 0, mode: () => mode });
+  const statuses = [];
+  const q = [{ role: 'user', content: 'What was total revenue?' }];
+  await assert.rejects(iq.ask(ID, q, { onTaskUpdate: (u) => statuses.push(u.status) }), (e) =>
+    e instanceof F.FabricIqMcpAdapterError && e.message === 'Fabric IQ MCP task ended with status "failed".' && /^Playground:/.test(e.playgroundNote),
+  );
+  assert.deepEqual(statuses, ['working', 'failed']);
+  mode = 'task-cancelled';
+  statuses.length = 0;
+  await assert.rejects(iq.ask(ID, q, { onTaskUpdate: (u) => statuses.push(u.status) }), { name: 'AbortError', message: 'Fabric IQ MCP task was cancelled.' });
+  assert.deepEqual(statuses, ['working', 'cancelled']);
+  // only a completed task resolves, even when it reports a tool failure
+  mode = 'normal';
+  assert.equal((await iq.ask(ID, [{ role: 'user', content: 'Why?' }])).result.isError, true);
+});
+
+test('fabric iq: runs as the signed-in persona; signed out fails', async () => {
+  const who = { current: alice };
+  const log = [];
+  const iq = new F.SimFabricIqClient({ delayMs: 0, getUser: () => who.current, onAsk: (e) => log.push(e) });
+  const q = [{ role: 'user', content: 'What was total revenue?' }];
+  const a = await iq.ask(ID, q);
+  who.current = carol;
+  const c = await iq.ask(ID, q);
+  assert.deepEqual(log.map((e) => e.runsAs), ['sub-alice', 'sub-carol']);
+  // the same replayed answer for every persona: the recording has no RLS or OLS (documented in fabric-iq.ts)
+  assert.deepEqual(a.result, c.result);
+  who.current = null;
+  await assert.rejects(iq.ask(ID, q), (e) => e instanceof F.FabricIqMcpAdapterError && e.message === 'Fabric IQ MCP connector invocation failed (HTTP 401).' && /signed-in user/.test(e.playgroundNote));
+  // the input checks still come first
+  await assert.rejects(iq.ask('', q), /nonempty artifact GUID/);
 });
 
 // ---------------------------------------------------------------- functions and OneLake
@@ -608,20 +756,106 @@ test('functions: works locally as you, fails deployed when the owner has no writ
   assert.equal(w.events.at(-1).tokensAs, 'sub-owner');
 });
 
+test('onelake: a Viewer reads and writes through OneLake security roles', async () => {
+  const run = async (lakeRole) => {
+    const state = { caller: { sub: alice.sub, name: 'Alice' } };
+    const host = U.createFunctionHost({ appOwner: owner, getCaller: () => state.caller });
+    const lake = U.createOneLakeSim({
+      workspaceId: WS,
+      items: [{ itemId: LAKE, displayName: 'ContosoLake' }],
+      roles: { [owner.sub]: 'Viewer' },
+      oneLakeRoles: lakeRole ? { [owner.sub]: lakeRole } : undefined,
+      resolveToken: host.tokenInfo,
+    });
+    host.register('try', async (ctx) => {
+      const auth = { Authorization: `Bearer ${ctx.Tokens.Storage}` };
+      const read = await lake.fetch(fileUrl('none.txt'), { headers: auth });
+      const write = await lake.fetch(fileUrl('a.txt') + '?resource=file', { method: 'PUT', headers: auth });
+      const message = async (res) => (res.ok || res.status === 404 ? '' : (await res.json()).error.message);
+      return [read.status, write.status, await message(read), await message(write)];
+    }, ['Storage']);
+    return host.invoke('try');
+  };
+  const [r0, w0, why] = await run(undefined);
+  assert.deepEqual([r0, w0], [403, 403]);
+  assert.match(why, /^This request is not authorized to perform this operation\. Playground: .*Viewer role and no OneLake security role.*Read or ReadWrite \(DefaultReader gives Read to users with ReadAll\)/);
+  const [r1, w1, , whyWrite] = await run('Read');
+  assert.deepEqual([r1, w1], [404, 403]); // reads (the file just isn't there), can't write
+  assert.match(whyWrite, /Viewer role and a OneLake security role with Read\. Writing OneLake data needs Admin, Member or Contributor, or a OneLake security role with ReadWrite\.$/);
+  assert.deepEqual((await run('ReadWrite')).slice(0, 2), [404, 201]);
+});
+
 test('functions: tokens are bounded by the declared audiences', async () => {
   const { host } = world({ unminted: ['Fabric'] });
   host.register('peek', async (ctx) => Object.keys(ctx.Tokens), ['Storage', 'Fabric']);
   assert.deepEqual(await host.invoke('peek'), ['Storage']); // the unminted one is not enumerable
   host.register('readFabric', async (ctx) => ctx.Tokens.Fabric, ['Fabric']);
-  await assert.rejects(host.invoke('readFabric'), { message: "No token available for audience 'Fabric'. Ensure a connection with this audience is declared." });
+  await assert.rejects(host.invoke('readFabric'), (e) =>
+    e instanceof U.UserDataFunctionInvalidInputError &&
+    e.name === 'UserDataFunctionInvalidInputError' &&
+    e.errorCode === 'InvalidInput' &&
+    e.message === "No token available for audience 'Fabric'. Ensure a connection with this audience is declared.",
+  );
   host.register('noAudience', async (ctx) => ctx.Tokens.Storage, []);
   assert.equal(await host.invoke('noAudience'), undefined);
   await assert.rejects(host.invoke('missing'), /no function named/);
-  const pkg = U.userDataFunctionsPackage(host, (n) => (n === 'viaUdf' ? ['Storage'] : []));
+  // GUID custom audiences are valid
+  host.register('guid', async (ctx) => typeof ctx.Tokens['11111111-2222-3333-4444-555555555555'], ['11111111-2222-3333-4444-555555555555']);
+  assert.equal(await host.invoke('guid'), 'string');
+  assert.equal(U.isValidCustomAudience('11111111-2222-3333-4444-555555555555'), true);
+  assert.equal(U.isValidCustomAudience('api://contoso-api'), true);
+  for (const bad of ['https://x/.default', 'https://x?y', 'http://x', '*', 'contoso', '']) assert.equal(U.isValidCustomAudience(bad), false, bad);
+});
+
+test('functions: the context goes wherever RayfinContext is declared', async () => {
+  const { host } = world();
+  host.register('ctxSecond', async (a, ctx, b) => `${a}|${ctx.user.id}|${typeof ctx.Tokens.Storage}|${b}`, ['Storage'], { contextAt: 1 });
+  assert.equal(await host.invoke('ctxSecond', 'x', 'y'), 'x|sub-alice|string|y');
+  host.register('noCtx', async (name) => `Hello ${name}!`, [], { contextAt: null });
+  assert.equal(await host.invoke('noCtx', 'Ada'), 'Hello Ada!');
+  const pkg = U.userDataFunctionsPackage(host, (n) => (n === 'udfLast' ? { audiences: ['Fabric'], contextAt: 1 } : {}));
+  new pkg.UserDataFunctions().func('udfLast', async (x, ctx) => `${x}:${Object.keys(ctx.Tokens)}`, []);
+  assert.equal(await host.invoke('udfLast', 7), '7:Fabric');
+});
+
+test('functions: udf.func connections join the annotated audiences', async () => {
+  const { host } = world();
+  const pkg = U.userDataFunctionsPackage(host, (n) => (n === 'viaUdf' || n.startsWith('meta') ? { audiences: ['Storage'] } : {}));
   const udf = new pkg.UserDataFunctions();
   udf.func('viaUdf', async (ctx, x) => `${typeof ctx.Tokens.Storage}:${x}`, []);
   assert.equal(await host.invoke('viaUdf', 1), 'string:1');
-  assert.throws(() => udf.func('old', async () => 1, [{}]), /keep the third argument/);
+  udf.func('metaPlusConn', async (ctx) => Object.keys(ctx.Tokens).sort(), [
+    udf.connection({ audienceType: pkg.AudienceType.Sql }),
+    udf.connection({ audienceType: pkg.AudienceType.Storage }), // already annotated: once
+    udf.connection({ audience: 'api://contoso-api' }),
+    udf.connection({ alias: 'ContosoLake' }), // binds a FabricItem parameter: not simulated, ignored
+  ]);
+  assert.deepEqual(await host.invoke('metaPlusConn'), ['Sql', 'Storage', 'api://contoso-api']);
+  // an invalid custom audience: registered, but every invocation fails
+  udf.func('badAudience', async () => 'never', [udf.connection({ audience: 'https://contoso/.default' })]);
+  await assert.rejects(host.invoke('badAudience'), (e) =>
+    e instanceof U.UserDataFunctionInternalError && e.errorCode === 'InternalError' && e.message === U.INVALID_CONNECTION_AUDIENCE_MESSAGE,
+  );
+  assert.equal(pkg.Connection, U.Connection);
+  assert.equal(new pkg.UserDataFunctionError('X').errorCode, 'X');
+});
+
+test('functions: request, response and time limits', async () => {
+  const { host } = world();
+  host.register('echo', async (ctx, s) => s.length, []);
+  assert.equal(await host.invoke('echo', 'x'.repeat(4 * 1024 * 1024 - 10)), 4 * 1024 * 1024 - 10);
+  await assert.rejects(host.invoke('echo', 'x'.repeat(4 * 1024 * 1024)), /^Error: Playground: .*at most 4 MB/);
+  host.register('big', async (ctx, n) => 'y'.repeat(n), []);
+  assert.equal((await host.invoke('big', 30 * 1024 * 1024 - 2)).length, 30 * 1024 * 1024 - 2); // with its JSON quotes: exactly 30 MiB
+  await assert.rejects(host.invoke('big', 30 * 1024 * 1024 - 1), (e) =>
+    e instanceof U.UserDataFunctionError && e.errorCode === 'ResponseTooLarge' && e.message === "Function's response size is larger than the 30 megabyte limit.",
+  );
+  assert.equal(U.TIMEOUT_MS, 240_000);
+  const quick = U.createFunctionHost({ appOwner: owner, getCaller: () => ({ sub: alice.sub, name: 'Alice' }), timeoutMs: 20 });
+  quick.register('slow', () => new Promise((r) => setTimeout(() => r('late'), 200)), []);
+  quick.register('fast', async () => 'ok', []);
+  await assert.rejects(quick.invoke('slow'), /^Error: Playground: "slow" ran longer than 0.02 seconds/);
+  assert.equal(await quick.invoke('fast'), 'ok');
 });
 
 test('functions: signed out, and tokens of the wrong audience', async () => {

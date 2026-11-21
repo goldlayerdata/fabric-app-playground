@@ -13,7 +13,24 @@
 // - Error codes: https://rayfin.ai/docs/reference/sdk/rayfin-storage#errors
 // - Status codes other than InvalidName's 400 come from the installed SDK's own map
 //   (rayfin-storage dist/storageErrorCodes.js: TooLarge 400, UnsupportedContentType 400,
-//   PermissionDenied 403, NotFound 404, Conflict 409). Not in the docs.
+//   PermissionDenied 403, NotFound 404, Conflict 409, NoStorageEntitiesConfigured 400). Not in the
+//   docs. That map has no entry for Unauthenticated: for a direct request the SDK takes the code from
+//   the service's JSON and the status from the HTTP response, so Unauthenticated's status is NOT
+//   DOCUMENTED (401 here).
+// - Folder declaration checks (build time): the installed rayfin-core 2.0.0
+//   dist/analysis/storage-config-generator.js, rules 6-9, with its messages: no anonymous rule;
+//   'overwrite' needs a role granted update or '*'; maxSize a positive whole number of bytes, at
+//   most 5,000 MiB (MAX_OBJECT_SIZE_BYTES, Azure's single Put Blob limit), size strings parsed by
+//   parseByteSize (binary units, 1kb = 1024: BYTE_UNITS; any case, spaces and no unit allowed,
+//   rounded to the nearest byte); MIME globs by isMimeGlob (token characters, `type/subtype`,
+//   `type/*` or `*/*`); declared fields must not collide, ignoring case, with a built-in field
+//   (user_metadata included).
+// - Interrupted operations (https://learn.microsoft.com/fabric/apps/storage#work-with-files):
+//   list() can include files in a `Deleting` state, which can't be uploaded or downloaded; an
+//   interrupted upload or delete can block the path, "in some cases ... for about 70 minutes".
+//   interrupt() plays both. NOT DOCUMENTED: the code and status then (here Conflict 409, the SDK's
+//   mapping of UPLOAD_TARGET_LOCKED and DELETE_TARGET_LOCKED), and how a Deleting file shows in
+//   list() (here: like any other file; the SDK's StorageObjectRef has no state field).
 // - `retryable`: status >= 500 or RateLimited (installed SDK, isRetryableStorageError; docs: #errors).
 //
 // Policies: the caller passes each rule's policy as a plain function `(claims, item) => boolean`,
@@ -30,12 +47,16 @@
 // - the order of the upload checks (here: size, type, conflict, then permission);
 // - whether list(directoryPath) includes deeper levels (here: yes, it is a prefix: the SDK sends
 //   the directory as `prefix`, installed StorageFolderClient.js), and the list order (here: by path);
-// - the default list limit (here: 100), the service's size limit when maxSize is omitted (here: a
-//   playground cap of 64 MiB to protect the tab), whether a ByteSize string such as '2mb' counts
-//   1000 or 1024 (here: 1024, like the mb() helper), how MIME globs compare (here: ignoring case
-//   and any `;` parameters);
-// - what the service does with built-in StorageObject fields sent in `fields` (here: dropped);
+// - the default list limit (here: 100), the service's size limit when maxSize is omitted ("the
+//   global service limit", value not given; one object can't pass 5,000 MiB anyway; here: a
+//   playground cap of 64 MiB to protect the tab), how MIME globs compare at upload (here: ignoring
+//   case and any `;` parameters);
+// - what the service does with built-in StorageObject fields sent in an upload's `fields` (here:
+//   dropped, matched ignoring case; the build only checks declared fields);
 // - the service's error messages (here: "Playground: …").
+//
+// PLAYGROUND ONLY: a policy here is a JavaScript function and can throw; that answers Unexpected
+// (400). Real policies are a server-side rule language and can't throw.
 
 import { pg, simulatedId } from './playground';
 
@@ -87,6 +108,8 @@ export type FolderDeclaration = {
   className: string;
   blob?: string | BlobOptions;
   rules: readonly FolderRule[];
+  /** Names of the app fields declared on the class (such as `team_id`), for the build-time name check. */
+  fields?: readonly string[];
 };
 
 /** A folder after the checks `storage apply` makes. */
@@ -100,7 +123,7 @@ export type Folder = {
   rules: readonly FolderRule[];
 };
 
-/** Thrown when a declaration would be refused by `storage apply` (playground wording). */
+/** Thrown when a declaration would be refused by the build or `storage apply` (rayfin-core's wording where the package has one). */
 export class FolderDeclarationError extends Error {
   override name = 'FolderDeclarationError';
 }
@@ -125,18 +148,68 @@ export function normalizeFolderName(input: string): string {
   return name;
 }
 
-const UNIT: Record<string, number> = { b: 1, kb: 1024, mb: 1024 ** 2, gb: 1024 ** 3 };
+/** rayfin-core BYTE_UNITS: binary units. */
+const BYTE_UNITS: Record<string, number> = { b: 1, kb: 1024, mb: 1024 ** 2, gb: 1024 ** 3 };
+/** rayfin-core MAX_OBJECT_SIZE_BYTES: 5,000 MiB, Azure's single Put Blob limit. */
+export const MAX_OBJECT_SIZE_BYTES = 5_000 * 1024 * 1024;
 
-/** Bytes from a `maxSize` value. NOT DOCUMENTED: whether '2mb' is 1000- or 1024-based; 1024 here, like mb(). */
-export function toBytes(size: number | string): number {
-  if (typeof size === 'number') {
-    if (!Number.isFinite(size) || size < 0) throw new FolderDeclarationError(pg(`maxSize must be a byte count, not ${size}.`));
-    return size;
+/**
+ * rayfin-core parseByteSize (storage-config-generator.js; MIT, Microsoft Corporation): a number is
+ * returned as is; a string is trimmed and lowercased, then digits with at most one dot, then an
+ * optional unit (spaces allowed between). Rounded to the nearest byte; NaN when malformed.
+ */
+export function parseByteSize(value: number | string): number {
+  if (typeof value === 'number') return value;
+  const s = String(value).trim().toLowerCase();
+  let i = 0;
+  let dotSeen = false;
+  while (i < s.length) {
+    const code = s.charCodeAt(i);
+    if (code >= 48 && code <= 57) i++;
+    else if (s[i] === '.' && !dotSeen) {
+      dotSeen = true;
+      i++;
+    } else break;
   }
-  const m = /^(\d+(?:\.\d+)?)(b|kb|mb|gb)$/.exec(size);
-  if (!m) throw new FolderDeclarationError(pg(`maxSize "${size}" is not a number followed by b, kb, mb or gb.`));
-  return Math.floor(Number(m[1]) * UNIT[m[2]]);
+  const numPart = s.slice(0, i);
+  const unitPart = s.slice(i).trim();
+  if (numPart === '' || numPart === '.' || numPart.endsWith('.')) return Number.NaN;
+  const multiplier = unitPart === '' ? 1 : BYTE_UNITS[unitPart];
+  if (multiplier === undefined) return Number.NaN;
+  return Math.round(Number.parseFloat(numPart) * multiplier);
 }
+
+/** Bytes from a `maxSize` value, checked as rule 8 of the installed rayfin-core does, with its messages. */
+export function toBytes(size: number | string, className = 'Folder'): number {
+  const bytes = parseByteSize(size);
+  if (!Number.isInteger(bytes) || bytes <= 0) {
+    throw new FolderDeclarationError(
+      `@blob('${className}'): maxSize must be a positive whole byte count or size string (e.g. '2mb'); got ${JSON.stringify(size)}.`,
+    );
+  }
+  if (bytes > MAX_OBJECT_SIZE_BYTES) {
+    throw new FolderDeclarationError(
+      `@blob('${className}'): maxSize (${bytes} bytes) exceeds the maximum supported object size of ${MAX_OBJECT_SIZE_BYTES} bytes (5,000 MiB). Uploads are single-request PUTs and cannot exceed the Azure single-upload limit.`,
+    );
+  }
+  return bytes;
+}
+
+const isMimeTokenRun = (s: string) => /^[0-9A-Za-z_.+-]+$/.test(s);
+/** rayfin-core isMimeGlob: the full wildcard, or token characters as `type/subtype` or `type/*`. */
+export function isMimeGlob(t: string): boolean {
+  if (t === '*/*') return true;
+  const slash = t.indexOf('/');
+  if (slash <= 0 || t.indexOf('/', slash + 1) !== -1) return false;
+  const subtype = t.slice(slash + 1);
+  return isMimeTokenRun(t.slice(0, slash)) && (subtype === '*' || isMimeTokenRun(subtype));
+}
+
+/** rayfin-core INTRINSIC_OBJECT_FIELDS: the built-in StorageObject fields, `user_metadata` included. */
+export const INTRINSIC_OBJECT_FIELDS: readonly string[] = [
+  'id', 'owner_id', 'folder', 'path', 'name', 'size', 'content_type', 'cache_control', 'content_disposition', 'etag',
+  'created_at', 'updated_at', 'last_accessed_at', 'user_metadata',
+];
 
 /** The size helpers of @microsoft/rayfin-core (binary units: kb(2) === 2048). */
 export const bytes = (n: number) => n;
@@ -166,15 +239,19 @@ const grants = (rule: FolderRule, action: SimpleAction) => asArray(rule.actions)
 
 /**
  * Checks a declaration the way `storage apply` and the decorator generator would, and returns the
- * folder. Documented refusals: no authenticated rule, an anonymous rule, `onConflict: 'overwrite'`
- * without an authenticated role granted `update` (https://rayfin.ai/docs/storage#declare-a-folder,
- * #folder-options). The wording is the playground's.
+ * folder. Refusals with the installed rayfin-core's messages: an anonymous rule (rule 6),
+ * `onConflict: 'overwrite'` without a role granted `update` (rule 7), maxSize and MIME globs
+ * (rule 8), declared fields named like a built-in field (rule 9). Documented, with playground
+ * wording: a folder needs an authenticated rule (https://rayfin.ai/docs/storage#declare-a-folder).
  */
 export function defineFolder(decl: FolderDeclaration): Folder {
   const opts: BlobOptions = typeof decl.blob === 'string' ? { name: decl.blob } : (decl.blob ?? {});
   const name = normalizeFolderName(opts.name ?? decl.className);
+  const cls = decl.className;
   if (decl.rules.some((r) => r.role === 'anonymous')) {
-    throw new FolderDeclarationError(pg(`Folder "${name}": anonymous Storage permissions are not supported.`));
+    throw new FolderDeclarationError(
+      `@blob('${cls}'): anonymous permissions are not supported for storage folders. Remove the anonymous role and grant access to the authenticated role instead.`,
+    );
   }
   const authenticated = decl.rules.filter((r) => r.role === 'authenticated');
   if (authenticated.length === 0) {
@@ -182,16 +259,32 @@ export function defineFolder(decl: FolderDeclaration): Folder {
   }
   const onConflict = opts.onConflict ?? 'error';
   if (onConflict === 'overwrite' && !authenticated.some((r) => grants(r, 'update'))) {
-    throw new FolderDeclarationError(pg(`Folder "${name}" uses onConflict: 'overwrite', which needs an authenticated role granted update.`));
+    throw new FolderDeclarationError(
+      `@blob('${cls}'): onConflict: 'overwrite' requires at least one authenticated role to grant the 'update' action. Add 'update' to a role or set onConflict: 'error'.`,
+    );
   }
-  for (const t of opts.allowedContentTypes ?? []) {
-    if (!/^[^/\s]+\/[^/\s]+$/.test(t)) throw new FolderDeclarationError(pg(`Folder "${name}": "${t}" is not a type/subtype MIME glob.`));
+  const maxSize = opts.maxSize === undefined ? undefined : toBytes(opts.maxSize, cls);
+  if (opts.allowedContentTypes) {
+    const malformed = opts.allowedContentTypes.filter((t) => !isMimeGlob(t));
+    if (malformed.length > 0) {
+      throw new FolderDeclarationError(
+        `@blob('${cls}'): allowedContentTypes contains malformed MIME glob(s): ${malformed.join(', ')}. Use forms like 'image/*' or 'application/pdf'.`,
+      );
+    }
+  }
+  const intrinsics = new Set(INTRINSIC_OBJECT_FIELDS.map((f) => f.toLowerCase()));
+  for (const field of decl.fields ?? []) {
+    if (intrinsics.has(field.toLowerCase())) {
+      throw new FolderDeclarationError(
+        `@blob('${cls}'): field '${field}' conflicts with a built-in StorageObject field. Built-in fields (${[...INTRINSIC_OBJECT_FIELDS].sort().join(', ')}) are managed by the service; rename the field on the @blob class.`,
+      );
+    }
   }
   return {
     name,
     className: decl.className,
     onConflict,
-    maxSize: opts.maxSize === undefined ? undefined : toBytes(opts.maxSize),
+    maxSize,
     allowedContentTypes: opts.allowedContentTypes,
     rules: decl.rules,
   };
@@ -321,12 +414,19 @@ export type StorageEvent = {
 
 // ---------------------------------------------------------------- the simulated service
 
-/** Built-in fields the server manages: never stored from `fields` (https://rayfin.ai/docs/storage/files#store-typed-metadata). */
-const INTRINSIC = new Set([
-  'id', 'owner_id', 'folder', 'path', 'name', 'size', 'content_type', 'cache_control', 'content_disposition', 'etag',
-  'created_at', 'updated_at', 'last_accessed_at', 'sizeBig', 'contentType', 'contentDisposition', 'cacheControl',
-  'createdAt', 'updatedAt', 'lastAccessedAt',
-]);
+/**
+ * Names an upload's `fields` can't set: the built-in fields the server manages
+ * (https://rayfin.ai/docs/storage/files#store-typed-metadata), plus the SDK's envelope names, which
+ * win over custom fields in list() anyway (flattenListItem). Matched ignoring case. NOT DOCUMENTED:
+ * what the service does with them (here: dropped).
+ */
+const RESERVED_FIELDS = new Set(
+  [...INTRINSIC_OBJECT_FIELDS, 'sizeBig', 'contentType', 'contentDisposition', 'cacheControl', 'createdAt', 'updatedAt', 'lastAccessedAt'].map((f) =>
+    f.toLowerCase(),
+  ),
+);
+/** About 70 minutes: how long an interrupted operation can block a path "in some cases" (Learn, storage#work-with-files). */
+export const INTERRUPTED_BLOCK_MS = 70 * 60 * 1000;
 
 /** NOT DOCUMENTED (the service limit): the playground's own cap, to keep the tab responsive. */
 export const PLAYGROUND_MAX_BYTES = 64 * 1024 ** 2;
@@ -346,6 +446,8 @@ type Stored = {
   updatedAt: string;
   lastAccessedAt: string | null;
   fields: Record<string, unknown>;
+  /** Set by an interrupted delete. */
+  state?: 'Deleting';
 };
 
 export type StorageSimOptions = {
@@ -359,7 +461,16 @@ export type StorageSimOptions = {
 };
 
 /** What the playground's Files panel shows: every object, whoever owns it. */
-export type StoredSummary = { folder: string; path: string; owner_id: string; size: number; contentType: string; updatedAt: string };
+export type StoredSummary = {
+  folder: string;
+  path: string;
+  owner_id: string;
+  size: number;
+  contentType: string;
+  updatedAt: string;
+  /** 'Deleting' after an interrupted delete, until a delete succeeds. */
+  state?: 'Deleting';
+};
 
 export interface StorageSim {
   /** `client.storage`: a folder client per key, normalized like the SDK (`storage.Attachment` is folder `attachment`). */
@@ -370,6 +481,12 @@ export interface StorageSim {
   serviceFactory(): () => Record<string, FolderClient>;
   /** Every stored object (a panel view, not a Storage API). */
   inspect(): StoredSummary[];
+  /**
+   * Plays an interrupted operation on a path, as Learn describes it: 'delete' leaves the file listed
+   * in a `Deleting` state (no upload or download) until a delete succeeds; either kind blocks
+   * operations on the path for `blockedForMs` (default about 70 minutes, on the sim's clock).
+   */
+  interrupt(op: 'upload' | 'delete', folderKey: string, path: string, blockedForMs?: number): void;
   /** Empties every folder. */
   reset(): void;
 }
@@ -441,6 +558,17 @@ export function createStorageSim(options: StorageSimOptions): StorageSim {
     byName.set(f.name, f);
   }
   const objects = new Map<string, Map<string, Stored>>(folders.map((f) => [f.name, new Map()]));
+  /** Paths blocked by an interrupted operation, until a time on the sim's clock. */
+  const blocked = new Map<string, Map<string, number>>(folders.map((f) => [f.name, new Map()]));
+  const isBlocked = (folder: Folder, path: string) => {
+    const until = blocked.get(folder.name)!.get(path);
+    if (until === undefined) return false;
+    if (now().getTime() < until) return true;
+    blocked.get(folder.name)!.delete(path);
+    return false;
+  };
+  const locked = (p: string, cid: string, why: string) =>
+    storageError('Conflict', 409, pg(`"${p}" ${why}. Wait and retry: an interrupted upload or delete can block a path for about 70 minutes.`), cid);
 
   const emit = (e: StorageEvent) => options.onEvent?.(e);
 
@@ -472,7 +600,13 @@ export function createStorageSim(options: StorageSimOptions): StorageSim {
       try {
         ok = rule.policy(claims, item) === true;
       } catch (e) {
-        throw storageError('Unexpected', 400, pg(`The folder's policy threw: ${(e as Error)?.message ?? e}`), cid);
+        // Playground only: real policies are a server-side rule language and can't throw.
+        throw storageError(
+          'Unexpected',
+          400,
+          pg(`The folder's policy threw: ${(e as Error)?.message ?? e}. This happens only here: real policies are rules the service evaluates, and can't throw.`),
+          cid,
+        );
       }
       if (ok) return true;
     }
@@ -508,6 +642,7 @@ export function createStorageSim(options: StorageSimOptions): StorageSim {
     }
     const claims = options.getClaims();
     if (!claims || typeof claims.sub !== 'string' || !claims.sub) {
+      // NOT DOCUMENTED: the status (the SDK's map has no Unauthenticated entry); 401 here.
       throw storageError('Unauthenticated', 401, pg('Nobody is signed in. Storage needs a signed-in session.'), cid);
     }
     return { folder, claims };
@@ -540,7 +675,10 @@ export function createStorageSim(options: StorageSimOptions): StorageSim {
           const contentType = resolveContentType(data, opts.contentType);
           const limit = folder.maxSize ?? PLAYGROUND_MAX_BYTES;
           if (bytes.byteLength > limit) {
-            const why = folder.maxSize === undefined ? 'the playground\'s own limit (the service limit is not documented)' : `this folder's maxSize (${folder.maxSize} bytes)`;
+            const why =
+              folder.maxSize === undefined
+                ? "the playground's own limit (the global service limit that applies without maxSize is not documented)"
+                : `this folder's maxSize (${folder.maxSize} bytes)`;
             throw storageError('TooLarge', 400, pg(`${bytes.byteLength} bytes is more than ${why}.`), cid);
           }
           if (!contentTypeAllowed(contentType, folder.allowedContentTypes)) {
@@ -548,7 +686,9 @@ export function createStorageSim(options: StorageSimOptions): StorageSim {
           }
           const store = objects.get(folder.name)!;
           const existing = store.get(p);
-          const fields = Object.fromEntries(Object.entries(opts.fields ?? {}).filter(([k]) => !INTRINSIC.has(k)));
+          if (existing?.state === 'Deleting') throw locked(p, cid, "is being deleted, and a file in that state can't be uploaded");
+          if (isBlocked(folder, p)) throw locked(p, cid, 'is blocked by an interrupted operation');
+          const fields = Object.fromEntries(Object.entries(opts.fields ?? {}).filter(([k]) => !RESERVED_FIELDS.has(k.toLowerCase())));
           const stamp = now().toISOString();
           if (existing) {
             if (folder.onConflict === 'error') {
@@ -603,6 +743,7 @@ export function createStorageSim(options: StorageSimOptions): StorageSim {
           if (!allowed(folder, claims, 'read', policyItem(folder, { ...s, size: s.bytes.byteLength }), cid)) {
             throw storageError('PermissionDenied', 403, pg(`The folder's rules don't let ${claims.sub} read "${p}".`), cid);
           }
+          if (s.state === 'Deleting') throw locked(p, cid, "is being deleted, and a file in that state can't be downloaded");
           s.lastAccessedAt = now().toISOString();
           return {
             stream: new Blob([s.bytes as BlobPart]).stream(),
@@ -659,6 +800,7 @@ export function createStorageSim(options: StorageSimOptions): StorageSim {
           if (!allowed(folder, claims, 'delete', policyItem(folder, { ...s, size: s.bytes.byteLength }), cid)) {
             throw storageError('PermissionDenied', 403, pg(`The folder's rules don't let ${claims.sub} delete "${p}".`), cid);
           }
+          if (isBlocked(folder, p)) throw locked(p, cid, 'is blocked by an interrupted operation');
           store.delete(p);
           return { success: true, deleted: 1, correlationId: cid };
         });
@@ -689,11 +831,23 @@ export function createStorageSim(options: StorageSimOptions): StorageSim {
           size: s.bytes.byteLength,
           contentType: s.contentType,
           updatedAt: s.updatedAt,
+          ...(s.state ? { state: s.state } : {}),
         })),
       );
     },
+    interrupt(op, folderKey, path, blockedForMs = INTERRUPTED_BLOCK_MS) {
+      const folder = byName.get(normalizeFolderName(folderKey));
+      if (!folder) throw new Error(pg(`There is no folder "${normalizeFolderName(folderKey)}".`));
+      if (op === 'delete') {
+        const s = objects.get(folder.name)!.get(path);
+        if (!s) throw new Error(pg(`There is no object at "${path}" whose delete could be interrupted.`));
+        s.state = 'Deleting';
+      }
+      blocked.get(folder.name)!.set(path, now().getTime() + blockedForMs);
+    },
     reset() {
       for (const m of objects.values()) m.clear();
+      for (const m of blocked.values()) m.clear();
     },
   };
 }

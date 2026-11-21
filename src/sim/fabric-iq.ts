@@ -18,25 +18,44 @@
 //   (https://rayfin.ai/docs/connectors/fabric-iq#continue-the-conversation). Here, the earlier user
 //   questions in the history are re-read to know what "What about 2025?" refers to; without the
 //   history it refers to nothing, and the answer covers every country.
-// - A tool failure resolves with result.isError: true rather than throwing
-//   (https://rayfin.ai/docs/reference/sdk/rayfin-connector-fabric-iq-mcp#conversation-types).
+// - Only a task that completes resolves, and a completed tool failure resolves with
+//   result.isError: true rather than throwing
+//   (https://rayfin.ai/docs/reference/sdk/rayfin-connector-fabric-iq-mcp#conversation-types). A task
+//   that ends 'failed' throws FabricIqMcpAdapterError (the task's error message, else `Fabric IQ MCP
+//   task ended with status "failed".`), and one that ends 'cancelled' throws an AbortError ("Fabric
+//   IQ MCP task was cancelled."): installed fabricIqMcpClient.js, terminalResult. Modes
+//   'task-failed' and 'task-cancelled' play both (the sim's failed task carries no error object).
 // - Aborting the signal rejects with an AbortError (#progress-and-cancellation); close() makes later
 //   calls throw FabricIqMcpAdapterError ("Fabric IQ MCP connector is closed.", installed connector.js).
+// - createFabricIqMcpConnectorClient() checks nothing and connects lazily, on the first call
+//   (installed connector.js). callTool() checks, after connecting: "Tool name must be non-empty.",
+//   then "Tool arguments must be an object." (fabricIqMcpClient.js).
+// - A non-2xx answer from the Rayfin backend throws FabricIqMcpAdapterError "Fabric IQ MCP connector
+//   invocation failed (HTTP <status>)." (rawInvoke.js); a non-2xx answer from Fabric IQ itself throws
+//   FabricIqMcpHttpError "Fabric IQ MCP returned HTTP <status>." The message carries only the status.
 // - Mode 'not-enabled': "authoring support does not guarantee that the Fabric IQ backend adapter is
 //   enabled in your Fabric environment"; then every question fails
 //   (https://rayfin.ai/docs/connectors/fabric-iq#troubleshoot-fabric-iq). NOT DOCUMENTED: what a
-//   real environment answers then (status and message). Here: a FabricIqMcpAdapterError, which is
-//   what the wrapper throws for a non-2xx answer from the Rayfin backend, with playground wording.
-// - Runs as the signed-in user (delegated only): https://rayfin.ai/docs/connectors/fabric-iq#add-the-connector
+//   real environment answers then. Here: the backend's non-2xx error, with HTTP 404 (a playground
+//   choice), and the explanation in the error's `playgroundNote`.
+// - Runs as the signed-in user, delegated only (https://rayfin.ai/docs/connectors/fabric-iq#add-the-connector).
+//   Learn (https://learn.microsoft.com/fabric/iq/connectors/fabric-iq-mcp): delegated Power BI
+//   Service `Item.Read.All` and `Item.Execute.All`, no service principal or app-only access, the
+//   caller's own permissions, and RLS and OLS apply, so two people can get different results for
+//   the same question. HERE every signed-in persona gets the same replayed answer: the snapshots were
+//   run once by the owner, on a model with no RLS or OLS roles. With `getUser`, a signed-out caller
+//   fails like a non-2xx backend answer (HTTP 401, a playground choice; NOT DOCUMENTED).
 //
-// NOT DOCUMENTED, chosen here: the tools listTools() returns besides AskPowerBI (here: AskPowerBI
-// only), the task statuses onTaskUpdate receives (here: 'working', then 'completed', the MCP Tasks
-// names; the package treats completed, failed and cancelled as terminal), and the shape of a real
-// answer's structuredContent (here: the snapshot id, its DAX and its table, marked as playground).
+// Tools: Learn lists six tools (DiscoverArtifacts, ResolveFabricItem, GetReportMetadata,
+// GetSemanticModelSchema, ValueSearch, ExecuteQuery) for the `Fabric.Routing.FabricIQ.V2` toolset,
+// and says that toolset has no natural-language answering tool. Rayfin pins another toolset,
+// `X-Variants: Fabric.Routing.M365.V1` (installed fabricIqMcpTypeB.js), and sends questions to an
+// `AskPowerBI` tool (https://rayfin.ai/docs/connectors/fabric-iq#ask-a-question). The tool list of
+// M365.V1 is NOT DOCUMENTED, so listTools() here returns AskPowerBI only.
 //
-// CONFLICT, not resolved here: Learn says Fabric IQ MCP "doesn't expose a natural-language answering
-// tool" (https://learn.microsoft.com/fabric/iq/connectors/fabric-iq-mcp), while Rayfin's wrapper
-// sends questions to an `AskPowerBI` tool (https://rayfin.ai/docs/connectors/fabric-iq#ask-a-question).
+// NOT DOCUMENTED, chosen here: the non-terminal task status onTaskUpdate receives (here: 'working',
+// the MCP Tasks name), and the shape of a real answer's structuredContent (here: the snapshot id,
+// its DAX and its table, marked as playground).
 
 import catalog from '../../data/catalog.json';
 import snapshotFile from '../../data/snapshots.json';
@@ -67,6 +86,44 @@ export type FabricIqMcpToolsResult = { readonly tools: readonly { readonly name:
 /** The package's adapter error (invalid input, closed wrapper, non-2xx answer from the backend). */
 export class FabricIqMcpAdapterError extends Error {
   override readonly name = 'FabricIqMcpAdapterError';
+  /** Playground only: why the simulation threw, when the real message can't say. */
+  playgroundNote?: string;
+}
+
+/** The package's error for a non-2xx answer from Fabric IQ itself (installed fabricIqMcpClient.js). */
+export class FabricIqMcpHttpError extends Error {
+  override readonly name = 'FabricIqMcpHttpError';
+  readonly status: number;
+  readonly #headers: Readonly<Record<string, string>>;
+  constructor(status: number, headers: Readonly<Record<string, string>> = {}) {
+    super(`Fabric IQ MCP returned HTTP ${status}.`);
+    this.status = status;
+    this.#headers = Object.freeze({ ...headers });
+  }
+  /** Reads a response header, ignoring case. */
+  getResponseHeader(name: string): string | undefined {
+    const key = Object.keys(this.#headers).find((k) => k.toLowerCase() === name.toLowerCase());
+    return key === undefined ? undefined : this.#headers[key];
+  }
+}
+
+export type FabricIqMcpContractErrorCode = 'INVALID_ENVELOPE' | 'INVALID_PROTOCOL' | 'INVALID_HEADERS' | 'LIMIT_EXCEEDED';
+
+/** The package's error for an envelope that breaks the connector contract (installed fabricIqMcpTypeB.js). Never thrown here. */
+export class FabricIqMcpContractError extends Error {
+  override readonly name = 'FabricIqMcpContractError';
+  readonly code: FabricIqMcpContractErrorCode;
+  constructor(code: FabricIqMcpContractErrorCode, message: string) {
+    super(message);
+    this.code = code;
+  }
+}
+
+/** The AbortError the package creates (fabricIqMcpClient.js, createAbortError). */
+function abortError(message: string): Error {
+  const error = new Error(message);
+  error.name = 'AbortError';
+  return error;
 }
 
 // ---------------------------------------------------------------- the recording
@@ -246,15 +303,20 @@ export function replay(artifactId: string, query: string, context: readonly Fabr
 
 // ---------------------------------------------------------------- the wrapper
 
-export type FabricIqMode = 'normal' | 'not-enabled';
+export type FabricIqMode = 'normal' | 'not-enabled' | 'task-failed' | 'task-cancelled';
 
 export type FabricIqSimOptions = {
-  /** Read at each call: 'not-enabled' makes every question fail, as when the backend adapter is off. */
+  /**
+   * Read at each request: 'not-enabled' makes every request fail, as when the backend adapter is
+   * off; 'task-failed' and 'task-cancelled' end every task that way.
+   */
   mode?: () => FabricIqMode;
+  /** The signed-in persona, or null when nobody is signed in. Read at each request. Omit for "always signed in". */
+  getUser?: () => { readonly sub: string } | null;
   /** Simulated time per answer, in milliseconds (0 in tests). */
   delayMs?: number;
-  /** Called after each ask, for the Log. `runsAs` is always the signed-in user (delegated). */
-  onAsk?: (entry: { artifactId: string; question: string; historyLength: number; isError: boolean; snapshot?: string }) => void;
+  /** Called after each ask, for the Log. `runsAs` is the signed-in persona's `sub` (delegated), when `getUser` is given. */
+  onAsk?: (entry: { artifactId: string; question: string; historyLength: number; isError: boolean; snapshot?: string; runsAs?: string }) => void;
 };
 
 const GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -291,24 +353,77 @@ export function validateAsk(artifactId: unknown, messages: unknown): { query: st
   return { query, context, snapshot };
 }
 
-const NOT_ENABLED = pg(
-  'every question fails here, as it does when the Fabric IQ backend adapter is not enabled in a Fabric environment. Check availability with your Fabric administrator. What a real environment answers then is not documented.',
-);
+
+/** The real message for a non-2xx answer from the Rayfin backend (rawInvoke.js), with a playground note on why. */
+function backendError(status: number, note: string): FabricIqMcpAdapterError {
+  const error = new FabricIqMcpAdapterError(`Fabric IQ MCP connector invocation failed (HTTP ${status}).`);
+  error.playgroundNote = pg(note);
+  return error;
+}
+
+const NOT_ENABLED_NOTE =
+  "every request fails here, as it does when the Fabric IQ backend adapter is not enabled in a Fabric environment. Check availability with your Fabric administrator. What a real environment answers then is not documented: the status 404 is the playground's choice.";
+const SIGNED_OUT_NOTE =
+  "nobody is signed in, and Fabric IQ runs only as the signed-in user (delegated). The status a real backend answers then is not documented: 401 is the playground's choice.";
+
+/** The package's isPlainRecord check for tool arguments. */
+const isPlainRecord = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === 'object' && !Array.isArray(value) && Object.getPrototypeOf(value) === Object.prototype;
 
 /** The simulated FabricIqMcpConnectorClient. */
 export class SimFabricIqClient {
   #closed = false;
-  constructor(private readonly options: FabricIqSimOptions = {}) {}
+  #connected = false;
+  /** `connector` is what createFabricIqMcpConnectorClient() got; it is checked on the first call, as the real wrapper connects then. */
+  constructor(
+    private readonly options: FabricIqSimOptions = {},
+    private readonly connector?: unknown,
+  ) {}
 
   #assertOpen() {
     if (this.#closed) throw new FabricIqMcpAdapterError('Fabric IQ MCP connector is closed.');
   }
 
-  /** The "request": the backend check, the simulated task, then the replayed answer. */
+  #mode(): FabricIqMode {
+    return this.options.mode?.() ?? 'normal';
+  }
+
+  /** What fails any request before Fabric IQ answers: the backend adapter, then the sign-in. */
+  #checkRequest() {
+    if (this.#mode() === 'not-enabled') throw backendError(404, NOT_ENABLED_NOTE);
+    if (this.options.getUser && !this.options.getUser()) throw backendError(401, SIGNED_OUT_NOTE);
+  }
+
+  /** The lazy connect: the first call uses the connector, and a failed connect is retried on the next call. */
+  #connect() {
+    this.#assertOpen();
+    if (this.#connected) return;
+    if (this.connector !== undefined) {
+      const c = this.connector as { executeQuery?: unknown } | null;
+      if (!c || typeof c.executeQuery !== 'function') {
+        throw new TypeError(pg('the connector passed to createFabricIqMcpConnectorClient() has no executeQuery. Pass client.connectors.<name>.'));
+      }
+    }
+    this.#checkRequest();
+    this.#connected = true;
+  }
+
+  /** The tool call: the backend check, the simulated task, then its terminal status. */
   async #run(artifactId: string, query: string, context: readonly FabricIqMcpChatMessage[], options: FabricIqMcpToolCallOptions) {
-    if ((this.options.mode?.() ?? 'normal') === 'not-enabled') throw new FabricIqMcpAdapterError(NOT_ENABLED);
+    this.#checkRequest();
     options.onTaskUpdate?.({ status: 'working' });
     await wait(this.options.delayMs ?? 600, options.signal);
+    const mode = this.#mode();
+    if (mode === 'task-failed') {
+      options.onTaskUpdate?.({ status: 'failed' });
+      const error = new FabricIqMcpAdapterError('Fabric IQ MCP task ended with status "failed".');
+      error.playgroundNote = pg("mode 'task-failed': the simulated task ended 'failed', with no error object.");
+      throw error;
+    }
+    if (mode === 'task-cancelled') {
+      options.onTaskUpdate?.({ status: 'cancelled' });
+      throw abortError('Fabric IQ MCP task was cancelled.');
+    }
     const result = replay(artifactId, query, context);
     options.onTaskUpdate?.({ status: 'completed' });
     return result;
@@ -317,19 +432,30 @@ export class SimFabricIqClient {
   async ask(artifactId: string, messages: readonly FabricIqMcpChatMessage[], options: FabricIqMcpToolCallOptions = {}): Promise<FabricIqMcpChatResponse> {
     this.#assertOpen();
     options.signal?.throwIfAborted();
-    const { query, snapshot } = validateAsk(artifactId, messages);
-    const result = await this.#run(artifactId, query, snapshot.slice(0, -1), options);
+    const { query, context, snapshot } = validateAsk(artifactId, messages);
+    const result = await this.callTool('AskPowerBI', { artifactId, query, context }, options);
     const sc = result.structuredContent as { snapshot?: string } | undefined;
-    this.options.onAsk?.({ artifactId, question: query, historyLength: snapshot.length - 1, isError: result.isError === true, snapshot: sc?.snapshot });
+    const runsAs = this.options.getUser?.()?.sub;
+    this.options.onAsk?.({
+      artifactId,
+      question: query,
+      historyLength: snapshot.length - 1,
+      isError: result.isError === true,
+      snapshot: sc?.snapshot,
+      ...(runsAs ? { runsAs } : {}),
+    });
     return { result, messages: [...snapshot, { role: 'assistant', content: structuredClone(result) }] };
   }
 
   async callTool(name: string, args: Record<string, unknown> = {}, options: FabricIqMcpToolCallOptions = {}): Promise<FabricIqMcpToolResult> {
     this.#assertOpen();
     options.signal?.throwIfAborted();
-    if (typeof args !== 'object' || args === null || Array.isArray(args)) throw new FabricIqMcpAdapterError('Tool arguments must be an object.');
+    this.#connect();
+    if (typeof name !== 'string' || name.trim().length === 0) throw new FabricIqMcpAdapterError('Tool name must be non-empty.');
+    if (!isPlainRecord(args)) throw new FabricIqMcpAdapterError('Tool arguments must be an object.');
+    options.signal?.throwIfAborted();
     if (name !== 'AskPowerBI') {
-      if ((this.options.mode?.() ?? 'normal') === 'not-enabled') throw new FabricIqMcpAdapterError(NOT_ENABLED);
+      this.#checkRequest();
       return errorResult(`the tool "${name}" is not in the recording; only AskPowerBI is simulated.`);
     }
     let context: FabricIqMcpChatMessage[] = [];
@@ -342,9 +468,18 @@ export class SimFabricIqClient {
   }
 
   async listTools(): Promise<FabricIqMcpToolsResult> {
-    this.#assertOpen();
-    if ((this.options.mode?.() ?? 'normal') === 'not-enabled') throw new FabricIqMcpAdapterError(NOT_ENABLED);
-    return { tools: [{ name: 'AskPowerBI', description: pg('the only tool simulated here. Which other tools Fabric IQ lists is not documented.') }] };
+    this.#connect();
+    this.#checkRequest();
+    return {
+      tools: [
+        {
+          name: 'AskPowerBI',
+          description: pg(
+            'the only tool simulated here. Rayfin pins the Fabric.Routing.M365.V1 toolset, whose tool list is not documented; Learn lists six tools for the Fabric.Routing.FabricIQ.V2 toolset.',
+          ),
+        },
+      ],
+    };
   }
 
   async close(): Promise<void> {
@@ -354,21 +489,28 @@ export class SimFabricIqClient {
 
 /**
  * The module the preview can serve as '@microsoft/rayfin-connector-fabric-iq-mcp': the wrapper
- * factory, the runtime marker and the error classes. The connector passed in must have
- * `executeQuery` (it is `client.connectors.<name>`); the answers come from the simulation.
+ * factory, the runtime and the error classes. As in the package, creating the wrapper checks
+ * nothing; the connector (`client.connectors.<name>`) is used on the first call. The answers come
+ * from the simulation.
  */
 export function fabricIqPackage(options: FabricIqSimOptions = {}) {
-  const FABRIC_IQ_RUNTIME = Symbol.for('playground.fabricIqMcp');
   return {
-    fabricIqMcp: () => ({ operations: { executeQuery: {} }, [FABRIC_IQ_RUNTIME]: true }),
-    createFabricIqMcpConnectorClient(connector: { executeQuery?: unknown }) {
-      if (!connector || typeof connector.executeQuery !== 'function') {
-        throw new TypeError(pg('createFabricIqMcpConnectorClient needs client.connectors.<name>, which has executeQuery.'));
-      }
-      return new SimFabricIqClient(options);
+    /** Same shape as the package's runtime. Its `invoke` is never reached here: no request leaves the page. */
+    fabricIqMcp: () => ({
+      operations: {
+        executeQuery: {
+          invoke: async (_context: unknown, _next: unknown): Promise<never> => {
+            throw new Error(pg('no request leaves the page. Ask through createFabricIqMcpConnectorClient(); the answers are replayed.'));
+          },
+        },
+      },
+    }),
+    createFabricIqMcpConnectorClient(connector: unknown, _options?: unknown) {
+      return new SimFabricIqClient(options, connector);
     },
     FabricIqMcpAdapterError,
+    FabricIqMcpHttpError,
+    FabricIqMcpContractError,
     FABRIC_IQ_MCP_INVOKE_TIMEOUT_MS: 300_000,
-    FABRIC_IQ_RUNTIME,
   };
 }
