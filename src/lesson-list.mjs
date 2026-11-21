@@ -2083,7 +2083,7 @@ export const lessons = [
         code: C.TARGETS_LOAD,
         edits: [{ file: TARGETS_TS, from: '', to: C.TARGETS_LOAD }],
         see: 'No red lines.',
-        why: 'The same chain as the lakehouse: `select`, `where`, `orderBy`, `execute`. `execute()` returns one page (100 rows), which is plenty here: we add one target per country and year (nothing enforces it: Rayfin doesn\'t support a unique constraint over two fields).',
+        why: 'The same chain as the lakehouse: `select`, `where`, `orderBy`, `execute`. `execute()` returns one page (100 rows), which is plenty here: we add one target per country and year (nothing enforces that: the `unique` option on a field covers that one field, and Rayfin\'s guide says a rule over two fields is a unique constraint you add in the database itself).',
       },
       {
         do: 'Add the page: **Do it for me** writes `src/TargetsPage.tsx` and adds it to the report as **Targets** (page id, `PAGES` entry and import).',
