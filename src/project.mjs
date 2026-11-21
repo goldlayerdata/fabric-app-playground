@@ -704,17 +704,17 @@ function connectorInvoke(p, args, answer, done, fail) {
   if (result.status !== 'success') {
     return fail(PG('The query failed. The real CLI exits with an error and prints the result; its error part:'), ...JSON.stringify(result.error, null, 2).split('\n').map((l) => PG(l)));
   }
-  // rayfin.ai (CLI reference, invoke): with --json, success emits { status: 'ok', connector, operation, output }.
-  // Rows are cut outside the JSON, never inside it (the real CLI spills large output to a file).
+  // Rayfin's CLI reference (invoke) and connector-invoke.js: without --json it prints "✅ Invoked <name>.<operation>",
+  // then the output as pretty-printed JSON. Only --json wraps it in { status: 'ok', connector, operation, output }.
+  // Rows are cut outside the JSON, never inside it (the real CLI writes a result over 8 KB to a file).
   const cut = result.table.rows.length > 5;
   const output = cut ? { ...result, table: { ...result.table, rows: result.table.rows.slice(0, 5) } } : result;
-  const envelope = { status: 'ok', connector: String(name).toLowerCase(), operation: 'executeQuery', output };
   return {
     project: p,
     lines: [
       SIMULATED,
-      PG('Shown in the shape `--json` prints; without it, the real layout may differ.'),
-      ...JSON.stringify(envelope, null, 2).split('\n'),
+      `✅ Invoked ${String(name).toLowerCase()}.executeQuery`,
+      ...JSON.stringify(output, null, 2).split('\n'),
       ...(cut ? [PG(`First 5 of ${result.table.rows.length} rows shown.`)] : []),
     ],
     ok: true,

@@ -347,7 +347,7 @@ export const lessons = [
       {
         do: 'Test the connector from the terminal, with one DAX query (copy it rather than type it):',
         run: INVOKE,
-        see: '`"status": "ok"`, and in `output`, `"status": "success"`, the column `[Revenue]` and one row: 150632573.6073.',
+        see: '`✅ Invoked contoso.executeQuery`, then the result: `"status": "success"`, the column `[Revenue]` and one row: 150632573.6073.',
         why: '`connector invoke` sends a query without any app code: it checks that we can query the model (for real, we need Read and Build permission on it, and the CLI may ask for Power BI consent first). `--input` carries the DAX, wrapped in JSON; the backslashes keep its inner quotes. Real projects often put it in a file instead (`--file`), because quoting differs between terminals.',
       },
     ],
@@ -1532,7 +1532,7 @@ export const lessons = [
         do: 'Test it from the terminal with a measure only this model has (copy it rather than type it):',
         run: INVOKE_HEADLINE_PARETO,
         point: 'terminal',
-        see: '`"status": "ok"`, and one row: **It takes 4 of 8 categories to reach 80% of revenue**.',
+        see: '`✅ Invoked pareto.executeQuery`, then the result: `"status": "success"` and one row: **It takes 4 of 8 categories to reach 80% of revenue**.',
         why: 'The model writes that sentence itself, from its own measure, `[Cutoff Headline]`.',
       },
       {
