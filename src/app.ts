@@ -2689,24 +2689,28 @@ function showSplash() {
   const started = !!project.appDir || order.some((l) => progress.started(l));
   const current = chapterOf(lesson);
   const currentDone = lessonsOf(current).filter(progress.done).length;
-  // The parts side by side, one column each; a chapter is a compact row. The chapter you pick opens in one
-  // panel under the columns (the one you are working in starts open); picking it again closes it.
-  let picked: Chapter | undefined = current;
-  const detail = h('div', { class: 'chapter-detail', id: 'splash-chapter-detail' });
-  const rows = new Map<Chapter, HTMLButtonElement>();
-  const renderDetail = () => {
-    for (const [c, btn] of rows) {
-      btn.setAttribute('aria-expanded', String(c === picked));
-      btn.classList.toggle('picked', c === picked);
-    }
-    if (!picked) {
-      detail.hidden = true;
-      detail.replaceChildren();
-      return;
+  // Like the site's articles page: the parts and their chapters in a sidebar on the left, the chosen chapter's
+  // breakdown on the right. The chapter you are working in is chosen first.
+  let picked: Chapter = current;
+  const main = h('div', { class: 'splash-main', id: 'splash-chapter-detail', 'aria-live': 'polite' });
+  const links = new Map<Chapter, HTMLButtonElement>();
+  // the short state beside a chapter in the sidebar: lessons done, a tick, or "soon"
+  const shortState = (c: Chapter) => {
+    const state = chapterState(c);
+    if (state.key === 'coming') return 'soon';
+    if (state.key === 'done') return '✓';
+    if (state.key === 'progress') return `${lessonsOf(c).filter(progress.done).length}/${lessonsOf(c).length}`;
+    return '';
+  };
+  const renderMain = () => {
+    for (const [c, btn] of links) {
+      if (c === picked) btn.setAttribute('aria-current', 'true');
+      else btn.removeAttribute('aria-current');
     }
     const c = picked;
+    const p = partList.find((x) => x.chapters.includes(c.id))!;
     const state = chapterState(c);
-    const body = h('div', { class: 'body' }, h('p', { class: 'g' }, c.goal));
+    const body = h('div', { class: 'body' });
     if (c.modules) {
       body.append(
         h(
@@ -2719,45 +2723,45 @@ function showSplash() {
     } else {
       body.append(h('p', { class: 'planned-head' }, 'Lessons planned:'), h('ul', { class: 'planned' }, ...c.coming!.map((t) => h('li', {}, t))));
     }
-    detail.hidden = false;
-    detail.replaceChildren(
-      h('div', { class: 'detail-head' }, h('span', { class: 'n' }, `Chapter ${chapterNum(c)}`), h('h3', { class: 't' }, c.title), h('span', { class: `chip ${state.key}` }, state.label)),
+    main.replaceChildren(
+      h('p', { class: 'main-part' }, `Part ${partNum(p)} · ${p.title}`),
+      h('div', { class: 'main-head' }, h('h2', {}, h('span', { class: 'n' }, `Chapter ${chapterNum(c)}`), c.title), h('span', { class: `chip ${state.key}` }, state.label)),
+      h('p', { class: 'main-goal' }, c.goal),
       body,
     );
   };
-  const chapterRow = (c: Chapter) => {
+  const navLink = (c: Chapter) => {
     const state = chapterState(c);
     const btn = h(
       'button',
-      { type: 'button', class: `chapter-row ${state.key}${c === current ? ' current' : ''}`, 'aria-controls': 'splash-chapter-detail' },
-      h('span', { class: 'n' }, String(chapterNum(c))),
-      h('span', { class: 't' }, c.title),
-      h('span', { class: `chip ${state.key}` }, state.label),
+      { type: 'button', class: `${state.key}${c === current ? ' current' : ''}`, 'aria-controls': 'splash-chapter-detail' },
+      h('span', { class: 't' }, h('span', { class: 'n' }, String(chapterNum(c))), c.title),
+      h('span', { class: 'side-count' }, shortState(c)),
     ) as HTMLButtonElement;
     btn.addEventListener('click', () => {
-      picked = picked === c ? undefined : c;
-      renderDetail();
+      picked = c;
+      renderMain();
     });
-    rows.set(c, btn);
+    links.set(c, btn);
     return h('li', {}, btn);
   };
   $('splash-chapters').replaceChildren(
     h(
-      'div',
-      { class: 'parts' },
+      'nav',
+      { class: 'splash-nav', 'aria-label': 'Chapters' },
       ...partList.map((p) =>
         h(
-          'section',
-          { class: 'part' },
-          h('div', { class: 'part-head' }, h('span', { class: 'level' }, `Part ${partNum(p)} · ${p.level}`), h('h2', {}, p.title)),
-          h('p', { class: 'part-goal' }, p.goal),
-          h('ol', { class: 'chapters' }, ...chaptersOf(p).map(chapterRow)),
+          'div',
+          { class: 'side-block' },
+          h('h2', { class: 'side-title' }, `Part ${partNum(p)} · ${p.level}`),
+          h('p', { class: 'side-part' }, p.title),
+          h('ul', { class: 'side-list' }, ...chaptersOf(p).map(navLink)),
         ),
       ),
     ),
-    detail,
+    main,
   );
-  renderDetail();
+  renderMain();
   const go = $('splash-go') as HTMLButtonElement;
   go.disabled = false;
   go.textContent = started ? `Continue: ${check ? 'Check your knowledge' : `${num(lesson)} ${lesson.title}`} →` : 'Start the course →';
