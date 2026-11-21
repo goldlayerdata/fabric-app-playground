@@ -413,6 +413,20 @@ console.log('\ncontrols');
     p = doStep(p, lesson.steps[0], answer).project;
     const note = parseEntity(p.files['rayfin/data/SalesTarget.ts']).fields.find((f) => f.name === 'note');
     expect(note && !note.optional, `${numOf(lesson)} \`note?\` without optional: true is a required column`);
+    // The fabric note's way out: rename only the property, and keep the column with `column: 'amount'`.
+    const end = after['change-model'];
+    const added = create(end.db, person('alice'), { country: 'Germany', amount: 3000000 });
+    const target = 'rayfin/data/SalesTarget.ts';
+    const field = '  @decimal({ precision: 18, scale: 2 }) amount!: number;\n';
+    const kept = "  @decimal({ precision: 18, scale: 2, column: 'amount' }) targetAmount!: number;\n";
+    const renamed = { ...end, db: added.db, files: { ...end.files, [target]: end.files[target].replace(field, kept) } };
+    const plan = planApply(renamed);
+    expect(
+      renamed.files[target].includes(kept) && !plan.blocked && plan.db.rows.SalesTarget[0].targetAmount === 3000000,
+      `${numOf(lesson)} a rename that keeps the column (column: 'amount') applies, and the amounts stay`,
+    );
+    const lost = planApply({ ...renamed, files: { ...end.files, [target]: end.files[target].replace(field, field.replace('amount!', 'targetAmount!')) } });
+    expect(!!lost.blocked && lost.destructive.some((op) => op.includes('drop column SalesTarget.amount')), `${numOf(lesson)} a plain rename is blocked: drop column amount`);
   }
 
   // My rows only: Alice changes her row, Carol can't; the email slip locks Alice out of her own row.

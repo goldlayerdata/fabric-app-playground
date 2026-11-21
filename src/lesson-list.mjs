@@ -1876,12 +1876,12 @@ export const lessons = [
         why: 'The data app template starts without a database of its own: it was made for apps that only read a semantic model.',
       },
       {
-        do: 'Rayfin\'s docs turn services on with `rayfin init`. Try it:',
+        do: 'Rayfin\'s docs turn services on with `rayfin init`. In our project it would replace `rayfin.yml`, so the playground stops it. Try it, and read why:',
         run: 'npx rayfin init --services auth,data',
         commandFails: true,
         point: 'terminal',
         see: 'The playground stops, and says why.',
-        why: 'Rerunning `init` in a project that has a `rayfin.yml` "reruns configuration". What that writes in a data app project like ours isn\'t documented, and the Rayfin CLI 2.0.0\'s code asks before overwriting `rayfin.yml` with a new one from defaults, which would drop our connectors. Before running a command on a real project, check what it changes.',
+        why: 'Rerunning `init` here would offer to write a new `rayfin.yml` from defaults, without our connectors. Before running a command on a real project, check what it changes.',
       },
       {
         do: 'Turn the service on by hand: **Do it for me** sets `enabled: true` under `data:` and adds `dialect: mssql`.',
@@ -1951,11 +1951,15 @@ export const lessons = [
         why: '`\'*\'` means all four actions. **Who is using it** narrows it down.',
       },
       {
-        do: 'A slip on purpose: delete the marked `@authenticated(\'*\')` line, then look at **Access** for `SalesTarget` in the **Data** tab.',
+        do: 'A slip on purpose: delete the marked `@authenticated(\'*\')` line.',
         file: TARGET,
         edits: [{ file: TARGET, from: C.TARGET_RULE_ALL, to: '' }],
+        see: 'No red line.',
+      },
+      {
+        do: 'In the **Data** tab, look at **Access** for `SalesTarget`.',
         point: 'data',
-        see: 'No red line. **Access** still says: any signed-in person: create, read, update and delete.',
+        see: 'It still says: any signed-in person: create, read, update and delete.',
         why: 'An entity with no permission decorator isn\'t locked: it silently gets full access for every signed-in person (Rayfin\'s docs). So we name the permissions on every entity, even when the default looks right.',
       },
       {
@@ -1989,13 +1993,13 @@ export const lessons = [
         edits: [{ file: DATA_SCHEMA, from: '', to: C.DATA_SCHEMA }],
         point: 'files',
         see: 'No red lines.',
-        why: 'Two lists, kept in step: the type `AppSchema` (for the client\'s types) and the array `schema` (what Rayfin applies). Every new entity goes in both. As in **Entities from the metadata**, imports under `rayfin/` end in `.js`.',
+        why: 'Two lists, kept in step: the type `AppSchema` (for the client\'s types) and the array `schema`, the list Rayfin\'s docs ask you to keep. Every new entity goes in both. As in **Entities from the metadata**, imports under `rayfin/` end in `.js`.',
       },
       {
         do: 'Apply the schema:',
         run: DB_APPLY,
         point: 'terminal',
-        see: '`create table SalesTarget (…)`. The **Data** tab shows `SalesTarget`, with no rows.',
+        see: '`create table for SalesTarget (…)`, and its permissions. The **Data** tab shows `SalesTarget`, with no rows.',
         why: 'Writing a class changes nothing until it\'s applied. `db apply` applies only the database part (tables and permissions) to an app that already exists: we deployed in **Take it to Fabric**.',
       },
       {
@@ -2079,7 +2083,7 @@ export const lessons = [
         code: C.TARGETS_LOAD,
         edits: [{ file: TARGETS_TS, from: '', to: C.TARGETS_LOAD }],
         see: 'No red lines.',
-        why: 'The same chain as the lakehouse: `select`, `where`, `orderBy`, `execute`. `execute()` returns one page (100 rows), which is plenty here: at most one target per country and year.',
+        why: 'The same chain as the lakehouse: `select`, `where`, `orderBy`, `execute`. `execute()` returns one page (100 rows), which is plenty here: we add one target per country and year (nothing enforces it: Rayfin doesn\'t support a unique constraint over two fields).',
       },
       {
         do: 'Add the page: **Do it for me** writes `src/TargetsPage.tsx` and adds it to the report as **Targets** (page id, `PAGES` entry and import).',
@@ -2104,7 +2108,14 @@ export const lessons = [
         file: TARGETS_PAGE,
         edits: [{ file: TARGETS_PAGE, from: C.TARGETS_PAGE, to: C.TARGETS_PAGE_EDIT }],
         see: 'The form on the right.',
-        why: 'After each write, `saved` goes up by one. It\'s part of the load key, so the list loads again, as a new key did in **Rows on a page**. A refused write shows its message under the form.',
+        why: 'After each write, `saved` goes up by one. It\'s part of the load key, so the list loads again, as a new key did in **Rows on a page**. A refused write shows its message.',
+      },
+      {
+        do: 'How does **Add** call the write? Read this card.',
+        file: TARGETS_PAGE,
+        find: 'save(() => addTarget(country, year, Number(amount)))',
+        see: '`save(() => addTarget(…))` hands `save` a function to run later, so one `save` can run any write, then load the list again.',
+        why: 'The same `save` runs `changeTarget` for **Edit**. It also catches a refused write and shows its message, and after a successful one it empties the form.',
       },
       {
         do: 'On **Targets**, type `Germany` and `3000000`, and press **Add**.',
@@ -2182,7 +2193,7 @@ export const lessons = [
         file: TARGET,
         edits: [{ file: TARGET, from: AMOUNT_FIELD, to: AMOUNT_RENAMED }],
         errors: '1+',
-        see: 'Red lines in `src/targets.ts` and `src/TargetsPage.tsx`: every use of `amount`.',
+        see: 'Red lines in `src/targets.ts` and `src/TargetsPage.tsx` wherever `amount` is used, and a few that follow from them.',
         why: 'TypeScript finds every place the old name is used. The database is another matter.',
       },
       {
@@ -2190,7 +2201,7 @@ export const lessons = [
         run: DB_APPLY,
         commandFails: true,
         see: 'Stopped: `drop column SalesTarget.amount`. Nothing was applied.',
-        why: 'The playground compares columns by name, so a rename is a dropped column and a new one, and the targets we typed would lose their amounts. Rayfin\'s docs list dropping a column as potentially destructive; whether the real CLI recognizes a rename isn\'t documented. Don\'t add `--force` here.',
+        why: 'The property names the column, so a rename is a dropped column and a new one, and the targets we typed would lose their amounts. Rayfin\'s docs list dropping a column as potentially destructive. Don\'t add `--force` here: to rename only the property, keep the column with `column: \'amount\'` (the fabric note below shows how).',
       },
       {
         do: UNDO,
@@ -2204,8 +2215,8 @@ export const lessons = [
       'TypeScript finds every use of a renamed field; the database keeps the old column until you apply.',
     ],
     fabric: {
-      text: 'To rename a field without losing data, plan it: add the new field, copy the values, update the code, then drop the old one. Rayfin\'s docs don\'t describe a rename step.',
-      links: [rayfin.nullable, rayfin.migrations, learn.dataModels],
+      text: 'To rename only the property, keep the column: `@decimal({ precision: 18, scale: 2, column: \'amount\' }) targetAmount!: number;` (rayfin.ai: Modeling). To rename the column itself, plan it: add the new field, copy the values, then drop the old one.',
+      links: [rayfin.modeling, rayfin.nullable, rayfin.migrations],
     },
   },
 
@@ -2257,7 +2268,7 @@ export const lessons = [
         do: 'Use it: **Do it for me** makes the page list use `useSession()`, and takes out `signedInEmail`, which nothing uses any more.',
         edits: [
           { from: "import { signedInEmail } from './session';\n", to: "import { useSession } from './session';\n" },
-          { from: APP_PAGE_STATE, to: `${APP_PAGE_STATE}  const session = useSession();\n` },
+          { from: APP_PAGE_STATE, to: `${APP_PAGE_STATE}  const session = useSession();\n${C.SIGNED_IN_STATE}` },
           { from: C.SIGNED_IN_ONCE, to: C.SIGNED_IN_LIVE },
           { file: SESSION_TS, from: SESSION_ONCE_FN, to: '' },
         ],
@@ -2344,17 +2355,27 @@ export const lessons = [
       {
         do: 'As Carol, press **Edit** on Germany, type `3100000`, and press **Save**.',
         point: 'preview',
-        see: 'Refused: the message says the row doesn\'t pass `claims.sub.eq(item.owner_id)` for this person. *(Playground wording.)*',
-        why: 'Carol may read every row, but her update reaches only rows that pass the policy, and this one doesn\'t. The data API refused it, not the page. What the real data API answers here isn\'t documented: Rayfin\'s guide says such a request matches nothing.',
+        see: 'Refused: the message under the row says the row doesn\'t pass `claims.sub.eq(item.owner_id)` for this person. *(Playground wording.)*',
+        why: 'Carol may read every row, but her update reaches only rows that pass the policy, and this one doesn\'t. The data API adds the policy to the update as a condition, so the update matches no row (Data API builder\'s docs). The real client then fails with its own error; the exact wording isn\'t documented.',
       },
       {
-        do: 'A slip on purpose: switch back to Alice, and in `addTarget` change `owner_id: session.user.id` to `owner_id: session.user.email`.',
+        do: 'Switch back to Alice.',
+        point: 'signin',
+        see: '**Signed in as: Alice**.',
+      },
+      {
+        do: 'A slip on purpose: in `addTarget`, change `owner_id: session.user.id` to `owner_id: session.user.email`.',
         file: TARGETS_TS,
         edits: [{ file: TARGETS_TS, from: 'owner_id: session.user.id', to: 'owner_id: session.user.email' }],
         see: 'No red line.',
       },
       {
-        do: 'As Alice, add France at `1000000`, then press **Edit** on it and **Save**.',
+        do: 'As Alice, on **Targets**, add France at `1000000`.',
+        point: 'preview',
+        see: 'The France row appears.',
+      },
+      {
+        do: 'Press **Edit** on France, and **Save**.',
         point: 'preview',
         see: 'Refused: Alice can\'t change the row she just added.',
         why: 'The policy compares the id (`claims.sub`), and we stored the email. Both are text, so there\'s no red line: the values just never match.',
@@ -2455,8 +2476,8 @@ export const lessons = [
     steps: [
       {
         do: 'Why not `claims.role`? Read this card.',
-        see: 'Rayfin\'s base `role` is a platform class (signed in or not), not a job, and permission decorators accept only `anonymous` and `authenticated`.',
-        why: 'How a Fabric sign-in would carry a business role in `claims.role` isn\'t documented. Business roles come from the app, and that\'s what dynamic claims are for.',
+        see: 'Rayfin\'s built-in `role` only says whether someone is signed in (its auth package types it as `Anonymous` or `Authenticated`), not their job. Permission decorators accept only `anonymous` and `authenticated`.',
+        why: 'Microsoft Learn\'s examples compare `claims.role` with `\'admin\'`, but how a Fabric sign-in would carry that isn\'t documented. Business roles come from the app, and that\'s what dynamic claims are for.',
       },
       {
         do: 'Set up [[functions|function]]:',
@@ -2478,7 +2499,7 @@ export const lessons = [
         file: FUNCTION_APP,
         edits: [{ file: FUNCTION_APP, from: FUNCTION_APP_TEMPLATE, to: C.CLAIMS_FUNCTION }],
         see: 'No red lines.',
-        why: 'Rayfin calls it at each sign-in and refresh, and adds what it returns to the token. `ctx.auth.email` comes from the sign-in, never typed by the person. No entitlement means no sign-in at all: never a broad default.',
+        why: 'Rayfin calls it at each sign-in and refresh, and adds what it returns to the token. `ctx.auth.email` comes from the sign-in, never typed by the person. No entitlement means no sign-in at all: never a broad default. `denySignIn` never returns, so after the `if`, TypeScript knows `entitlement` exists.',
       },
       {
         do: 'A slip on purpose: **Do it for me** renames the claim `salesRole` to `role`, in the return type and in the returned object.',
@@ -2493,7 +2514,7 @@ export const lessons = [
         do: 'Generate the claim types:',
         run: 'npx rayfin functions init',
         commandFails: true,
-        see: 'It stops: `"role" is a reserved claim name`. *(Playground wording.)*',
+        see: 'It stops: `Claim \'role\' is a reserved claim name and cannot be used as a custom claim.`',
         why: '`role`, `sub`, `email`, `name` and a few more belong to the platform. The CLI checks the names when it generates the types, and the backend checks every result at sign-in.',
       },
       {
@@ -2513,7 +2534,7 @@ export const lessons = [
       {
         do: 'Switch to Dan.',
         point: 'signin',
-        see: 'Sign-in refused: "You have no sales role in this app. Ask your administrator." The page says "Not signed in".',
+        see: 'Sign-in refused: "You have no sales role in this app. Ask your administrator." The page starts again and says "Not signed in", and **Overview** shows an error: model queries run as the signed-in person, and there is none.',
         why: 'The playground runs your claims function at each switch. A real app gets the error code `SIGN_IN_DENIED` with the reason as its message, and should show that message.',
       },
       {
@@ -2567,10 +2588,15 @@ export const lessons = [
         why: 'What a person may read now depends on who they are, so a new person means a new read. The key decides when `useLoad` runs again.',
       },
       {
-        do: 'Switch to Bob. On **Targets**, add France at `1000000`, and Germany at `3000000` if it isn\'t there.',
+        do: 'Switch to Bob. On **Targets**, add France at `1000000`.',
         point: 'signin',
-        see: 'Both rows.',
+        see: 'The France row.',
         why: 'Bob is the director, so the create rule lets him.',
+      },
+      {
+        do: 'If Germany isn\'t there, add it at `3000000`.',
+        point: 'preview',
+        see: 'Both rows.',
       },
       {
         do: 'Switch to Alice, then to Carol, on **Targets**.',
@@ -2614,7 +2640,7 @@ export const lessons = [
         do: 'Use it: **Do it for me** shows **Add** on **Targets** only when `isDirector()` says so.',
         file: TARGETS_PAGE,
         edits: [
-          { file: TARGETS_PAGE, from: "import { useState } from 'react';\n", to: "import { useEffect, useState } from 'react';\n" },
+          { file: TARGETS_PAGE, from: "import { Fragment, useState } from 'react';\n", to: "import { Fragment, useEffect, useState } from 'react';\n" },
           { file: TARGETS_PAGE, from: "import { useSession } from './session';\n", to: "import { isDirector, useSession } from './session';\n" },
           { file: TARGETS_PAGE, from: '  const session = useSession();\n', to: `  const session = useSession();\n${C.DIRECTOR_STATE}` },
           { file: TARGETS_PAGE, from: C.TARGETS_ADD_BUTTON, to: C.TARGETS_ADD_BUTTON_DIRECTOR },
@@ -2624,8 +2650,8 @@ export const lessons = [
       {
         do: 'As Alice, in the **Data** tab, use **Send directly** to send the create it suggests: Germany 2027.',
         point: 'data',
-        see: 'Refused by the data API.',
-        why: 'Hiding a button stops nobody who calls the API another way. The policy on the server is the security: without the create rule, this would have worked.',
+        see: 'Refused by the data API. (The playground enforces create policies; the next card says why to test that.)',
+        why: 'Hiding a button stops nobody who calls the API another way. The policy on the server is the security: with `create` open to every signed-in person, as in **My rows only**, this would have worked.',
       },
       {
         do: 'Read the watch-out card.',
@@ -2639,7 +2665,7 @@ export const lessons = [
       'Hiding a button is a hint; the policy on the server is the security.',
     ],
     fabric: {
-      text: 'In the browser, `getClaims()` returns claims as strings, for UI hints only. If dynamic claims are off for your region, `claims.salesRole` is missing from the token, and Data API builder refuses every request whose policy names it (403).',
+      text: 'In the browser, `getClaims()` returns claims as strings, for UI hints only. If dynamic claims are off for your region, `claims.salesRole` is missing from the token. Data API builder\'s docs say a policy that names a missing claim is refused with 403; Rayfin\'s docs don\'t say.',
       links: [rayfin.filterClaims, rayfin.browserClaims, learn.secureConnector],
     },
   },

@@ -101,6 +101,10 @@ function makePackages(run: RunMessage): Record<string, unknown> {
                   ),
                 );
               }
+              // Semantic model connectors run as the signed-in person (delegated only): with no session, no query.
+              if (!session.isAuthenticated) {
+                return Promise.reject(simulated('Nobody is signed in, and a semantic model query runs as the signed-in person (delegated).'));
+              }
               if (!input || typeof input.query !== 'string') {
                 return Promise.reject(new TypeError('executeQuery expects { query: string }'));
               }
@@ -253,7 +257,8 @@ class SignInDenied extends Error {}
  * session. Tells the parent page who is signed in, for the Log and the permission checks.
  */
 async function signIn(runId: number, s: SignIn) {
-  const base = { sub: s.persona.userId, email: s.persona.email, role: 'authenticated' };
+  // `role`: as @microsoft/rayfin-auth types a signed-in person's role (roles.d.ts: 'Anonymous' | 'Authenticated').
+  const base = { sub: s.persona.userId, email: s.persona.email, role: 'Authenticated' };
   let error: { code: string; message: string } | undefined;
   let extra: Record<string, unknown> = {};
   if (s.claimsFile) {

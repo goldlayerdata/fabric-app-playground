@@ -3,8 +3,8 @@
 //
 // What is simulated, and how (rayfin.ai: Data, Permissions, Schema changes; Microsoft Learn: Define data
 // models, Define data permissions):
-// - Entities are read from the decorators in rayfin/data/*.ts, the files registered in rayfin/data/schema.ts.
-//   The real CLI compiles them and reads their metadata; here a small parser reads the source text.
+// - Entities are every exported @entity() class in rayfin/data/*.ts, as the Rayfin CLI collects them (it doesn't
+//   need the `schema` array). The real CLI compiles them and reads their metadata; here a small parser reads the source.
 // - `db apply` compares the declared entities with the tables it applied last time. It blocks the changes
 //   Rayfin's docs call potentially destructive (dropping a column or table, narrowing or changing a type)
 //   unless `--force` is given. The real CLI's output wording is not documented: the terminal prints
@@ -159,7 +159,7 @@ export function parseEntity(text, file = '') {
     const args = splitTop(b.inner);
     const opts = args[0]?.startsWith('{') ? objectLiteral(args[0]) : {};
     const field = { name: rest[1], kind, mark: rest[2] ?? '', tsType: rest[3].trim(), optional: opts.optional === true };
-    for (const k of ['max', 'min', 'precision', 'scale', 'default', 'unique']) if (opts[k] !== undefined) field[k] = opts[k];
+    for (const k of ['max', 'min', 'precision', 'scale', 'default', 'unique', 'column']) if (opts[k] !== undefined) field[k] = opts[k];
     if (kind === 'set') field.values = args.filter((a) => !a.startsWith('{')).map(literal).filter((x) => typeof x === 'string');
     fields.push(field);
   }
@@ -293,28 +293,24 @@ export function entityFiles(project) {
     .filter(Boolean);
 }
 
-/** The entities registered in rayfin/data/schema.ts (the `schema` array), in order. */
+/**
+ * The entities `db apply` applies. Like the Rayfin CLI 2.0.0 (rayfin-tools-common, services/data/node/dab-config.js:
+ * findCompiledDataFiles, collectEntities), every exported @entity() class in rayfin/data/ counts, whether or not
+ * rayfin/data/schema.ts lists it: the `schema` array and the `AppSchema` type are the lists Rayfin's docs ask for.
+ */
 export function declared(project) {
-  const text = project.files[SCHEMA_FILE];
-  if (text === undefined) return { entities: [], problems: [`${SCHEMA_FILE} does not exist yet.`] };
-  const list = stripComments(text).match(/export\s+const\s+schema\s*=\s*\[([^\]]*)\]/);
-  if (!list) return { entities: [], problems: [`${SCHEMA_FILE} has no \`export const schema = [...]\`.`] };
-  const names = splitTop(list[1]);
-  const files = entityFiles(project);
-  const entities = [];
-  const problems = [];
-  for (const n of names) {
-    const e = files.find((x) => x.name === n);
-    if (!e) problems.push(`${n} is in the schema array, but no file in ${DATA_DIR}/ declares an @entity() class named ${n}.`);
-    else {
-      entities.push(e);
-      problems.push(...e.problems);
-    }
-  }
-  return { entities, problems };
+  const entities = entityFiles(project);
+  return { entities, problems: entities.flatMap((e) => e.problems) };
 }
 
-/** A column as the database holds it. */
+/** Is the entity in the `AppSchema` type of rayfin/data/schema.ts (what the client's types come from)? */
+export function inAppSchema(project, name) {
+  const text = stripComments(project.files[SCHEMA_FILE] ?? '');
+  const type = text.match(/export\s+type\s+AppSchema\s*=\s*\{([^}]*)\}/);
+  return !!type && new RegExp(`\\b${name}\\s*:`).test(type[1]);
+}
+
+/** A column as the database holds it. `column` names the SQL column when it differs from the property. */
 export const columnOf = (f) => {
   const c = { kind: f.kind, optional: f.optional };
   if (f.kind === 'text') c.max = typeof f.max === 'number' ? f.max : 'MAX';
@@ -326,8 +322,14 @@ export const columnOf = (f) => {
     c.precision = 18;
     c.scale = 2;
   }
+  if (typeof f.column === 'string' && f.column !== f.name) c.column = f.column;
   return c;
 };
+
+/** The SQL column of a property: its `column` option, or the property's own name. */
+const physical = (name, c) => c.column ?? name;
+/** A column's definition, leaving out which property it belongs to. */
+const shape = (c) => JSON.stringify({ ...c, column: undefined });
 
 /** How a column reads in SQL terms (for the terminal and the Data tab). */
 export function sqlType(c) {
@@ -373,37 +375,45 @@ export function planApply(project, force = false) {
   const destructive = [];
   const stops = [];
   const next = { tables: {}, rows: {} };
+  const notNull = (c) => (c.optional ? '' : ' NOT NULL');
   for (const e of entities) {
     const before = db.tables[e.name];
     const rows = db.rows[e.name] ?? [];
     const columns = Object.fromEntries(e.fields.map((f) => [f.name, columnOf(f)]));
-    if (!before) ops.push(`create table ${e.name} (${Object.entries(columns).map(([n, c]) => `${n} ${sqlType(c)}${c.optional ? '' : ' NOT NULL'}`).join(', ')})`);
-    else {
+    // The property that held each SQL column before: columns are matched by their SQL name.
+    const wasNamed = (n, c) => (before ? Object.keys(before.columns).find((b) => physical(b, before.columns[b]) === physical(n, c)) : undefined);
+    if (!before) {
+      // The real table name is generated from the entity's name (rayfin.ai: Modeling).
+      ops.push(`create table for ${e.name} (${Object.entries(columns).map(([n, c]) => `${physical(n, c)} ${sqlType(c)}${notNull(c)}`).join(', ')})`);
+      ops.push(`permissions of ${e.name}: ${effectiveRules(e).map((r) => r.source).join(' ')}`);
+    } else {
       for (const [n, c] of Object.entries(columns)) {
-        const was = before.columns[n];
-        if (!was) {
-          ops.push(`add column ${e.name}.${n} ${sqlType(c)}${c.optional ? '' : ' NOT NULL'}`);
+        const b = wasNamed(n, c);
+        const col = physical(n, c);
+        if (!b) {
+          ops.push(`add column ${e.name}.${col} ${sqlType(c)}${notNull(c)}`);
           if (!c.optional && c.default === undefined && rows.length) {
             stops.push(
-              `${e.name} has ${rows.length} row${rows.length > 1 ? 's' : ''}, and ${n} is required. What the real apply does with existing rows isn't documented: empty the table (Data tab) or make ${n} optional first.`,
+              `${e.name} has ${rows.length} row${rows.length > 1 ? 's' : ''}, and ${col} is required. What the real apply does with existing rows isn't documented: empty the table (Data tab) or make ${n} optional first.`,
             );
           }
           continue;
         }
+        const was = before.columns[b];
+        if (b !== n) ops.push(`property ${b} → ${n}: the column ${col} stays, with its values`);
+        if (shape(c) === shape(was)) continue;
         const narrower =
           c.kind !== was.kind ||
           (c.kind === 'text' && c.max !== 'MAX' && (was.max === 'MAX' || c.max < was.max)) ||
           (c.kind === 'decimal' && (c.precision < was.precision || c.scale < was.scale)) ||
           (was.optional && !c.optional);
-        const changed = JSON.stringify(c) !== JSON.stringify(was);
-        if (!changed) continue;
-        const op = `alter column ${e.name}.${n}: ${sqlType(was)}${was.optional ? '' : ' NOT NULL'} → ${sqlType(c)}${c.optional ? '' : ' NOT NULL'}`;
+        const op = `alter column ${e.name}.${col}: ${sqlType(was)}${notNull(was)} → ${sqlType(c)}${notNull(c)}`;
         ops.push(op);
         if (narrower) destructive.push(op);
       }
-      for (const n of Object.keys(before.columns)) {
-        if (!(n in columns)) {
-          const op = `drop column ${e.name}.${n}${rows.length ? ` (its values in ${rows.length} row${rows.length > 1 ? 's' : ''} are lost)` : ''}`;
+      for (const [b, bc] of Object.entries(before.columns)) {
+        if (!Object.entries(columns).some(([n, c]) => physical(n, c) === physical(b, bc))) {
+          const op = `drop column ${e.name}.${physical(b, bc)}${rows.length ? ` (its values in ${rows.length} row${rows.length > 1 ? 's' : ''} are lost)` : ''}`;
           ops.push(op);
           destructive.push(op);
         }
@@ -411,11 +421,18 @@ export function planApply(project, force = false) {
       if (JSON.stringify(effectiveRules(e).map(ruleKey)) !== JSON.stringify(before.rules.map(ruleKey))) ops.push(`permissions of ${e.name}: ${effectiveRules(e).map((r) => r.source).join(' ')}`);
     }
     next.tables[e.name] = { columns, rules: effectiveRules(e), file: e.file };
-    next.rows[e.name] = rows.map((r) => Object.fromEntries(Object.keys(columns).map((n) => [n, r[n] ?? null])));
+    next.rows[e.name] = rows.map((r) =>
+      Object.fromEntries(
+        Object.entries(columns).map(([n, c]) => {
+          const b = wasNamed(n, c);
+          return [n, b ? r[b] ?? null : null];
+        }),
+      ),
+    );
   }
   for (const name of Object.keys(db.tables)) {
     if (!entities.some((e) => e.name === name)) {
-      const op = `drop table ${name}${db.rows[name]?.length ? ` (${db.rows[name].length} rows are lost)` : ''}`;
+      const op = `drop table for ${name}${db.rows[name]?.length ? ` (${db.rows[name].length} rows are lost)` : ''}`;
       ops.push(op);
       destructive.push(op);
     }
@@ -643,13 +660,16 @@ export function handleRequest(db, req, identity, newId = () => crypto.randomUUID
 export const RESERVED_CLAIMS = ['sub', 'email', 'role', 'sid', 'iss', 'aud', 'exp', 'iat', 'nbf', 'jti', 'name', 'scope'];
 
 /** Problems with a set of app-defined claim names (case-insensitive reserved names, the name pattern, at most 8). */
+// The name messages are the Rayfin CLI 2.0.0's own (utils/auth-claims-generator.js, validateClaimName).
 export function claimNameProblems(names) {
   const out = [];
   if (names.length > 8) out.push(`${names.length} claims: at most 8 are allowed`);
   for (const n of names) {
     const lower = n.toLowerCase();
-    if (RESERVED_CLAIMS.includes(lower) || /^(dc_|rfn_|xms_)/.test(lower)) out.push(`"${n}" is a reserved claim name`);
-    else if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(n)) out.push(`"${n}" is not a valid claim name`);
+    const prefix = ['dc_', 'rfn_', 'xms_'].find((x) => lower.startsWith(x));
+    if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(n)) out.push(`Claim '${n}' is not a valid claim name. Names must match ^[A-Za-z][A-Za-z0-9_]*$.`);
+    else if (RESERVED_CLAIMS.includes(lower)) out.push(`Claim '${n}' is a reserved claim name and cannot be used as a custom claim.`);
+    else if (prefix) out.push(`Claim '${n}' uses the reserved '${prefix}' prefix and cannot be used as a custom claim.`);
   }
   const lowered = names.map((n) => n.toLowerCase());
   if (new Set(lowered).size !== lowered.length) out.push('two claim names differ only by case');
@@ -686,14 +706,20 @@ export function claimsContract(text) {
 }
 
 /** The file `npx rayfin functions init` generates for the claims (its exact real content isn't documented). */
+/** The file `npx rayfin functions init` generates for the claims: the Rayfin CLI 2.0.0's renderDts, verbatim. */
 export function claimsTypesFile(claims) {
   return [
-    '// @generated by `npx rayfin functions init`: do not edit.',
-    '// Playground: the real file\'s exact content isn\'t documented. Like it, this one merges the claims',
-    '// function\'s return type into RayfinCustomClaims, so `claims.<name>` type-checks in policies.',
-    'export {};',
+    '/**',
+    ' * Custom auth claims for this app.',
+    ' *',
+    ' * AUTO-GENERATED by `rayfin dev` from the udf.authClaims provider — do not',
+    " * edit manually. Declaration-merges the provider's return type into",
+    ' * RayfinCustomClaims so `claims.<name>` (in policies) and',
+    ' * `ctx.getClaims()` (in functions) are fully typed.',
+    ' */',
+    "import '@microsoft/rayfin-core/experimental/index';",
     '',
-    "declare module '@microsoft/rayfin-core' {",
+    "declare module '@microsoft/rayfin-core/experimental/index' {",
     '  interface RayfinCustomClaims {',
     ...claims.map((c) => `    ${c.name}: ${c.type};`),
     '  }',

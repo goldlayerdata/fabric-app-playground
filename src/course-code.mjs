@@ -964,7 +964,7 @@ export const TARGETS_ADD_BUTTON = `          <button type="button" className="ro
           </button>
 `;
 
-export const TARGETS_PAGE_EDIT = `import { useState } from 'react';
+export const TARGETS_PAGE_EDIT = `import { Fragment, useState } from 'react';
 import { ErrorPanel, YearSlicer } from './components';
 import { useLoad } from './lake';
 import { addTarget, changeTarget, loadTargets } from './targets';
@@ -985,6 +985,8 @@ export default function TargetsPage() {
     try {
       await write();
       setEditing(undefined);
+      setCountry('');
+      setAmount('');
       setSaved((n) => n + 1);
     } catch (e) {
       setMessage(e instanceof Error ? e.message : String(e));
@@ -1010,31 +1012,40 @@ ${TARGETS_HEAD}      <section className="col-span-8 row-span-5 overflow-auto rou
             </thead>
             <tbody>
               {targets.value.map((t) => (
-                <tr key={t.id} className="border-t border-gray-100">
-                  <td>{t.country}</td>
-                  <td className="text-right">
-                    {editing?.id === t.id ? (
-                      <input
-                        className="w-32 rounded border border-gray-300 px-1 text-right"
-                        value={editing.amount}
-                        onChange={(e) => setEditing({ id: t.id, amount: e.target.value })}
-                      />
-                    ) : (
-                      t.amount.toLocaleString('en-US')
-                    )}
-                  </td>
-                  <td className="text-right">
-                    {editing?.id === t.id ? (
-                      <button type="button" className="rounded border px-2" onClick={() => save(() => changeTarget(t.id, Number(editing.amount)))}>
-                        Save
-                      </button>
-                    ) : (
-                      <button type="button" className="rounded border px-2" onClick={() => setEditing({ id: t.id, amount: String(t.amount) })}>
-                        Edit
-                      </button>
-                    )}
-                  </td>
-                </tr>
+                <Fragment key={t.id}>
+                  <tr className="border-t border-gray-100">
+                    <td>{t.country}</td>
+                    <td className="text-right">
+                      {editing?.id === t.id ? (
+                        <input
+                          className="w-32 rounded border border-gray-300 px-1 text-right"
+                          value={editing.amount}
+                          onChange={(e) => setEditing({ id: t.id, amount: e.target.value })}
+                        />
+                      ) : (
+                        t.amount.toLocaleString('en-US')
+                      )}
+                    </td>
+                    <td className="text-right">
+                      {editing?.id === t.id ? (
+                        <button type="button" className="rounded border px-2" onClick={() => save(() => changeTarget(t.id, Number(editing.amount)))}>
+                          Save
+                        </button>
+                      ) : (
+                        <button type="button" className="rounded border px-2" onClick={() => setEditing({ id: t.id, amount: String(t.amount) })}>
+                          Edit
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                  {editing?.id === t.id && message && (
+                    <tr>
+                      <td colSpan={3} className="pb-1 text-right text-xs text-red-700">
+                        {message}
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               ))}
             </tbody>
           </table>
@@ -1046,7 +1057,7 @@ ${TARGETS_HEAD}      <section className="col-span-8 row-span-5 overflow-auto rou
           <input className="w-full rounded border border-gray-300 px-2 py-1" placeholder="Country" value={country} onChange={(e) => setCountry(e.target.value)} />
           <input className="w-full rounded border border-gray-300 px-2 py-1" placeholder="Amount (USD)" value={amount} onChange={(e) => setAmount(e.target.value)} />
 ${TARGETS_ADD_BUTTON}        </div>
-        {message && <p className="mt-2 text-sm text-red-700">{message}</p>}
+        {!editing && message && <p className="mt-2 text-sm text-red-700">{message}</p>}
       </section>
     </div>
   );
@@ -1078,9 +1089,12 @@ export function useSession() {
 }
 `;
 
-export const SIGNED_IN_ONCE = '        <p className="break-all px-3 pb-2 text-xs text-gray-500">Signed in as {signedInEmail()}</p>\n';
-export const SIGNED_IN_LIVE =
-  "        <p className=\"break-all px-3 pb-2 text-xs text-gray-500\">{session.isAuthenticated && session.user ? `Signed in as ${session.user.email}` : 'Not signed in'}</p>\n";
+// Cut short to fit the page list; the whole line shows on hover.
+export const SIGNED_IN_ONCE =
+  '        <p className="truncate px-3 pb-2 text-xs text-gray-500" title={`Signed in as ${signedInEmail()}`}>Signed in as {signedInEmail()}</p>\n';
+export const SIGNED_IN_STATE =
+  "  const signedIn = session.isAuthenticated && session.user ? `Signed in as ${session.user.email}` : 'Not signed in';\n";
+export const SIGNED_IN_LIVE = '        <p className="truncate px-3 pb-2 text-xs text-gray-500" title={signedIn}>{signedIn}</p>\n';
 
 // ---------------------------------------------------------------- my rows only
 export const OWNER_FIELD = '  @text({ max: 128 }) owner_id!: string;\n';

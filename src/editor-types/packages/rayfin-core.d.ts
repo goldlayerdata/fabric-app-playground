@@ -1,8 +1,8 @@
 // Types from @microsoft/rayfin-core 2.0.0 (MIT, Microsoft Corporation), copied from
-// dist/decorators/decorators.d.ts, dist/options.d.ts, dist/policy.d.ts, dist/claims-augmentation.d.ts
-// and dist/schema.d.ts, with comments shortened. A subset: the class decorators `entity`, `role`,
-// `authenticated` and `anonymous` with their options (policy, include, exclude), the policy DSL,
-// the claims a policy can name, the field decorators the course uses (`uuid`, `text`, `int`,
+// dist/decorators/decorators.d.ts, dist/options.d.ts, dist/policy.d.ts, dist/claims-augmentation.d.ts,
+// dist/schema.d.ts and dist/experimental/index.d.ts, with comments shortened. A subset: the class
+// decorators `entity`, `role`, `authenticated` and `anonymous` with their options (policy, include,
+// exclude), the policy DSL, the claims a policy can name, the field decorators the course uses (`uuid`, `text`, `int`,
 // `decimal`, `date`, `boolean`, `set`), and the primary-key phantom `Source()` carries.
 // Left out: `email`, `one`, `many`, `blob` and the storage types.
 declare module '@microsoft/rayfin-core' {
@@ -224,4 +224,11 @@ declare module '@microsoft/rayfin-core' {
     options: Omit<SetFieldOptions<T>, 'enum'>,
     ...values: T
   ): (target: unknown, context: ClassFieldDecoratorContext<unknown, T[number] | undefined>) => void;
+}
+
+// dist/experimental/index.d.ts: the claims types again, from the package's experimental entry. The generated
+// rayfin/auth/claims.generated.d.ts augments this module; it merges into the same RayfinCustomClaims.
+declare module '@microsoft/rayfin-core/experimental/index' {
+  export type { RayfinBaseClaims, RayfinCustomClaims, AllClaims, ClientClaims, ClaimsDsl } from '@microsoft/rayfin-core';
+  export { ClaimRef } from '@microsoft/rayfin-core';
 }

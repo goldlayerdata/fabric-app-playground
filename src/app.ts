@@ -26,11 +26,11 @@ import {
   claimsContract,
   columnOf,
   dataService,
-  declared,
   describeRule,
   effectiveRules,
   emptyDb,
   entityFiles,
+  inAppSchema,
   handleRequest,
   sqlType,
   unlimitedText,
@@ -1739,7 +1739,7 @@ function renderAbout() {
     ),
     p(
       h('b', {}, 'The app\'s own data and sign-in. '),
-      'The app\'s database is simulated in this browser: `npx rayfin up db apply` reads the entities registered in rayfin/data/schema.ts (with a small parser of the decorators), compares them with what it applied last, and stops before the changes Rayfin\'s docs call potentially destructive; its output is the playground\'s wording. Each request from the page is checked against the entity\'s permission rules (`policy` with `.eq`, `.neq`, `.and`, `.or`; `include` and `exclude`) for the claims of the person on the Signed in as switch, here in the browser: on Fabric, the data API (Data API builder) checks them on the server. The people, ids and emails are made up; on Fabric, people sign in with Microsoft Entra ID and nobody switches. When rayfin.yml turns dynamic claims on, your claims function runs in the page\'s sandbox at each switch; on Fabric, the deployed function runs at sign-in and refresh, if the backend has dynamic claims for your workspace\'s region. Refusals and errors without documented wording start with Playground:. The Data tab shows every row, ignoring permissions: no real app has that view. The real thing: ',
+      'The app\'s database is simulated in this browser: `npx rayfin up db apply` reads every exported entity class in rayfin/data/, as the real CLI collects them (with a small parser of the decorators), compares them with what it applied last, and stops before the changes Rayfin\'s docs call potentially destructive; its output is the playground\'s wording. Each request from the page is checked against the entity\'s permission rules (`policy` with `.eq`, `.neq`, `.and`, `.or`; `include` and `exclude`) for the claims of the person on the Signed in as switch, here in the browser: on Fabric, the data API (Data API builder) checks them on the server. The people, ids and emails are made up; on Fabric, people sign in with Microsoft Entra ID and nobody switches. When rayfin.yml turns dynamic claims on, your claims function runs in the page\'s sandbox at each switch; on Fabric, the deployed function runs at sign-in and refresh, if the backend has dynamic claims for your workspace\'s region. Refusals and errors without documented wording start with Playground:. The Data tab shows every row, ignoring permissions: no real app has that view. The real thing: ',
       a('https://rayfin.ai/docs/data', 'Data'),
       ', ',
       a('https://rayfin.ai/docs/data/permissions', 'Permissions'),
@@ -1787,7 +1787,8 @@ let persona: Persona = PERSONAS.find((x) => x.id === store.get('persona')) ?? PE
 
 /** Who is signed in, as the permission checks see it. The claims come from the preview, which runs the claims function. */
 type Identity = { signedIn: boolean; claims: Record<string, unknown>; error?: { code: string; message: string }; pending?: boolean };
-const baseClaims = (x: Persona) => ({ sub: x.userId, email: x.email, role: 'authenticated' });
+// `role`: as @microsoft/rayfin-auth types a signed-in person's role ('Anonymous' | 'Authenticated').
+const baseClaims = (x: Persona) => ({ sub: x.userId, email: x.email, role: 'Authenticated' });
 let identity: Identity = { signedIn: true, claims: baseClaims(persona), pending: true };
 
 /** Sign-in settings for the preview: the claims function runs only when rayfin.yml turns dynamic claims on. */
@@ -1801,16 +1802,27 @@ function switchPersona(next: Persona) {
   persona = next;
   store.set('persona', next.id);
   const settings = signInSettings();
+  const wasSignedIn = identity.signedIn;
   identity = { signedIn: true, claims: baseClaims(next), pending: !!settings.claimsFile };
-  if (iframe && project.dev) toFrame({ type: 'signIn', runId, signIn: settings });
+  if (iframe && project.dev) {
+    switchedFrom = wasSignedIn;
+    toFrame({ type: 'signIn', runId, signIn: settings });
+  }
   renderSignIn();
   renderData();
 }
+/** While a switch waits for the preview's sign-in: whether someone was signed in before it. */
+let switchedFrom: boolean | undefined;
 
 function onIdentity(msg: { signedIn: boolean; claims: Record<string, unknown>; error?: { code: string; message: string } }) {
   identity = { signedIn: msg.signedIn, claims: msg.claims, error: msg.error };
   renderSignIn();
   renderData();
+  // A switch that signs someone out (a refused sign-in), or back in: the page starts again, as a real app
+  // shows its sign-in screen instead of the report.
+  const before = switchedFrom;
+  switchedFrom = undefined;
+  if (before !== undefined && before !== msg.signedIn) runNow();
 }
 
 function renderSignIn() {
@@ -1957,7 +1969,6 @@ function renderData() {
   const svc = dataService(project);
   const db = project.db;
   const files = entityFiles(project);
-  const { entities } = declared(project);
   const parts: (Node | string)[] = [
     h(
       'p',
@@ -1976,18 +1987,20 @@ function renderData() {
       'p',
       { class: 'identity' },
       h('b', {}, identity.signedIn ? `Signed in as ${persona.email}. ` : 'Nobody is signed in. '),
-      identity.signedIn ? `Claims: ${claimText}${identity.pending ? ' (the claims function runs when the page runs)' : ''}` : identity.error?.message ?? '',
-      h('span', { class: 'muted' }, rich(' (Playground: the value Fabric gives `role` isn\'t documented.)')),
+      identity.signedIn
+        ? rich(`Claims (**Who is using it** explains them): ${claimText}${identity.pending ? ' (the claims function runs when the page runs)' : ''}`)
+        : identity.error?.message ?? '',
+      h('span', { class: 'muted' }, rich(' (Playground: `role` as Rayfin\'s auth package types it; what Fabric puts there isn\'t documented.)')),
     ),
   );
   const names = [...new Set([...files.map((f) => f.name), ...Object.keys(db.tables)])];
-  if (!names.length) parts.push(h('p', {}, rich('No tables yet. Entities in `rayfin/data/` become tables once registered in `schema.ts` and applied.')));
+  if (!names.length) parts.push(h('p', {}, rich('No tables yet. Entities in `rayfin/data/` become tables once applied.')));
   const unlimited = unlimitedText(db);
   for (const name of names) {
     const e = files.find((x) => x.name === name);
     const table = db.tables[name] as AppTable | undefined;
-    const registered = entities.some((x) => x.name === name);
-    const state = !table ? (registered ? 'registered, not applied yet' : e ? 'not in schema.ts yet' : '') : !e || !registered ? 'applied; no longer declared' : 'applied';
+    const typed = inAppSchema(project, name) ? '' : ' · not in AppSchema yet, so the client has no typed entity for it';
+    const state = !table ? `not applied yet${e ? typed : ''}` : !e ? 'applied; no longer declared' : `applied${typed}`;
     const section = h('section', { class: 'data-entity' }, h('h3', {}, name, h('span', { class: 'muted' }, ` · ${state}`)));
     // Columns, from the decorators, marked where they differ from the applied table.
     if (e) {
