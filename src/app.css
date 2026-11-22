@@ -707,10 +707,13 @@ body.resizing iframe, body.resizing .monaco-editor { pointer-events: none; }
 .drawer .chapter > summary::-webkit-details-marker { display: none; }
 .drawer .chapter > summary .chapter-head h3::before { content: '▸'; color: var(--muted); transition: transform 0.15s; }
 .drawer .chapter[open] > summary .chapter-head h3::before { transform: rotate(90deg); }
-.drawer .chapter-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-.drawer .chapter-head h3 { font-size: 16px; margin: 0; display: flex; gap: 8px; align-items: baseline; }
-.drawer .chapter-head .num { color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; flex-shrink: 0; }
+.drawer .chapter-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+/* "Chapter 1" on its own small line above the title, so the title gets the whole width */
+.drawer .chapter-head h3 { font-size: 16px; line-height: 1.3; margin: 0; display: grid; grid-template-columns: 12px minmax(0, 1fr); column-gap: 8px; min-width: 0; }
+.drawer .chapter > summary .chapter-head h3::before { grid-column: 1; grid-row: 2; }
+.drawer .chapter-head .num { grid-column: 2; color: var(--muted); font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
 .drawer .chapter-head.coming h3 { color: var(--muted); }
+.drawer .chapter-head .chip { flex-shrink: 0; margin-top: 2px; }
 .drawer .chapter > .muted { font-size: 12.5px; margin: 2px 0 4px; }
 
 /* ---------------------------------------------------------------- sign-in switch (simulated) and the Data tab */
