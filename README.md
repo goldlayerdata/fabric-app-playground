@@ -9,19 +9,25 @@ There is no Fabric and no model behind it:
 - **The app's own database** (Chapters 4 and 5) is simulated in the browser (`src/app-data.mjs`). `npx rayfin up db apply` reads the entities in `rayfin/data/` (a small parser of their decorators; the real CLI collects every exported entity class), compares them with what it applied last, and stops before the changes Rayfin's docs call potentially destructive unless `--force` is given; a `@text()` without `max` applies, then the data API answers "Internal server error", as the docs describe. The page's `rayfinClient.data` calls are checked against the entity's permission rules (`policy` with `.eq`, `.neq`, `.and`, `.or`; `include`, `exclude`) for the claims of the person on the **Signed in as** switch (made-up people), and rows are kept with the project in this browser. With dynamic claims on, the project's `udf.authClaims` function runs in the preview's sandbox at each switch. The **Data** tab appears once the data service is on; it shows every row, ignoring permissions (no real app has that view), and can send a request directly. The real CLI's output and the data API's refusals aren't documented word for word: those lines start with `Playground:`. `rayfin init` is not rerun (what it writes in a data app project isn't documented); the lesson turns the service on by hand, as Microsoft Learn describes.
 - **The Rayfin packages** are simulated. The editor checks the learner's code against their real 2.0 signatures (a subset, MIT: `src/editor-types/packages/`), and only once the project has "installed" them. In the page, `executeQuery` matches the connector and the query text against saved results from that connector's model (two Contoso models: `contoso` and `pareto`) and returns them in the connector's result shape. Connector names resolve as in Rayfin 2.0 (`src/connectors-sim.mjs`): any case finds a connector, but its runtime is looked up by the exact configured name, and a semantic model connector without one hands the page the raw payload (placeholder bytes here), with no error.
 
-To update it, troubleshoot it or ship it, start with [MAINTAINING.md](MAINTAINING.md): everyday tasks step by step, what every check failure means, and a release checklist.
+## Use it
+
+- **In your browser:** open **https://goldlayerdata.github.io/fabric-app-playground/** on a desktop browser. There's nothing to install and no sign-in. Your project and progress stay in that browser only. The **Visuals** page is at **https://goldlayerdata.github.io/fabric-app-playground/visuals/**.
+- **Your own copy:** clone or fork this repository and follow **Run it** below. It's MIT licensed (see `LICENSE` and `THIRD-PARTY-NOTICES.md`), so you can adapt it for your own team or training.
+- **Found a mistake or a step that doesn't work?** Open an issue on this repository. Include the lesson, the step and what you saw.
+
+To update it, troubleshoot it or ship it, start with [MAINTAINING.md](MAINTAINING.md). It covers everyday tasks step by step, what every check failure means, and a release checklist.
 
 ## Run it
 
 ```powershell
-npm install
-npm run dev        # http://localhost:5180 (Visuals: /visuals/), rebuilds on save
+npm ci
+npm run dev        # http://127.0.0.1:5180 (Visuals: /visuals/), rebuilds on save
 npm run build      # static site in dist/
-npm run preview    # serves dist/ at http://localhost:5181
+npm run preview    # serves dist/ at http://127.0.0.1:5181
 npm run check      # checks the course, builds it from an empty folder step by step, then checks the Visuals page
 ```
 
-`dist/` is a plain static site (GitHub Pages works). Everything is bundled from pinned packages; nothing loads from a CDN.
+You need Node.js 22. The local servers listen on 127.0.0.1 only. `dist/` is a plain static site (GitHub Pages works). Everything is bundled from pinned packages; nothing loads from a CDN.
 
 ## How it works
 
