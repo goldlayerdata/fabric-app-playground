@@ -18,7 +18,7 @@
 //   run     optional: a command for the terminal. "Do it for me" runs it; done once it has been run.
 //   see     optional: what is visible once it's done
 //   why     optional: the explanation, shown under "see" in a quieter style
-//   file    optional: the file the step is about: it opens in the editor, is marked "step" in the file
+//   file    optional: the file the step is about: it opens in the editor, gets a pink dot in the file
 //           list, and is named on the card. Default: the file of its first edit, or src/App.tsx for a
 //           step with only a `find`. It must be in the project by then, unless the step creates it.
 //   find    optional: text to mark in that file (pink), and select with "Show me in the code"
@@ -32,6 +32,7 @@
 //           every step.
 //   done    optional: another way to tell an edit step is done: { file, before: [a, b] } or { file, absent }
 //   errors  optional: type errors expected in the project after this step (default 0). '1+': at least one.
+//           Counted after every edit and every command; a step that only looks can name a count too.
 //           The card then offers "Show the red line", which opens the file it is in.
 //   queryFails  optional: after this step, the page sends a query saved as the model's error
 //   commandFails  optional: the step's `run` command fails on purpose (the checker expects the failure)
@@ -325,6 +326,7 @@ export const lessons = [
       {
         do: 'Add a semantic model connector named `contoso`:',
         run: ADD_CONNECTOR,
+        errors: 2,
         point: 'terminal',
         see: '`rayfin.yml` changed, a new `rayfin/connectors/contoso/schema.ts` appears in the file list, and the terminal prints an install line to run next.',
         why: '`--type` says what kind of Fabric item, `--workspace-id` and `--item-id` say which one, and `--name` is the name our code will use.',
@@ -340,6 +342,7 @@ export const lessons = [
         do: 'Open `rayfin/connectors/contoso/schema.ts`.',
         file: 'rayfin/connectors/contoso/schema.ts',
         find: "export type ContosoSchema = FabricSemanticModel<'executeQuery'>;",
+        errors: 2,
         see: 'A generated file, with red lines: its packages aren\'t installed yet. `ContosoSchema` describes what the connector can do: one operation, `executeQuery`.',
         why: 'TypeScript uses it to check our calls. (A different "type" from `--type`, which is the kind of Fabric item.) The first line says not to edit it: to change the connector, we run `connector add` again.',
       },
@@ -2126,6 +2129,7 @@ export const lessons = [
       {
         do: 'A slip on purpose: re-add the connector as delegated, accepting every prompt:',
         run: LAKE_READD,
+        errors: 6,
         point: 'terminal',
         see: '`type: delegated` for `lake` in `rayfin.yml`, and red lines in `src/services/rayfinClient.ts`, `src/lake.ts` and `src/LinesPage.tsx`: `schema.ts` is a placeholder again.',
         why: 'Re-adding keeps the entity files, but `--yes` replaces a hand-written `schema.ts` with a fresh placeholder. Without `--auth`, re-adding would also have set `auth` back to `application`.',
@@ -2496,6 +2500,7 @@ export const lessons = [
       {
         do: 'Apply it:',
         run: DB_APPLY,
+        errors: '1+',
         commandFails: true,
         see: 'Stopped: `drop column SalesTarget.amount`. Nothing was applied.',
         why: 'The property names the column, so a rename is a dropped column and a new one, and the targets we typed would lose their amounts. Rayfin\'s docs list dropping a column as potentially destructive. Don\'t add `--force` here: to rename only the property, keep the column with `column: \'amount\'` (the fabric note below shows how).',

@@ -455,7 +455,7 @@ function renderPanel() {
   const step = currentStep();
   const file = stepFile(step);
   newFiles.clear(); // "new" in the file list lasts for the card that made the files
-  treeReveal = file; // the file list scrolls to the step's file
+  treeReveal = file ?? activeFile; // the file list scrolls to the step's file
   if (file && project.files[file] !== undefined && file !== activeFile) openFile(file);
   else renderFiles(); // the step's file is marked in the file list
   updateRedLine();
@@ -530,12 +530,9 @@ function renderLesson() {
     if (after) card.append(h('p', { class: 'up-next' }, ...after.upNext));
   } else {
     const step = currentStep()!;
-    card.append(h('p', { class: 'kicker' }, `Step ${position} of ${n}`));
-    if (stepFile(step)) {
-      fileNote = h('p', { class: 'step-file' });
-      card.append(fileNote);
-    }
-    card.append(h('p', { class: 'do' }, rich(step.do)));
+    // The step's file is named beside the step number: it takes no line of its own, so the buttons stay in view.
+    fileNote = stepFile(step) ? h('span', { class: 'step-file' }) : undefined;
+    card.append(h('div', { class: 'kicker-row' }, h('p', { class: 'kicker' }, `Step ${position} of ${n}`), fileNote), h('p', { class: 'do' }, rich(step.do)));
     const snippet = step.run ?? step.code;
     // `copy: false`: the code is only to read (Do it for me writes it), so there is nothing to paste.
     if (snippet) card.append(h('div', { class: `snippet${step.run ? ' command' : ''}` }, h('pre', {}, step.run ? `$ ${step.run}` : snippet), step.copy === false ? null : copyButton(snippet)));
@@ -879,12 +876,16 @@ function revealMark(range: monaco.Range, layoutFirst = true) {
   markInView = true;
 }
 
-/** Sideways, stay at the start of the lines when the range begins in view there (a long line then runs off to
- *  the right, as any long line does); a range that begins further along is scrolled to, a third of the way in. */
+/** Sideways, stay at the start of the lines whenever the range begins in view there (a long line then runs off
+ *  to the right, as any long line does). Only a range that begins past the right edge scrolls the code, and
+ *  no further than it takes to show it. */
 function revealSideways(range: monaco.Range) {
-  const begins = editor.getOffsetForColumn(range.startLineNumber, range.startColumn);
+  const line = range.startLineNumber;
+  const begins = editor.getOffsetForColumn(line, range.startColumn);
+  const ends = editor.getOffsetForColumn(line, range.endLineNumber === line ? range.endColumn : (editor.getModel()?.getLineMaxColumn(line) ?? range.startColumn));
   const room = editor.getLayoutInfo().contentWidth - editor.getLayoutInfo().verticalScrollbarWidth;
-  editor.setScrollLeft(begins > room * 0.7 ? begins - room * 0.3 : 0);
+  const margin = 24;
+  editor.setScrollLeft(begins + margin <= room ? 0 : Math.max(0, Math.min(begins - margin, ends + margin - room)));
 }
 
 /** After a scroll to somewhere else (the reader's, a red line, Show me in the code): is the mark still in view? */
@@ -1240,8 +1241,10 @@ try {
 const newFiles = new Set<string>();
 /** The files the list showed last time, to tell which are new. */
 let listed: Set<string> | undefined;
-/** A file whose row the list scrolls to on its next draw. */
+/** The file whose row the list keeps in view: the step's, or the one opened last. */
 let treeReveal: string | undefined;
+/** The row the list last scrolled to: it scrolls again for another file, or when its own size changes, and leaves the reader's scrolling alone otherwise. */
+let treeRevealed: string | undefined;
 /** What the list last drew, as text. */
 let treeShows = '';
 
@@ -1253,10 +1256,11 @@ function unfold(path: string) {
   if (changed) store.set('folded', JSON.stringify([...folded]));
 }
 
-function showTree(on: boolean) {
+/** Show or hide the file list. `keep`: the reader chose, so remember it. */
+function showTree(on: boolean, keep = false) {
   $('editor-wrap').classList.toggle('no-tree', !on);
   $('btn-tree').setAttribute('aria-pressed', String(on));
-  store.set('size:tree', on ? null : '0');
+  if (keep) store.set('size:tree', on ? '1' : '0');
 }
 
 type Folder = { path: string; folders: Map<string, Folder>; files: string[] };
@@ -1283,21 +1287,26 @@ function renderFiles() {
     treeShows = shows;
     drawTree(nav, paths, stepPath, errors);
   }
-  if (treeReveal) {
-    const row = [...nav.querySelectorAll<HTMLElement>('[data-path]')].find((x) => x.dataset.path === treeReveal);
-    treeReveal = undefined;
-    if (row) {
-      // Scroll the list only (scrollIntoView could move the page as well).
-      const box = nav.getBoundingClientRect();
-      const r = row.getBoundingClientRect();
-      const head = nav.firstElementChild!.getBoundingClientRect().height;
-      if (r.top < box.top + head) nav.scrollTop -= box.top + head - r.top;
-      else if (r.bottom > box.bottom) nav.scrollTop += r.bottom - box.bottom;
-    }
-  }
   renderCrumbs();
   updateFileNote();
+  // Last: the card's file line can change the card's height, and with it the list's.
+  if (treeReveal !== treeRevealed) revealTreeRow();
 }
+
+/** Scroll the file list so the row it should show (the step's file, or the one just opened) is whole. */
+function revealTreeRow() {
+  const nav = $('files');
+  const row = treeReveal ? [...nav.querySelectorAll<HTMLElement>('[data-path]')].find((x) => x.dataset.path === treeReveal) : undefined;
+  if (!row) return;
+  treeRevealed = treeReveal;
+  // Scroll the list only (scrollIntoView could move the page as well).
+  const box = nav.getBoundingClientRect();
+  const r = row.getBoundingClientRect();
+  const head = nav.firstElementChild!.getBoundingClientRect().height;
+  if (r.top < box.top + head) nav.scrollTop -= box.top + head - r.top;
+  else if (r.bottom > box.bottom) nav.scrollTop += r.bottom - box.bottom + 2;
+}
+new ResizeObserver(revealTreeRow).observe($('files'));
 
 function drawTree(nav: HTMLElement, paths: string[], stepPath: string | undefined, errors: Map<string, number>) {
   const root: Folder = { path: '', folders: new Map(), files: [] };
@@ -1315,7 +1324,8 @@ function drawTree(nav: HTMLElement, paths: string[], stepPath: string | undefine
     at.files.push(p);
   }
 
-  const pill = (kind: 'step' | 'new', title: string) => h('span', { class: `pill ${kind}`, title }, kind);
+  // A dot, not a word: the file's name keeps the room.
+  const pill = (kind: 'step' | 'new', title: string) => h('span', { class: `dot-mark ${kind}`, title, role: 'img', 'aria-label': title });
   const fileRow = (p: string, depth: number) => {
     const generated = isGenerated(p, project.files[p]);
     const n = errors.get(p) ?? 0;
@@ -1409,15 +1419,18 @@ function updateFileNote() {
   fileNote.className = 'step-file';
   if (project.files[file] === undefined) {
     const creates = step?.edits?.some((e) => (e.file ?? PAGE_FILE) === file && e.from === '');
-    if (creates) fileNote.replaceChildren('This step creates ', code(file), '.');
-    else fileNote.replaceChildren('This step is in ', code(file), ', which is not in your project yet.');
+    fileNote.title = creates ? `This step creates ${file}` : `This step is in ${file}, which is not in your project yet`;
+    fileNote.replaceChildren(creates ? 'Creates ' : 'Not in your project yet: ', code(file));
   } else if (file === activeFile) {
-    fileNote.replaceChildren('In ', code(file), ', open in the editor.');
+    fileNote.title = `This step is in ${file}, open in the editor`;
+    fileNote.replaceChildren('In ', code(file));
   } else {
-    const open = h('button', { type: 'button' }, 'Open ', code(file));
+    // Another file is open: the line is the way back, and nothing more.
+    const open = h('button', { type: 'button', title: `This step is in ${file}${activeFile ? `, and ${activeFile} is open` : ''}` }, 'Open ', code(file));
     open.addEventListener('click', () => openFile(file));
     fileNote.classList.add('away');
-    fileNote.replaceChildren('This step is in ', code(file), ...(activeFile ? [', and ', code(activeFile), ' is open.'] : ['.']), ' ', open);
+    fileNote.title = '';
+    fileNote.replaceChildren(open);
   }
 }
 
@@ -1463,6 +1476,7 @@ ts.typescriptDefaults.onDidExtraLibsChange(() => scheduleTypeCheck(TYPE_CHECK_LI
 async function checkTypes() {
   const run = ++checkRun;
   const files = [...models].filter(([path]) => isCode(path));
+  let answered = !files.length;
   for (let attempt = 0; files.length && attempt < 3; attempt++) {
     // No answer in time (the worker is still starting, or was replaced): ask again.
     const found = await Promise.race([diagnose(files), new Promise<undefined>((r) => setTimeout(() => r(undefined), 4000))]).catch(() => undefined);
@@ -1473,9 +1487,11 @@ async function checkTypes() {
       if (model.isDisposed() || model.getVersionId() !== version) continue;
       monaco.editor.setModelMarkers(model, TYPE_CHECK, diagnostics.map((d) => toMarker(model, d)));
     }
+    answered = true;
     break;
   }
-  typesChecked = true;
+  // Without an answer nothing was checked: the status keeps saying "Checking types…", never "No type errors".
+  if (answered) typesChecked = true;
   showProblems();
 }
 
@@ -1540,6 +1556,7 @@ function showTypeStatus() {
   const total = [...byFile.values()].reduce((a, b) => a + b, 0);
   const el = $('type-status');
   el.className = total ? 'bad' : 'ok';
+  $('status').classList.toggle('has-errors', total > 0); // the errors get the whole line: the hint steps aside
   if (!total) {
     const anyCode = [...models.keys()].some(isCode);
     el.textContent = anyCode && !typesChecked ? 'Checking types…' : models.size ? 'No type errors' : '';
@@ -2628,8 +2645,11 @@ window.addEventListener('hashchange', () => {
 });
 $('btn-panel-pop').addEventListener('click', () => setPopped($('panel').classList.contains('popped') ? null : $('panel')));
 $('btn-editor-pop').addEventListener('click', () => setPopped($('editor-wrap').classList.contains('popped') ? null : $('editor-wrap')));
-$('btn-tree').addEventListener('click', () => showTree($('editor-wrap').classList.contains('no-tree')));
-showTree(store.get('size:tree') !== '0');
+$('btn-tree').addEventListener('click', () => showTree($('editor-wrap').classList.contains('no-tree'), true));
+// Until the reader chooses, the file list starts hidden where the window leaves the code little room
+// (a small screen, or a zoomed page): the path above the code and the card's file line still say where we are.
+const TREE_FROM_PX = 1100;
+showTree(store.get('size:tree') ? store.get('size:tree') === '1' : window.innerWidth >= TREE_FROM_PX);
 $('pop-backdrop').addEventListener('click', () => setPopped(null));
 {
   const left = document.querySelector<HTMLElement>('.left')!;

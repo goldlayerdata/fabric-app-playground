@@ -309,7 +309,26 @@ for (const lesson of order) {
     };
     const writesFile = step.edits?.some((e) => e.from === '' && !(project.files[e.file ?? PAGE_FILE] ?? '').trim());
     if (!writesFile) checkFind('at');
-    if (!step.run && !step.edits) return;
+    // The red lines a step says are there: counted after every step that changes the project (an edit
+    // or a command), and on a step that only looks when it names a count.
+    const checkErrors = (what) => {
+      const d = typeCheck(project);
+      const ok = errorsOk(step.errors, d.length);
+      console.log(`   step ${si + 1}: ${what}${d.length} type error(s)${step.errors ? ` (expected ${step.errors})` : ''}${ok ? '' : '  <-- '}`);
+      if (!ok) {
+        fail(`${label}: expected ${step.errors ?? 0} type error(s), got ${d.length}`);
+        d.forEach((x) => console.log(`     ${x}`));
+      }
+      // A red line is drawn in a file: every expected error must be in one of the project's, so the file
+      // list can turn it red and "Show the red line" can open it.
+      for (const x of step.errors ? d : []) {
+        if (project.files[x.split(':')[0]] === undefined) fail(`${label}: an expected error is in no file of the project: ${x}`);
+      }
+    };
+    if (!step.run && !step.edits) {
+      if (step.errors) checkErrors('(a look) ');
+      return;
+    }
     if (stepIsDone(project, step) && !/^Undo/.test(step.do)) fail(`${label}: looks done before it is applied`);
     const r = doStep(project, step, answer);
     if (r.error) {
@@ -321,21 +340,10 @@ for (const lesson of order) {
     if (writesFile) checkFind('after');
     if (!stepIsDone(project, step)) fail(`${label}: not detected as done after applying it`);
     if (step.run) {
-      console.log(`   step ${si + 1}: $ ${step.run.slice(0, 70)}`);
+      checkErrors(`$ ${step.run.slice(0, 50)}: `);
       return;
     }
-    const d = typeCheck(project);
-    const ok = errorsOk(step.errors, d.length);
-    console.log(`   step ${si + 1}: ${d.length} type error(s)${step.errors ? ` (expected ${step.errors})` : ''}${ok ? '' : '  <-- '}`);
-    if (!ok) {
-      fail(`${label}: expected ${step.errors ?? 0} type error(s), got ${d.length}`);
-      d.forEach((x) => console.log(`     ${x}`));
-    }
-    // A red line is drawn in a file: every expected error must be in one of the project's, so the file
-    // list can turn it red and "Show the red line" can open it.
-    for (const x of step.errors ? d : []) {
-      if (project.files[x.split(':')[0]] === undefined) fail(`${label}: an expected error is in no file of the project: ${x}`);
-    }
+    checkErrors('');
     let sent = [];
     try {
       sent = queriesOf(project);
