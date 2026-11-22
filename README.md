@@ -1,6 +1,6 @@
 # Fabric app playground
 
-A Gold Layer playground where Power BI developers build a Fabric app from an empty folder, chapter by chapter. Chapter 1: create the project, add a semantic model connector, wire the client, then build a report-style 16:9 page in TypeScript and React, make it interactive, and review a page "an agent" wrote. Chapter 2: add a second semantic model, register it in the client, and ask both models from one page. Chapter 3: read a lakehouse through an entity connector, and keep totals in the model. Chapter 4: give the app a database of its own and read and write sales targets. Chapter 5: sign-in, claims and permissions: who sees and changes which targets. Unofficial, and not affiliated with Microsoft.
+A Gold Layer playground where Power BI developers build a Fabric app from an empty folder, chapter by chapter. Chapter 1: create the project, add a semantic model connector, wire the client, then build a report-style 16:9 page in TypeScript and React, make it interactive, and review a page "an agent" wrote. Chapter 2: add a second semantic model, register it in the client, and ask both models from one page. Chapter 3: read a lakehouse through an entity connector, and keep totals in the model. Chapter 4: give the app a database of its own and read and write sales targets. Chapter 5: sign-in, claims and permissions: who sees and changes which targets. A second page, **Visuals** (`visuals/`), shows each Power BI visual beside the same visual running in a Fabric app, with what it takes. Unofficial, and not affiliated with Microsoft.
 
 There is no Fabric and no model behind it:
 
@@ -13,10 +13,10 @@ There is no Fabric and no model behind it:
 
 ```powershell
 npm install
-npm run dev        # http://localhost:5180, rebuilds on save
+npm run dev        # http://localhost:5180 (Visuals: /visuals/), rebuilds on save
 npm run build      # static site in dist/
 npm run preview    # serves dist/ at http://localhost:5181
-npm run check      # checks the course, then builds it from an empty folder, step by step
+npm run check      # checks the course, builds it from an empty folder step by step, then checks the Visuals page
 ```
 
 `dist/` is a plain static site (GitHub Pages works). Everything is bundled from pinned packages; nothing loads from a CDN.
@@ -41,11 +41,39 @@ npm run check      # checks the course, then builds it from an empty folder, ste
 | The app's own database: decorators read, `db apply`, permission policies, claim rules | `src/app-data.mjs`; `src/runtime.tsx` (`client.data`, the session, the claims function); `src/app.ts` (`onData`, the Data tab, the **Signed in as** switch) |
 | Lessons: goals, steps, summaries, Fabric notes; the longer code pieces they paste | `src/lesson-list.mjs`, `src/course-code.mjs` |
 | Troubleshooting and the glossary, both in the Help tab (underlined words in a lesson open their row there) | `src/terms.mjs` |
-| Start screen (chapters), course drawer (with **Copy link** beside the lesson on screen), progress, routing (`#lesson-id/step`, `#check/module-id`), terminal tab | `src/app.ts` |
+| Start screen (chapters, and the Visuals page under Reference), course drawer (with **Copy link** beside the lesson on screen), progress, routing (`#lesson-id/step`, `#check/module-id`), terminal tab | `src/app.ts` |
 | The step card: one height per window size (`.lesson` in the CSS), so the code area under it never moves. The instruction, then its buttons, then the code to paste (at most about 8 lines, scrolling inside itself), then **You should see**; **Why?** is folded. The card leaves room for about 8 lines of code | `src/app.ts` (`renderLesson`), `src/app.css` |
 | The bottom panel: Terminal, Log, Queries, Data (once the data service is on) and Help. A step that points at a tab (`point: 'log'`…) opens it, and the tab blinks. The **Simulated** chip in the top bar opens About | `src/app.ts` (`pointAt`, `selectTab`, `renderAbout`) |
 | Layout: three draggable dividers (sizes remembered, double-click resets) and **Pop out** on the editor and the bottom panel (large text, Esc docks). In a window under 1000 px wide (or a zoomed page) the parts stack, each with a height of its own | `src/app.ts` (`initSplit`, `setPopped`), `src/app.css` |
-| Colours: a Gold Layer Tools piece, so Tools pink `#FF7FB5` is the accent (`--accent`), kept for "act here": the mark in the code, the part a step points at, **Next** and the start screen's main button (and the Tools lane in the brand line). Everything else is plain text colours; errors are a clear red with ✕. Gold for the logo and the "In a real Fabric app" notes. The logo links to goldlayerdata.com/tools.html, and the start screen lists the site sections and socials | `src/app.css` |
+| Colours: a Gold Layer Tools piece, so Tools pink `#FF7FB5` is the accent (`--accent`), kept for "act here": the mark in the code, the part a step points at, **Next** and the start screen's main button (and the Tools lane in the brand line). Everything else is plain text colours; errors are a clear red with ✕. Gold for the logo and the "In a real Fabric app" notes. The logo links to goldlayerdata.com/tools.html, and the start screen lists the site sections and socials. The tokens and the top bar are in `src/top.css`, which the Visuals page uses too | `src/top.css`, `src/app.css` |
+
+## The Visuals page
+
+`visuals/` (goldlayerdata.github.io/fabric-app-playground/visuals/), its own page in the same site, with the playground's top bar: Power BI's built-in visuals, one page each, beside the same visual running as Fabric app code. Each visual's page has:
+
+- a sketch of the Power BI visual and the fields in its wells;
+- the app side, running on the saved Contoso answers with Microsoft's visuals packages (for Treemap, Key influencers, Decomposition tree and Azure map, why there is no drop-in equivalent and what to do instead);
+- a headline: what it takes in Power BI, and how many lines in an app;
+- three cards, each a job you know from Power BI with the code that does it in an app: Fields → DAX query, Format pane → chart spec, Interactions;
+- "What it takes" in plain words (✓ Done for you, ✎ You write). Badges, sources, the counting rule and every file are folded, under **More detail** and **For developers**.
+
+A Notes page has the package versions (1.0.0 here, 5.4.0 on npm), where Rayfin's visuals skill and the packages disagree, the page weight and the counting rule.
+
+**Packages.** `@microsoft/fabric-visuals`, `@microsoft/fabric-visuals-core` and `@microsoft/fabric-datagrid` 1.0.0, the versions Rayfin 2.0's data app template pins, and `@microsoft/fabric-slicers` 4.4.0 for the slicer (not in the template). They load only on this page: `tools/build.mjs` builds it as a second entry (`dist/visuals/`), so the course's bundle doesn't carry them. `npm run build` prints both pages' sizes and writes `dist/visuals/bundle-report.json`, which the Notes page reads.
+
+| Part | File |
+| --- | --- |
+| The page: routing (`#/bar`, `#/notes`), landing tiles, the sidebar with groups that fold, a visual's page, Notes | `src/visuals/shell/main.tsx`, `src/visuals/shell/shell.css` (the top bar and tokens come from `src/top.css`) |
+| What each page says: wells, the three jobs and their code excerpts, "What it takes" with its sources (installed package files by line, Microsoft Learn) | `src/visuals/shell/visuals.tsx` (Bar chart, Slicer, Key influencers, and the shared pieces), `src/visuals/shell/visuals-gallery.tsx` (the others) |
+| The sketches, also used small on the landing tiles | `src/visuals/shell/sketches.tsx` |
+| Page order, and the links to the course | `src/visuals/pages.mjs` |
+| The app code each page runs and shows, written as a learner would in a Rayfin data app: components, `.dax` queries, `.json` chart specs and the small `.ts` query files. The template's `useSemanticModelQuery` and `toDataTable` are there too, never counted | `src/visuals/app/` |
+| The stand-in for the model: the hook answers each query from the answer book and remembers which answer each visual got | `src/visuals/app/hooks/use-semantic-model-query.ts`, `src/visuals/sim/answer-book.ts` |
+| The answer book | `tools/visuals-answers.mjs` |
+
+**Where the numbers come from, and how they are checked.** The page reads the course's saved answers (`data/snapshots.json`, `data/catalog.json`). Each `.dax` file must send exactly the text a saved answer was captured with: the build and `npm run check` stop if not. A few answers are derived, and the page says so under Where the numbers come from: the slicer's answer for two or three years is the sum of the saved per-year answers, and revenue by category and year is the per-year answers stacked. `data/visuals-extra-answers.json` takes answers captured for this page only (none yet); each must be the exact text of one of the `.dax` files. `tools/check-visuals.mjs`, part of `npm run check`, also checks that every query the app code can send has an answer, that every number the page's text quotes from the data (such as a tooltip's "$60,466,772") is in a saved answer, so a new snapshot can't leave an old number on the page, that `pages.mjs` and the pages agree and its course links name real lessons, and that the page's code type-checks. Line counts are worked out from the code at run time, so they can't go stale.
+
+**Links both ways.** The course's top bar has **Visuals** beside **Course**, and the start screen lists it under Reference. A lesson step can name a visual (`visual: 'bar'` in `src/lesson-list.mjs`): a small link under Why opens it in a new tab, never as an action of the card. Today: the bars in The first queries and Cross-filter, and the slicer in State as a slicer. Back the other way, "Build one yourself in the course" on Bar chart (Cross-filter), Slicer (State as a slicer) and Card (A component).
 
 ## Data
 
@@ -134,4 +162,4 @@ When a step card opens, its spot in the code is marked in pink and its file open
 
 ## Licences
 
-MIT for this project (`LICENSE`). Bundled third-party code and fonts: `THIRD-PARTY-NOTICES.md`. The Rayfin type subsets (and the `@microsoft/fabric-user-data-functions` subset) and the data app template's files the terminal writes are from Microsoft's Rayfin 2.0 packages (MIT). Contoso data: SQLBI Contoso Data Generator V2, MIT.
+MIT for this project (`LICENSE`). Bundled third-party code and fonts: `THIRD-PARTY-NOTICES.md` (the Visuals page adds Microsoft's Fabric visuals packages, MIT, and Vega and Vega-Lite, BSD-3-Clause, with their dependencies). The Rayfin type subsets (and the `@microsoft/fabric-user-data-functions` subset) and the data app template's files the terminal writes are from Microsoft's Rayfin 2.0 packages (MIT). Contoso data: SQLBI Contoso Data Generator V2, MIT.
