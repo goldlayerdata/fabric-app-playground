@@ -39,7 +39,7 @@ import {
 } from './app-data.mjs';
 
 type Edit = { file?: string; from: string; to: string; all?: boolean };
-type Point = 'editor' | 'files' | 'preview' | 'status' | 'terminal' | 'log' | 'queries' | 'terms' | 'run' | 'reset' | 'data' | 'signin';
+type Point = 'editor' | 'files' | 'preview' | 'status' | 'terminal' | 'log' | 'queries' | 'help' | 'run' | 'reset' | 'data' | 'signin';
 type Step = {
   do: string;
   code?: string;
@@ -92,14 +92,14 @@ const byId = new Map((lessons as Lesson[]).map((l) => [l.id, l]));
 const order: Lesson[] = course.flatMap((m) => m.lessons.map((id) => byId.get(id)!));
 numberRuns(order); // a command the course runs again is done once it is in the history that many times
 const moduleOf = (l: Lesson) => course.find((m) => m.lessons.includes(l.id))!;
-/** "2.1": module number, then the lesson's place in it. */
+/** "4.2": the chapter's number, then the lesson's place in that chapter. Modules have no number on screen. */
 function num(l: Lesson) {
-  const m = moduleOf(l);
-  return `${course.indexOf(m)}.${m.lessons.indexOf(l.id) + 1}`;
+  const c = chapterOf(l);
+  return `${chapterNum(c)}.${lessonsOf(c).indexOf(l) + 1}`;
 }
 const termById = new Map(terms.map((t) => [t.id, t]));
 
-// Chapters group the modules; module numbers run on across chapters (see course.mjs).
+// Chapters group the modules (see course.mjs); lessons are numbered within their chapter.
 const chapterList = chapters as Chapter[];
 const chapterOf = (l: Lesson) => chapterList.find((c) => c.modules?.includes(moduleOf(l).id))!;
 const chapterNum = (c: Chapter) => chapterList.indexOf(c) + 1;
@@ -145,12 +145,12 @@ function rich(text: string): DocumentFragment {
 /** Text without its `code` and **bold** marks, for tooltips. */
 const plain = (s: string) => s.replace(/`|\*\*/g, '');
 
-/** [[props]] or [[shown text|term-id]]: a word that opens its row in the Terms tab. */
+/** [[props]] or [[shown text|term-id]]: a word that opens its explanation in the Help tab. */
 function termLink(inner: string): Node {
   const [shown, id = shown.toLowerCase()] = inner.split('|');
   const t = termById.get(id);
   if (!t) return document.createTextNode(shown);
-  const b = h('button', { type: 'button', class: 'term', title: `${t.term}: ${plain(t.means)} (click for the Terms tab)` }, shown);
+  const b = h('button', { type: 'button', class: 'term', title: `${t.term}: ${plain(t.means)} (click for more, in the Help tab)` }, shown);
   b.addEventListener('click', () => showTerm(t.id));
   return b;
 }
@@ -223,7 +223,7 @@ function saveProject() {
 }
 
 /** Replace the whole project (a checkpoint, reset, undo), keeping the old one for one undo. */
-function replaceProject(next: Project, note: string, open?: string) {
+function replaceProject(next: Project, note: string, open?: string, alsoUndo?: () => void) {
   const previous = project;
   const wasOpen = activeFile;
   project = JSON.parse(JSON.stringify(next));
@@ -239,7 +239,10 @@ function replaceProject(next: Project, note: string, open?: string) {
   renderData();
   runNow();
   // Undo goes back to the file that was open, too.
-  showUndo(note, () => replaceProject(previous, 'Undone.', wasOpen));
+  showUndo(note, () => {
+    replaceProject(previous, 'Undone.', wasOpen);
+    alsoUndo?.();
+  });
 }
 
 const squash = (s: string) => s.replace(/\s+/g, ' ').trim();
@@ -333,45 +336,29 @@ function copyButton(text: string, label = 'Copy') {
   return b;
 }
 
-function makeDots(label: (p: number) => string, isEnd: (p: number) => boolean) {
-  const dots = h('div', { class: 'dots', role: 'list', 'aria-label': 'Cards' });
-  for (let p = 0; p <= lastPosition(); p++) {
-    const dot = h('button', {
-      type: 'button',
-      class: `dot${p === position ? ' on' : ''}${isEnd(p) ? ' end' : ''}`,
-      title: label(p),
-      'aria-label': label(p),
-      'aria-current': p === position ? 'step' : undefined,
-    });
-    dot.addEventListener('click', () => goTo(p));
-    dots.append(dot);
-  }
-  return dots;
-}
-
-function panelHead(m: Module, title: (Node | string)[], dots: HTMLElement) {
-  const link = h('button', { type: 'button', class: 'link-btn', title: 'Copy a link to this card' }, 'Copy link');
-  link.addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText(location.href);
-      link.textContent = 'Link copied';
-    } catch {
-      link.textContent = 'Copy it from the address bar';
-    }
-    setTimeout(() => (link.textContent = 'Copy link'), 1500);
-  });
+/** Above the card: the lesson's title, then a thin bar with where we are ("Step 2 of 15"). The module is named, without a number. */
+function panelHead(m: Module, title: (Node | string)[], where: string) {
+  const share = lastPosition() ? position / lastPosition() : 0;
   return h(
     'div',
     { class: 'lesson-head' },
-    h('div', { class: 'titles' }, h('p', { class: 'module-line' }, `Module ${course.indexOf(m)} · ${m.title}`), h('h1', {}, ...title)),
-    h('div', { class: 'head-right' }, dots, link, popButton($('lesson'))),
+    h('h1', {}, ...title),
+    h(
+      'div',
+      { class: 'step-bar' },
+      h('span', { class: 'module-line' }, m.title),
+      h('span', { class: 'bar', 'aria-hidden': 'true' }, h('i', { style: `width: ${(share * 100).toFixed(1)}%` })),
+      h('span', { class: 'where' }, where),
+    ),
   );
 }
 
 // ---------------------------------------------------------------- pop-outs and resizable sections
-/** Show a section large, over the page, for comfortable reading. One at a time; Esc or a click outside docks it. */
+/** Show a section large, over the page, for comfortable reading. One at a time; Esc or a click outside docks it.
+ *  The About box (the Simulated chip opens it) is shown the same way, and hidden again when docked. */
 function setPopped(el: HTMLElement | null) {
   for (const x of document.querySelectorAll('.popped')) x.classList.remove('popped');
+  $('about').hidden = el?.id !== 'about';
   el?.classList.add('popped');
   $('pop-backdrop').hidden = !el;
   for (const b of document.querySelectorAll<HTMLElement>('.pop-btn')) {
@@ -383,17 +370,6 @@ function setPopped(el: HTMLElement | null) {
   // The code shown large is easier to read in a larger font, too.
   const big = el?.id === 'editor-wrap';
   editor.updateOptions({ fontSize: big ? 16 : 13.5, lineHeight: big ? 25 : 21 });
-}
-
-function popButton(target: HTMLElement) {
-  const on = target.classList.contains('popped');
-  const b = h(
-    'button',
-    { type: 'button', class: 'link-btn pop-btn', 'aria-pressed': String(on), title: 'Show this large, for comfortable reading (Esc closes)' },
-    on ? 'Dock' : 'Pop out',
-  );
-  b.addEventListener('click', () => setPopped(target.classList.contains('popped') ? null : target));
-  return b;
 }
 
 /** A divider that sets a CSS size variable while dragged. The size is remembered; double-click resets it. */
@@ -437,7 +413,7 @@ function afterLesson(l: Lesson): { href: string; label: string; upNext: (Node | 
     return {
       href: `#check/${m.id}`,
       label: 'Check your knowledge →',
-      upNext: [`Up next: ${m.check.length} questions on Module ${course.indexOf(m)}, ${m.title}.`],
+      upNext: ['Up next: a few questions on ', h('b', {}, m.title), '.'],
     };
   }
   const next = order[order.indexOf(l) + 1];
@@ -456,12 +432,17 @@ function renderPanel() {
   const file = stepFile(step);
   newFiles.clear(); // "new" in the file list lasts for the card that made the files
   treeReveal = file ?? activeFile; // the file list scrolls to the step's file
+  // The file list opens for a card that points at it or creates a file, and only for that card.
+  treeForStep = !!step && (step.point === 'files' || !!step.edits?.some((e) => e.from === '' && project.files[e.file ?? PAGE_FILE] === undefined));
+  treeToggled = false;
+  applyTree();
   if (file && project.files[file] !== undefined && file !== activeFile) openFile(file);
   else renderFiles(); // the step's file is marked in the file list
   updateRedLine();
   pointAt(step?.point);
   markFind(step);
   renderCourseButton();
+  showRunning();
   ($('btn-answer') as HTMLButtonElement).hidden = !!check || !lesson.steps.some((s) => s.edits || s.run);
 }
 
@@ -496,11 +477,6 @@ function renderLesson() {
   fileNote = undefined;
   redLine = undefined;
 
-  const dots = makeDots(
-    (p) => (p === 0 ? 'The idea' : p === last ? 'Summary' : `Step ${p}`),
-    (p) => p === 0 || p === last,
-  );
-
   const card = h('div', { class: 'card' });
   const banner = mismatchBanner();
   if (banner) card.append(banner);
@@ -530,13 +506,13 @@ function renderLesson() {
     if (after) card.append(h('p', { class: 'up-next' }, ...after.upNext));
   } else {
     const step = currentStep()!;
-    // The step's file is named beside the step number: it takes no line of its own, so the buttons stay in view.
-    fileNote = stepFile(step) ? h('span', { class: 'step-file' }) : undefined;
-    card.append(h('div', { class: 'kicker-row' }, h('p', { class: 'kicker' }, `Step ${position} of ${n}`), fileNote), h('p', { class: 'do' }, rich(step.do)));
-    const snippet = step.run ?? step.code;
-    // `copy: false`: the code is only to read (Do it for me writes it), so there is nothing to paste.
-    if (snippet) card.append(h('div', { class: `snippet${step.run ? ' command' : ''}` }, h('pre', {}, step.run ? `$ ${step.run}` : snippet), step.copy === false ? null : copyButton(snippet)));
+    // A steady card: the instruction, then its buttons, then the code to paste (a few lines, scrolling inside
+    // itself), then what you should see. Why is folded. The buttons and "You should see" stay in view.
+    card.append(h('p', { class: 'do' }, rich(step.do)));
     const actions = h('div', { class: 'actions' });
+    // The step's file: nothing while it is the open one; "Open …" when another file is open; "Creates …" for a new one.
+    fileNote = stepFile(step) ? h('span', { class: 'step-file' }) : undefined;
+    if (fileNote) actions.append(fileNote);
     const findText = findTextOf(step);
     if (findText) {
       const show = h('button', { type: 'button', title: 'Shows where this step\'s code goes: selects what to replace, or puts the cursor where to add' }, 'Show me in the code');
@@ -552,13 +528,21 @@ function renderLesson() {
     }
     if (step.errors) {
       // The red line a step promises can be in another file, or further down: one click goes to it.
-      redLine = h('button', { type: 'button', class: 'red-line', hidden: '', title: 'Opens the file with the red line and scrolls to it' }, 'Show the red line');
+      redLine = h('button', { type: 'button', class: 'red-line', hidden: '', title: 'Opens the file with the red line and scrolls to it' }, '✕ Show the red line');
       redLine.addEventListener('click', () => showProblem());
       actions.append(redLine);
     }
     if (actions.childElementCount) card.append(actions);
+    const snippet = step.run ?? step.code;
+    // `copy: false`: the code is only to read (Do it for me writes it), so there is nothing to paste.
+    const long = !!snippet && snippet.split('\n').length > 3; // may give way to the lines under it, down to 3 lines
+    if (snippet) card.append(h('div', { class: `snippet${step.run ? ' command' : ''}${long ? ' long' : ''}` }, h('pre', {}, step.run ? `$ ${step.run}` : snippet), step.copy === false ? null : copyButton(snippet)));
     if (step.see) card.append(h('p', { class: 'see' }, h('b', {}, 'You should see: '), rich(step.see)));
-    if (step.why) card.append(h('p', { class: 'why' }, h('b', {}, 'Why: '), rich(step.why)));
+    if (step.why) {
+      const why = h('details', { class: 'why' }, h('summary', {}, 'Why?'), h('p', {}, rich(step.why)));
+      why.addEventListener('toggle', () => (why as HTMLDetailsElement).open && why.scrollIntoView({ block: 'nearest' }));
+      card.append(why);
+    }
   }
 
   const back = h('button', { type: 'button', class: 'back' }, '← Back');
@@ -576,7 +560,7 @@ function renderLesson() {
   }
 
   el.replaceChildren(
-    panelHead(moduleOf(lesson), [h('span', { class: 'num' }, num(lesson)), lesson.title], dots),
+    panelHead(moduleOf(lesson), [h('span', { class: 'num' }, num(lesson)), lesson.title], position === 0 ? 'The idea' : position === last ? 'Summary' : `Step ${position} of ${n}`),
     card,
     h('div', { class: 'lesson-nav' }, back, next),
   );
@@ -592,16 +576,12 @@ function renderCheck() {
   doneTick = undefined;
   fileNote = undefined;
   redLine = undefined;
-  const dots = makeDots(
-    (p) => (p === qs.length ? 'Result' : `Question ${p + 1}`),
-    (p) => p === qs.length,
-  );
 
   const card = h('div', { class: 'card' });
   if (position < qs.length) {
     const qi = position;
     const q = qs[qi];
-    card.append(h('p', { class: 'kicker' }, `Question ${qi + 1} of ${qs.length}`), h('p', { class: 'do' }, rich(q.q)));
+    card.append(h('p', { class: 'do' }, rich(q.q)));
     const list = h('div', { class: 'options', role: 'group', 'aria-label': 'Answers' });
     const feedback = h('div', { class: 'feedback', hidden: '' });
     q.options.forEach((text, i) => {
@@ -616,7 +596,7 @@ function renderCheck() {
         });
         const taught = byId.get(q.lesson)!;
         feedback.replaceChildren(
-          h('p', { class: ok ? 'ok' : 'bad' }, ok ? 'Right.' : 'Not quite.'),
+          h('p', { class: ok ? 'ok' : 'bad' }, ok ? '✓ Right.' : '✕ Not quite.'),
           h('p', {}, rich(q.why)),
           h('p', { class: 'muted' }, 'Taught in ', lessonLink(taught, q.step), '.'),
         );
@@ -635,7 +615,7 @@ function renderCheck() {
         'p',
         {},
         right === qs.length
-          ? `That is Module ${course.indexOf(m)} done: ${m.goal.charAt(0).toLowerCase()}${m.goal.slice(1)}`
+          ? `That is ${m.title} done: ${m.goal.charAt(0).toLowerCase()}${m.goal.slice(1)}`
           : 'Go back to any question to try again. Each answer links to the step that teaches it.',
       ),
     );
@@ -656,7 +636,11 @@ function renderCheck() {
     next.addEventListener('click', () => goTo(position + 1));
   }
 
-  el.replaceChildren(panelHead(m, ['Check your knowledge'], dots), card, h('div', { class: 'lesson-nav' }, back, next));
+  el.replaceChildren(
+    panelHead(m, ['Check your knowledge'], position === qs.length ? 'Result' : `Question ${position + 1} of ${qs.length}`),
+    card,
+    h('div', { class: 'lesson-nav' }, back, next),
+  );
   el.scrollTop = 0;
 }
 
@@ -665,7 +649,7 @@ function renderCourseButton() {
   const chapter = chapterOf(lesson);
   const list = lessonsOf(chapter);
   const done = list.filter(progress.done).length;
-  $('course-where').textContent = check ? `${course.indexOf(check)} · Check your knowledge` : `${num(lesson)} ${lesson.title}`;
+  $('course-where').textContent = check ? `Check your knowledge: ${check.title}` : `${num(lesson)} ${lesson.title}`;
   $('course-count').textContent = `Chapter ${chapterNum(chapter)} · ${done} of ${list.length} lessons`;
   ($('course-bar').firstElementChild as HTMLElement).style.width = `${(done / list.length) * 100}%`;
 }
@@ -688,7 +672,11 @@ function openChapter(c: Chapter) {
   const target = list.find((l) => !progress.done(l)) ?? list[0];
   closeCourse();
   if (chapterState(c).key === 'new') {
-    replaceProject(checkpointOf(list[0]), `Started ${c.title}: the project as the chapter begins.`);
+    // A clean terminal: output from another chapter would only confuse. Undo brings it back with the project.
+    const lines = saveTerminal();
+    termOut.replaceChildren();
+    termPrint([`Playground: Chapter ${chapterNum(c)}, ${c.title}. The project is as the chapter begins: every earlier step done.`]);
+    replaceProject(checkpointOf(list[0]), `Started ${c.title}: the project as the chapter begins.`, undefined, () => restoreTerminal(lines));
     store.set(`keep:${list[0].id}`, null);
   }
   location.hash = `#${target.id}`;
@@ -747,13 +735,13 @@ function renderCourse() {
     body.append(fold);
     if (!c.modules) continue;
     if (c !== chapterOf(lesson)) fold.append(h('p', {}, chapterButton(c)));
-    for (const m of modulesOf(c)) renderModule(fold, m, course.indexOf(m));
+    for (const m of modulesOf(c)) renderModule(fold, m);
   }
   body.append(h('p', { class: 'start-over' }, startOver));
 }
 
 /** One module in the course drawer: its lessons and its knowledge check. */
-function renderModule(body: HTMLElement, m: Module, mi: number) {
+function renderModule(body: HTMLElement, m: Module) {
   {
     const list = h('ul', {});
     for (const id of m.lessons) {
@@ -770,6 +758,7 @@ function renderModule(body: HTMLElement, m: Module, mi: number) {
             h('span', { class: 'num' }, num(l)),
             l.title,
           ),
+          !check && l === lesson ? copyLinkButton() : null,
         ),
       );
     }
@@ -786,13 +775,29 @@ function renderModule(body: HTMLElement, m: Module, mi: number) {
             h('span', { class: 'num' }, '?'),
             'Check your knowledge',
           ),
+          check === m ? copyLinkButton() : null,
         ),
       );
     }
     body.append(
-      h('section', { class: 'mod' }, h('h3', {}, h('span', { class: 'num' }, `Module ${mi}`), m.title), h('p', { class: 'muted' }, m.goal), list),
+      h('section', { class: 'mod' }, h('h3', {}, m.title), h('p', { class: 'muted' }, m.goal), list),
     );
   }
+}
+
+/** Copy a link to the card on screen, for a trainer or a note: beside the current lesson in the course drawer. */
+function copyLinkButton() {
+  const b = h('button', { type: 'button', class: 'link-btn copy-link', title: 'Copy a link to the card on screen' }, 'Copy link');
+  b.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(location.href);
+      b.textContent = 'Link copied';
+    } catch {
+      b.textContent = 'Copy it from the address bar';
+    }
+    setTimeout(() => (b.textContent = 'Copy link'), 1500);
+  });
+  return b;
 }
 
 function openCourse() {
@@ -815,10 +820,13 @@ function tabButton(name: string) {
   return document.querySelector<HTMLElement>(`.panel-tabs button[data-tab="${name}"]`);
 }
 
+/** Outline the part of the playground a step is about (it blinks three times). A step about a tab of the bottom
+ *  panel also opens that tab, the way Power BI opens Performance analyzer when you start recording. */
 function pointAt(p?: Point) {
   document.querySelectorAll('.pointed').forEach((e) => e.classList.remove('pointed'));
   if (!p) return;
-  if (p === 'files') showTree(true);
+  const tabs: Point[] = ['terminal', 'log', 'queries', 'data', 'help'];
+  if (tabs.includes(p) && !tabButton(p)?.hidden) selectTab(p, false);
   const target = {
     editor: $('editor'),
     files: $('files'),
@@ -827,7 +835,7 @@ function pointAt(p?: Point) {
     terminal: tabButton('terminal'),
     log: tabButton('log'),
     queries: tabButton('queries'),
-    terms: tabButton('terms'),
+    help: tabButton('help'),
     run: $('btn-run'),
     reset: $('btn-reset'),
     data: tabButton('data'),
@@ -969,7 +977,7 @@ function doStepNow(step: Step, button: HTMLElement) {
   updateDoneTick();
 }
 
-/** A short message under the editor, in place of the hint on the right: the type errors on the left stay. */
+/** A short message under the editor, on the right: the type errors on the left stay. Gone after 3 seconds. */
 const statusHint = $('status-hint').textContent;
 let flashTimer: number | undefined;
 function flash(message: string) {
@@ -1068,15 +1076,15 @@ monaco.editor.defineTheme('gold-layer', {
   rules: [
     { token: 'comment', foreground: '7d89a8' },
     { token: 'string', foreground: 'ffe27a' },
-    { token: 'keyword', foreground: 'ff9fc8' },
+    { token: 'keyword', foreground: 'b9a8ff' }, // not pink: pink in the code is the step's mark
     { token: 'number', foreground: '9fe0c0' },
   ],
   colors: {
     'editor.background': '#0a1328',
     'editor.lineHighlightBackground': '#111c38',
     'editorLineNumber.foreground': '#4a5a82',
-    'editorLineNumber.activeForeground': '#ff7fb5',
-    'editorCursor.foreground': '#ff7fb5',
+    'editorLineNumber.activeForeground': '#e8ecf5',
+    'editorCursor.foreground': '#e8ecf5',
     'editor.selectionBackground': '#2b3d6b',
     'editorWidget.background': '#111c38',
   },
@@ -1094,6 +1102,9 @@ const editor = monaco.editor.create($('editor'), {
   lineNumbersMinChars: 3,
   // No lines pinned to the top while scrolling: in a small editor they cover the code a step marks.
   stickyScroll: { enabled: false },
+  // Long lines wrap: a narrow editor never cuts a line, and a mark never needs a sideways scroll.
+  wordWrap: 'on',
+  wrappingIndent: 'same',
   automaticLayout: true,
   scrollBeyondLastLine: false,
   tabSize: 2,
@@ -1162,6 +1173,7 @@ function syncModels() {
     let model = models.get(path);
     if (!model) {
       model = monaco.editor.createModel(text, isCode(path) ? 'typescript' : 'plaintext', uriOf(path));
+      if (isCode(path)) typesChecked = false; // until the check has answered about this file too
       // An empty model on Windows defaults to CRLF; the steps' exact edits are written with \n.
       model.setEOL(monaco.editor.EndOfLineSequence.LF);
       models.set(path, model);
@@ -1256,16 +1268,33 @@ function unfold(path: string) {
   if (changed) store.set('folded', JSON.stringify([...folded]));
 }
 
-/** Show or hide the file list. `keep`: the reader chose, so remember it. */
-function showTree(on: boolean, keep = false) {
+// The file list. Until the reader chooses with **Files**, it shows only in a window at least TREE_FROM_PX wide:
+// below that, the code needs the room (the path above the code says where we are). A card that points at the
+// list, or creates a file, opens it for that card only; the next card goes back to the reader's own choice.
+// **Files** always wins, on any card, and is remembered.
+const TREE_FROM_PX = 1500;
+/** The card on screen opens the file list. */
+let treeForStep = false;
+/** The reader pressed Files on the card on screen: the list stays as they left it. */
+let treeToggled = false;
+const treeChoice = () => {
+  const kept = store.get('size:tree');
+  return kept ? kept === '1' : window.innerWidth >= TREE_FROM_PX;
+};
+
+function showTree(on: boolean) {
   $('editor-wrap').classList.toggle('no-tree', !on);
   $('btn-tree').setAttribute('aria-pressed', String(on));
-  if (keep) store.set('size:tree', on ? '1' : '0');
+}
+
+/** Show the file list as the card and the reader's choice say. */
+function applyTree() {
+  if (!treeToggled) showTree(treeForStep || treeChoice());
 }
 
 type Folder = { path: string; folders: Map<string, Folder>; files: string[] };
 
-/** The file list, the path above the editor, and the step card's file line: all follow the project and the open file. */
+/** The file list, the path above the editor, and the step card's file note: all follow the project and the open file. */
 function renderFiles() {
   const nav = $('files');
   const paths = Object.keys(project.files);
@@ -1289,7 +1318,7 @@ function renderFiles() {
   }
   renderCrumbs();
   updateFileNote();
-  // Last: the card's file line can change the card's height, and with it the list's.
+  // Last: the card's file note can change the card's layout, and with it the list's.
   if (treeReveal !== treeRevealed) revealTreeRow();
 }
 
@@ -1330,7 +1359,8 @@ function drawTree(nav: HTMLElement, paths: string[], stepPath: string | undefine
     const generated = isGenerated(p, project.files[p]);
     const n = errors.get(p) ?? 0;
     const on = p === activeFile;
-    const title = [p, generated && 'generated: read-only here', p === stepPath && 'this step is about this file', n && `${n} type error${n > 1 ? 's' : ''}`]
+    const full = project.appDir ? `${project.appDir}/${p}` : p;
+    const title = [full, generated && 'generated: read-only here', p === stepPath && 'this step is about this file', n && 'red lines']
       .filter(Boolean)
       .join(' · ');
     const b = h(
@@ -1339,7 +1369,6 @@ function drawTree(nav: HTMLElement, paths: string[], stepPath: string | undefine
       h('span', { class: 'name' }, p.split('/').pop()!),
       generated ? h('span', { class: 'lock', 'aria-hidden': 'true' }, '🔒') : null,
       p === stepPath ? pill('step', 'This step is about this file') : newFiles.has(p) ? pill('new', 'Just created') : null,
-      n ? h('span', { class: 'count' }, String(n)) : null,
     );
     b.addEventListener('click', () => openFile(p));
     const row = h('li', { class: `file${on ? ' on' : ''}${n ? ' bad' : ''}` }, b);
@@ -1362,7 +1391,7 @@ function drawTree(nav: HTMLElement, paths: string[], stepPath: string | undefine
         const bad = !open && [...errors.keys()].some(holds);
         const b = h(
           'button',
-          { type: 'button', class: `tree-item tree-folder${bad ? ' bad' : ''}`, 'data-path': `${sub.path}/`, 'aria-expanded': String(open), title: `${sub.path}/`, style: `--depth: ${depth}` },
+          { type: 'button', class: `tree-item tree-folder${bad ? ' bad' : ''}`, 'data-path': `${sub.path}/`, 'aria-expanded': String(open), title: `${project.appDir ? `${project.appDir}/` : ''}${sub.path}/`, style: `--depth: ${depth}` },
           h('span', { class: 'caret', 'aria-hidden': 'true' }),
           h('span', { class: 'name' }, name),
           !open && holds(stepPath) ? pill('step', 'This step is about a file in this folder') : null,
@@ -1407,7 +1436,7 @@ function renderCrumbs() {
   el.title = activeFile;
 }
 
-/** The step card's file line: which file the step is in, and one click to open it when another is open. */
+/** The step card's file note: "Creates …" for a new file, or an "Open …" button when another file is open. */
 function updateFileNote() {
   const step = currentStep();
   const file = stepFile(step);
@@ -1422,16 +1451,18 @@ function updateFileNote() {
     fileNote.title = creates ? `This step creates ${file}` : `This step is in ${file}, which is not in your project yet`;
     fileNote.replaceChildren(creates ? 'Creates ' : 'Not in your project yet: ', code(file));
   } else if (file === activeFile) {
-    fileNote.title = `This step is in ${file}, open in the editor`;
-    fileNote.replaceChildren('In ', code(file));
+    // Open already: the path above the code says so. Nothing to add here.
+    fileNote.title = '';
+    fileNote.replaceChildren();
   } else {
-    // Another file is open: the line is the way back, and nothing more.
-    const open = h('button', { type: 'button', title: `This step is in ${file}${activeFile ? `, and ${activeFile} is open` : ''}` }, 'Open ', code(file));
+    // Another file is open: a button back to the step's file, like the card's other buttons.
+    const open = h('button', { type: 'button', title: `This step is in ${file}${activeFile ? `, and ${activeFile} is open` : ''}` }, 'Open ', code(shortName(file)));
     open.addEventListener('click', () => openFile(file));
     fileNote.classList.add('away');
     fileNote.title = '';
     fileNote.replaceChildren(open);
   }
+  fileNote.hidden = !fileNote.childNodes.length;
 }
 
 function deleteFile(path: string) {
@@ -1476,7 +1507,7 @@ ts.typescriptDefaults.onDidExtraLibsChange(() => scheduleTypeCheck(TYPE_CHECK_LI
 async function checkTypes() {
   const run = ++checkRun;
   const files = [...models].filter(([path]) => isCode(path));
-  let answered = !files.length;
+  let answered = false;
   for (let attempt = 0; files.length && attempt < 3; attempt++) {
     // No answer in time (the worker is still starting, or was replaced): ask again.
     const found = await Promise.race([diagnose(files), new Promise<undefined>((r) => setTimeout(() => r(undefined), 4000))]).catch(() => undefined);
@@ -1490,7 +1521,8 @@ async function checkTypes() {
     answered = true;
     break;
   }
-  // Without an answer nothing was checked: the status keeps saying "Checking types…", never "No type errors".
+  // Only a real answer about real code files counts: without one, the status keeps saying "Checking types…",
+  // never "No type errors". A project with no code files yet has nothing to check, and says nothing.
   if (answered) typesChecked = true;
   showProblems();
 }
@@ -1559,7 +1591,7 @@ function showTypeStatus() {
   $('status').classList.toggle('has-errors', total > 0); // the errors get the whole line: the hint steps aside
   if (!total) {
     const anyCode = [...models.keys()].some(isCode);
-    el.textContent = anyCode && !typesChecked ? 'Checking types…' : models.size ? 'No type errors' : '';
+    el.textContent = !anyCode ? '' : typesChecked ? 'No type errors' : 'Checking types…';
     return;
   }
   // Each file name goes to that file's first red line.
@@ -1568,7 +1600,10 @@ function showTypeStatus() {
     b.addEventListener('click', () => showProblem(path));
     return b;
   });
-  el.replaceChildren(`${total} type error${total > 1 ? 's' : ''} in `, ...joined(links, ', '), ': hover the red lines (the page still runs)');
+  el.replaceChildren(
+    h('span', { class: 'err-what' }, `✕ ${total} type error${total > 1 ? 's' : ''} in `, ...joined(links, ', ')),
+    h('span', { class: 'err-hint' }, ': hover the red lines (the page still runs)'),
+  );
 }
 
 /** Open the file with a red line and scroll to it: the open file's first, or the first there is. */
@@ -1656,6 +1691,7 @@ let outline = false;
 function setRunState(text: string, cls: '' | 'live' | 'stopped' = '') {
   const el = $('run-state');
   el.textContent = text;
+  el.title = '';
   // classList, not className: a step may have outlined this element (`pointed`).
   el.classList.remove('live', 'stopped');
   if (cls) el.classList.add(cls);
@@ -1747,12 +1783,17 @@ async function runNow() {
     env: SIMULATED_ENV,
     signIn: signInSettings(),
   });
-  showRunning();
+  showRunning(true);
 }
 
 let runQueries = 0;
-function showRunning() {
-  setRunState(`Running · ${runQueries} quer${runQueries === 1 ? 'y' : 'ies'} sent`, 'live');
+/** "Running". The number of queries sent shows only on a card about it (the redraw trap, the review); otherwise it is in the tooltip. */
+function showRunning(start = false) {
+  const el = $('run-state');
+  if (!start && !el.classList.contains('live')) return;
+  const sent = `${runQueries} quer${runQueries === 1 ? 'y' : 'ies'} sent`;
+  setRunState(currentStep()?.point === 'status' ? `Running · ${sent}` : 'Running', 'live');
+  el.title = `Running: ${sent} since the page started`;
 }
 
 function stop(reason: string) {
@@ -1867,6 +1908,13 @@ function termPrint(lines: string[], cls = '') {
   }
 }
 
+/** The terminal's lines, to put back later. */
+const saveTerminal = () => [...termOut.children].map((c) => [c.textContent ?? '', c.className] as [string, string]);
+function restoreTerminal(lines: [string, string][]) {
+  termOut.replaceChildren(...lines.map(([text, cls]) => h('div', { class: cls }, text)));
+  termPrint([]); // keeps them, and scrolls to the end
+}
+
 function submitCommand(line: string) {
   const text = line.trim();
   termInput.value = '';
@@ -1938,6 +1986,11 @@ let logCount = 0;
 const logEl = $('tab-log');
 logEl.append(h('p', { class: 'muted' }, 'Every query the page sends shows up here, newest first. Click one to see the DAX and what came back.'));
 
+/** Something new in the Log: a small dot on its tab, until the tab is opened. No number. */
+function markLogNew() {
+  if (tabButton('log')?.getAttribute('aria-selected') !== 'true') $('log-new').hidden = false;
+}
+
 function logRunStart(n: number) {
   logEl.prepend(h('div', { class: 'log-run' }, `Run ${n} · ${fmtTime(new Date())}`));
   trimLog();
@@ -1949,7 +2002,7 @@ function trimLog() {
 
 function logQuery(at: Date, connector: string, query: string, a: Answer, raw?: ArrayBuffer) {
   logCount++;
-  $('log-count').textContent = String(logCount);
+  markLogNew();
   const r = a.result;
   let status: HTMLElement;
   let cols = '';
@@ -2009,7 +2062,7 @@ function logQuery(at: Date, connector: string, query: string, a: Answer, raw?: A
 
 function logRead(at: Date, req: ReadRequest, a: ReadAnswer) {
   logCount++;
-  $('log-count').textContent = String(logCount);
+  markLogNew();
   const what = `${req.connector}.${req.entity}`;
   const status = a.thrown ? h('span', { class: 'err' }, `threw: ${what}`) : h('span', { class: 'ok' }, `read ${what}: ${a.rows} row${a.rows === 1 ? '' : 's'}`);
   const ms = h('span', { class: 't' }, '…');
@@ -2143,13 +2196,14 @@ function snapTable(t: { columns: { name: string; dataType: string }[]; rows: unk
 const fmtCell = (v: unknown) =>
   typeof v === 'number' ? v.toLocaleString('en-US', { maximumFractionDigits: 4 }) : v === null ? 'null' : String(v);
 
-// ---------------------------------------------------------------- terms and help tabs
+// ---------------------------------------------------------------- help tab: common problems, then the words the lessons use
 function renderTerms() {
   const rows = terms.map((t) =>
     h('tr', { id: `term-${t.id}` }, h('th', { scope: 'row' }, t.term), h('td', {}, rich(t.means)), h('td', {}, rich(t.pbi)), h('td', {}, lessonLink(byId.get(t.lesson)!))),
   );
-  $('tab-terms').append(
-    h('p', { class: 'muted' }, 'The words the lessons use, what they mean, and the nearest thing in Power BI. Underlined words in a lesson open their row here.'),
+  $('tab-help').append(
+    h('h3', { class: 'help-head', id: 'help-words' }, 'Words the lessons use'),
+    h('p', { class: 'muted' }, 'What each means, and the nearest thing in Power BI. Underlined words in a lesson open their row here.'),
     h(
       'table',
       { class: 'ref' },
@@ -2160,7 +2214,7 @@ function renderTerms() {
 }
 
 function showTerm(id: string) {
-  selectTab('terms');
+  selectTab('help', false);
   const row = document.getElementById(`term-${id}`);
   if (!row) return;
   row.scrollIntoView({ block: 'center' });
@@ -2171,7 +2225,8 @@ function showTerm(id: string) {
 
 function renderHelp() {
   $('tab-help').append(
-    h('p', { class: 'muted' }, 'Something odd? Find what you see in the first column.'),
+    h('h3', { class: 'help-head' }, 'Something odd?'),
+    h('p', { class: 'muted' }, 'Find what you see in the first column.'),
     h(
       'table',
       { class: 'ref' },
@@ -2181,11 +2236,11 @@ function renderHelp() {
   );
 }
 
-// ---------------------------------------------------------------- about tab
+// ---------------------------------------------------------------- about: opened by the Simulated chip
 function renderAbout() {
   const p = (...parts: (string | Node)[]) => h('p', {}, ...parts);
   const a = (href: string, text: string) => h('a', { href, target: '_blank', rel: 'noopener' }, text);
-  $('tab-about').append(
+  $('about-body').append(
     p(
       h('b', {}, 'A Gold Layer tool. '),
       'Unofficial, and not affiliated with Microsoft. It is for Power BI developers who want to read and write the code of a Fabric app, from an empty folder to a reviewed report. More free tools are on the ',
@@ -2368,7 +2423,7 @@ type DataRequest = { entity: string; op: 'read' | 'create' | 'update' | 'delete'
 
 function logData(at: Date, req: DataRequest, r: ReturnType<typeof handleRequest>, from: 'page' | 'direct' | 'tab') {
   logCount++;
-  $('log-count').textContent = String(logCount);
+  markLogNew();
   const what = `${req.entity}.${req.op}`;
   const status = r.ok
     ? h('span', { class: 'ok' }, `${what}${req.op === 'read' ? `: ${r.rows} row${r.rows === 1 ? '' : 's'}` : ''}`)
@@ -2440,6 +2495,7 @@ function suggestion(entity: string, op: string) {
 }
 
 function renderData() {
+  updateDataTab();
   const el = $('tab-data');
   const svc = dataService(project);
   const db = project.db;
@@ -2600,12 +2656,22 @@ function renderData() {
 }
 
 // ---------------------------------------------------------------- wiring
-function selectTab(name: string) {
+/** Show a tab of the bottom panel. `focus`: the reader picked it, so the terminal's command line takes the keyboard. */
+function selectTab(name: string, focus = true) {
   for (const t of document.querySelectorAll<HTMLButtonElement>('.panel-tabs button[data-tab]')) {
     t.setAttribute('aria-selected', String(t.dataset.tab === name));
     $(`tab-${t.dataset.tab}`).hidden = t.dataset.tab !== name;
   }
-  if (name === 'terminal') termInput.focus();
+  if (name === 'log') $('log-new').hidden = true;
+  if (name === 'terminal' && focus) termInput.focus();
+}
+
+/** The Data tab is there once the data service is on (Store your own data turns it on). */
+function updateDataTab() {
+  const tab = tabButton('data')!;
+  const off = !dataService(project).enabled;
+  if (off && tab.getAttribute('aria-selected') === 'true') selectTab('terminal', false);
+  tab.hidden = off;
 }
 
 for (const t of document.querySelectorAll<HTMLButtonElement>('.panel-tabs button[data-tab]')) {
@@ -2629,7 +2695,8 @@ $<HTMLInputElement>('outline').addEventListener('change', (e) => {
   outline = (e.target as HTMLInputElement).checked;
   toFrame({ type: 'outline', on: outline });
 });
-$('btn-version').addEventListener('click', () => selectTab('about'));
+$('btn-version').addEventListener('click', () => setPopped($('about').classList.contains('popped') ? null : $('about')));
+$('btn-about-close').addEventListener('click', () => setPopped(null));
 $('btn-course').addEventListener('click', () => ($('course').hidden ? openCourse() : closeCourse()));
 $('btn-course-close').addEventListener('click', closeCourse);
 $('course-backdrop').addEventListener('click', closeCourse);
@@ -2645,11 +2712,14 @@ window.addEventListener('hashchange', () => {
 });
 $('btn-panel-pop').addEventListener('click', () => setPopped($('panel').classList.contains('popped') ? null : $('panel')));
 $('btn-editor-pop').addEventListener('click', () => setPopped($('editor-wrap').classList.contains('popped') ? null : $('editor-wrap')));
-$('btn-tree').addEventListener('click', () => showTree($('editor-wrap').classList.contains('no-tree'), true));
-// Until the reader chooses, the file list starts hidden where the window leaves the code little room
-// (a small screen, or a zoomed page): the path above the code and the card's file line still say where we are.
-const TREE_FROM_PX = 1100;
-showTree(store.get('size:tree') ? store.get('size:tree') === '1' : window.innerWidth >= TREE_FROM_PX);
+$('btn-tree').addEventListener('click', () => {
+  const on = $('editor-wrap').classList.contains('no-tree');
+  store.set('size:tree', on ? '1' : '0');
+  treeToggled = true;
+  showTree(on);
+});
+applyTree();
+window.addEventListener('resize', applyTree);
 $('pop-backdrop').addEventListener('click', () => setPopped(null));
 {
   const left = document.querySelector<HTMLElement>('.left')!;
@@ -2736,10 +2806,9 @@ function showSplash() {
         h(
           'ol',
           { class: 'splash-modules' },
-          ...modulesOf(c).map((m) => h('li', {}, h('span', { class: 'n' }, String(course.indexOf(m))), h('span', { class: 't' }, m.title), h('span', { class: 'g' }, m.goal))),
+          ...modulesOf(c).map((m) => h('li', {}, h('span', { class: 't' }, m.title), h('span', { class: 'g' }, m.goal))),
         ),
       );
-      if (c !== current) body.append(h('p', { class: 'go' }, chapterButton(c)));
     } else {
       body.append(h('p', { class: 'planned-head' }, 'Lessons planned:'), h('ul', { class: 'planned' }, ...c.coming!.map((t) => h('li', {}, t))));
     }
@@ -2749,6 +2818,21 @@ function showSplash() {
       h('p', { class: 'main-goal' }, c.goal),
       body,
     );
+    renderGo();
+  };
+  // The big button follows the chapter picked: continue where you are, or start (or continue) the chapter picked.
+  const go = $('splash-go') as HTMLButtonElement;
+  const renderGo = () => {
+    const other = picked !== current && !!picked.modules;
+    const state = chapterState(picked).key;
+    go.disabled = false;
+    go.dataset.chapter = other ? picked.id : '';
+    go.title = other && state === 'new' ? 'Builds the project as this chapter begins (every earlier step done). Undo is offered.' : '';
+    go.textContent = other
+      ? `${state === 'new' ? 'Start' : 'Continue'}: ${picked.title} →`
+      : started
+        ? `Continue: ${check ? `Check your knowledge, ${check.title}` : `${num(lesson)} ${lesson.title}`} →`
+        : 'Start the course →';
   };
   const navLink = (c: Chapter) => {
     const state = chapterState(c);
@@ -2782,9 +2866,6 @@ function showSplash() {
     main,
   );
   renderMain();
-  const go = $('splash-go') as HTMLButtonElement;
-  go.disabled = false;
-  go.textContent = started ? `Continue: ${check ? 'Check your knowledge' : `${num(lesson)} ${lesson.title}`} →` : 'Start the course →';
   $('splash-progress').textContent = started
     ? `Chapter ${chapterNum(current)}: ${currentDone} of ${lessonsOf(current).length} lessons done. Your project and progress are kept in this browser.`
     : `${order.length} lessons in ${chapterList.filter((c) => c.modules).length} chapters so far, one step at a time.`;
@@ -2795,7 +2876,11 @@ function showSplash() {
   el.scrollTop = 0;
 }
 
-$('splash-go').addEventListener('click', hideSplash);
+$('splash-go').addEventListener('click', () => {
+  const c = chapterList.find((x) => x.id === ($('splash-go') as HTMLButtonElement).dataset.chapter);
+  if (c) openChapter(c);
+  else hideSplash();
+});
 $('splash-restart').addEventListener('click', () => {
   restartCourse();
   hideSplash();
@@ -2812,8 +2897,8 @@ initTerminal();
 renderSignIn();
 renderData();
 renderQueries();
-renderTerms();
 renderHelp();
+renderTerms();
 renderAbout();
 syncModels();
 if (project.files[PAGE_FILE] !== undefined) openFile(PAGE_FILE);

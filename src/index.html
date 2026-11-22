@@ -59,8 +59,8 @@
       </button>
       <span class="top-gap"></span>
       <div class="signin" id="signin" hidden></div>
-      <button type="button" class="sim-chip" id="btn-version" title="Nothing here talks to Fabric or Power BI: the connectors answer from saved results, and the app's database, sign-in and permissions run in this browser. Click for the About tab.">
-        Simulated · mirrors Rayfin 2.0 · unofficial
+      <button type="button" class="sim-chip" id="btn-version" title="Nothing here talks to Fabric or Power BI: the connectors answer from saved results, and the app's database, sign-in and permissions run in this browser. Click for more.">
+        Simulated<span class="chip-more"> · mirrors Rayfin 2.0 · unofficial</span>
       </button>
     </header>
     <div class="drawer-backdrop" id="course-backdrop" hidden></div>
@@ -89,7 +89,7 @@
           </div>
           <div class="status" id="status">
             <span id="type-status">Checking types…</span>
-            <span class="status-hint" id="status-hint">Runs when you pause typing · Ctrl+S runs now</span>
+            <span class="status-hint" id="status-hint"></span>
           </div>
         </div>
       </section>
@@ -116,24 +116,27 @@
         <div class="panel" id="panel">
           <div class="panel-tabs" role="tablist">
             <button type="button" role="tab" data-tab="terminal" aria-selected="true">Terminal</button>
-            <button type="button" role="tab" data-tab="log" aria-selected="false">Log <span class="count" id="log-count">0</span></button>
+            <button type="button" role="tab" data-tab="log" aria-selected="false">Log <span class="new-dot" id="log-new" title="New queries since you last looked" hidden></span></button>
             <button type="button" role="tab" data-tab="queries" aria-selected="false">Queries</button>
-            <button type="button" role="tab" data-tab="data" aria-selected="false">Data</button>
-            <button type="button" role="tab" data-tab="terms" aria-selected="false">Terms</button>
+            <button type="button" role="tab" data-tab="data" aria-selected="false" hidden>Data</button>
             <button type="button" role="tab" data-tab="help" aria-selected="false">Help</button>
-            <button type="button" role="tab" data-tab="about" aria-selected="false">About</button>
             <button type="button" class="pop-btn" id="btn-panel-pop" title="Show this panel large, for comfortable reading (Esc closes)">Pop out</button>
           </div>
           <div class="panel-body terminal" id="tab-terminal" role="tabpanel"></div>
           <div class="panel-body" id="tab-log" role="tabpanel" hidden></div>
           <div class="panel-body" id="tab-queries" role="tabpanel" hidden></div>
           <div class="panel-body data-tab" id="tab-data" role="tabpanel" hidden></div>
-          <div class="panel-body" id="tab-terms" role="tabpanel" hidden></div>
           <div class="panel-body" id="tab-help" role="tabpanel" hidden></div>
-          <div class="panel-body" id="tab-about" role="tabpanel" hidden></div>
         </div>
       </section>
     </main>
+    <aside class="about" id="about" role="dialog" aria-labelledby="about-title" hidden>
+      <div class="about-head">
+        <h2 id="about-title">Simulated · mirrors Rayfin 2.0 · unofficial</h2>
+        <button type="button" id="btn-about-close">Close</button>
+      </div>
+      <div class="about-body" id="about-body"></div>
+    </aside>
     <div class="pop-backdrop" id="pop-backdrop" hidden></div>
     <script type="module" src="assets/app.js"></script>
   </body>
