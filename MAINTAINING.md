@@ -112,6 +112,8 @@ visuals page: all checks passed
 | The disclaimer ("our interpretation, not a guarantee") on the start screen, the top bar chip, About and the Visuals pages | `src/disclaimer.mjs` (one source for all of them) |
 | Licences of bundled code | `THIRD-PARTY-NOTICES.md` |
 | Deploy | `.github/workflows/pages.yml` |
+| Checks on pull requests; issue forms; the pull request template | `.github/workflows/check.yml`, `.github/ISSUE_TEMPLATE/`, `.github/pull_request_template.md` |
+| Rules for AI coding tools; Claude Code reviewers and skills | `AGENTS.md` (all tools), `CLAUDE.md` (imports it), `.claude/agents/`, `.claude/skills/`. Keep them in step with this guide. |
 
 ---
 

@@ -4,3 +4,6 @@ dist/
 # Working notes that stay local: paths and instructions from the owner's PC
 HANDOFF.md
 reference/
+
+# Personal Claude Code settings stay local (the shared agents and skills in .claude/ are committed)
+.claude/settings.local.json

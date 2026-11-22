@@ -26,6 +26,10 @@ By taking part, you agree to the [code of conduct](CODE_OF_CONDUCT.md).
 
 The maintainers review every change before it goes live. Merging to `main` publishes the site.
 
+## Using an AI coding tool
+
+Welcome. Your tool reads the rules in [AGENTS.md](AGENTS.md); Claude Code reads them through `CLAUDE.md`. With Claude Code you also get two ready-made reviewers in `.claude/agents/` (`fact-checker` and `beginner-reader`) and two step-by-step skills in `.claude/skills/` (`add-or-split-a-step` and `release-check`). They run on your own Claude account, never on the maintainers'. Please run both reviewers before you open a pull request, and check what your tool wrote: you are responsible for every line you submit.
+
 ## The rules that keep it honest
 
 These are the same rules the maintainers follow (MAINTAINING.md, section 4).
