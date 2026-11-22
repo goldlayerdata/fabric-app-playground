@@ -1240,12 +1240,12 @@ export function useSession() {
 }
 `;
 
-// Cut short to fit the page list; the whole line shows on hover.
+// The page list is narrow: a long email wraps onto a second line (wrap-anywhere) instead of being cut short.
 export const SIGNED_IN_ONCE =
-  '        <p className="truncate px-3 pb-2 text-xs text-gray-500" title={`Signed in as ${signedInEmail()}`}>Signed in as {signedInEmail()}</p>\n';
+  '        <p className="px-3 pb-2 text-xs text-gray-500 wrap-anywhere">Signed in as {signedInEmail()}</p>\n';
 export const SIGNED_IN_STATE =
   "  const signedIn = session.isAuthenticated && session.user ? `Signed in as ${session.user.email}` : 'Not signed in';\n";
-export const SIGNED_IN_LIVE = '        <p className="truncate px-3 pb-2 text-xs text-gray-500" title={signedIn}>{signedIn}</p>\n';
+export const SIGNED_IN_LIVE = '        <p className="px-3 pb-2 text-xs text-gray-500 wrap-anywhere">{signedIn}</p>\n';
 
 // ---------------------------------------------------------------- my rows only
 export const OWNER_FIELD = '  @text({ max: 128 }) owner_id!: string;\n';
