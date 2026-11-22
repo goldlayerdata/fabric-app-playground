@@ -283,3 +283,5 @@ div.job { background: var(--navy-2); border: 1px solid var(--line); border-radiu
 /* our interpretation, not a guarantee (src/disclaimer.mjs): calm, not a warning sign */
 .disclaimer { max-width: 75ch; padding: 10px 14px; margin: 8px 0 18px; border-left: 2px solid var(--line); background: var(--navy-2); border-radius: 0 6px 6px 0; color: var(--muted); line-height: 1.5; }
 .disclaimer b { color: var(--text); font-weight: 600; }
+.disclaimer a { color: var(--text); text-decoration-color: var(--line); text-underline-offset: 2px; }
+.disclaimer a:hover { text-decoration-color: currentColor; }

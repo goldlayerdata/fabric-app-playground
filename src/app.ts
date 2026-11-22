@@ -8,7 +8,7 @@ import { answer, entries, readLakehouse, savedResult, snapshotsTakenAt, type Ans
 import { rawPayload } from './connectors-sim.mjs';
 import { STEPS_VERSION, stepMoves } from './step-moves.mjs';
 import { VISUAL_IDS } from './visuals/pages.mjs';
-import { DISCLAIMER_SHORT, DISCLAIMER_TEXT, DISCLAIMER_TITLE } from './disclaimer.mjs';
+import { DISCLAIMER_FOOTER, DISCLAIMER_SHORT, DISCLAIMER_TEXT, DISCLAIMER_TITLE, REPORT_MISTAKE_LABEL, REPORT_MISTAKE_URL, disclaimerParts } from './disclaimer.mjs';
 import {
   CLAIMS_TYPES,
   FUNCTION_APP,
@@ -2280,11 +2280,21 @@ function renderHelp() {
 }
 
 // ---------------------------------------------------------------- about: opened by the Simulated chip
+/** The disclaimer's text, with the sources it names as links, and the way to report a mistake. */
+function disclaimerNodes(text: string): (Node | string)[] {
+  return [
+    h('b', {}, DISCLAIMER_TITLE + ' '),
+    ...disclaimerParts(text).map((p: { text: string; href?: string }) => (p.href ? h('a', { href: p.href, target: '_blank', rel: 'noopener' }, p.text) : p.text)),
+    ' ',
+    h('a', { href: REPORT_MISTAKE_URL, target: '_blank', rel: 'noopener', class: 'report-mistake' }, REPORT_MISTAKE_LABEL),
+  ];
+}
+
 function renderAbout() {
   const p = (...parts: (string | Node)[]) => h('p', {}, ...parts);
   const a = (href: string, text: string) => h('a', { href, target: '_blank', rel: 'noopener' }, text);
   $('about-body').append(
-    h('p', { class: 'about-disclaimer' }, h('b', {}, DISCLAIMER_TITLE + ' '), DISCLAIMER_TEXT),
+    h('p', { class: 'about-disclaimer' }, ...disclaimerNodes(DISCLAIMER_TEXT)),
     p(
       h('b', {}, 'A Gold Layer tool. '),
       'Unofficial, and not affiliated with Microsoft. It is for Power BI developers who want to read and write the code of a Fabric app, from an empty folder to a reviewed report. More free tools are on the ',
@@ -2944,7 +2954,9 @@ $('splash-visuals').textContent = `Or browse the visuals: ${VISUAL_IDS.length} P
 {
   const more = h('button', { type: 'button', class: 'link-btn' }, 'More in About');
   more.addEventListener('click', () => $('btn-version').click());
-  $('splash-disclaimer').replaceChildren(h('b', {}, DISCLAIMER_TITLE + ' '), DISCLAIMER_SHORT + ' ', more);
+  $('splash-disclaimer').replaceChildren(...disclaimerNodes(DISCLAIMER_SHORT), ' ', more);
+  // ... and said again at the bottom, where people expect it.
+  $('splash-note').textContent = `${DISCLAIMER_FOOTER} Simulated: nothing here connects to Fabric or Power BI. Made for a desktop browser.`;
 }
 $('splash-restart').addEventListener('click', () => {
   restartCourse();

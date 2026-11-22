@@ -7,7 +7,7 @@ import './shell.css';
 import { Component, Fragment, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import sources from 'virtual:sources';
-import { DISCLAIMER_SHORT, DISCLAIMER_TEXT, DISCLAIMER_TITLE } from '../../disclaimer.mjs';
+import { DISCLAIMER_FOOTER, DISCLAIMER_SHORT, DISCLAIMER_TEXT, DISCLAIMER_TITLE, REPORT_MISTAKE_LABEL, REPORT_MISTAKE_URL, disclaimerParts } from '../../disclaimer.mjs';
 import { answerBookInfo, resetUsedAnswers, subscribeAnswers, usedAnswers } from '../sim/answer-book';
 import { CategoryCrossFilter } from '../app/components/category-cross-filter';
 import { MarginGauge } from '../app/components/margin-gauge';
@@ -128,6 +128,27 @@ function Badge({ m }: { m: Mark }) {
 }
 
 // ------------------------------------------------------------------ landing
+/** The disclaimer, with the sources it names as links and the way to report a mistake (src/disclaimer.mjs). */
+function Disclaimer({ text, small }: { text: string; small?: boolean }) {
+  return (
+    <p className={small ? 'disclaimer small' : 'disclaimer'}>
+      <b>{DISCLAIMER_TITLE}</b>{' '}
+      {disclaimerParts(text).map((p: { text: string; href?: string }, i: number) =>
+        p.href ? (
+          <a key={i} href={p.href} target="_blank" rel="noopener">
+            {p.text}
+          </a>
+        ) : (
+          <Fragment key={i}>{p.text}</Fragment>
+        ),
+      )}{' '}
+      <a href={REPORT_MISTAKE_URL} target="_blank" rel="noopener">
+        {REPORT_MISTAKE_LABEL}
+      </a>
+    </p>
+  );
+}
+
 function Landing() {
   const groups = [...new Set(VISUALS.map((v) => v.group))];
   return (
@@ -138,9 +159,7 @@ function Landing() {
         can see what it takes before you build one. The course then teaches you to build them, one step at a time:{' '}
         <a href="../">open the course →</a>
       </p>
-      <p className="disclaimer small">
-        <b>{DISCLAIMER_TITLE}</b> {DISCLAIMER_SHORT}
-      </p>
+      <Disclaimer text={DISCLAIMER_SHORT} small />
       {groups.map((g) => (
         <section key={g} className="group">
           <h2>{g}</h2>
@@ -525,9 +544,7 @@ function Notes() {
     <main className="wrap notes">
       <p className="crumbs small"><a href="#/">Visuals</a> / Notes</p>
       <h1>Notes for developers</h1>
-      <p className="disclaimer">
-        <b>{DISCLAIMER_TITLE}</b> {DISCLAIMER_TEXT}
-      </p>
+      <Disclaimer text={DISCLAIMER_TEXT} />
       <section className="card">
         <h2>Versions: 1.0.0 here, 5.4.0 on npm</h2>
         <p className="small">A new Rayfin 2.0 data app pins <code>@microsoft/fabric-visuals</code>, <code>-core</code> and <code>fabric-datagrid</code> at 1.0.0 (May 2026). npm is at 5.4.0 (19 November 2026). What changes for this code. 1.0.0: the installed packages. <b>5.4.0: read from the npm tarballs</b> (type definitions and code, not installed here), except the compile check, which used a scratch install.</p>
@@ -611,7 +628,7 @@ function App() {
         <SideNav route={route} />
         <div className="layout-main">{route === 'notes' ? <Notes /> : v ? <VisualPage key={v.id} v={v} /> : <Landing />}</div>
       </div>
-      <footer className="foot small muted">Part of the Gold Layer Fabric app playground. Simulated: nothing here connects to Fabric or Power BI. Unofficial, not affiliated with Microsoft. Numbers: the Contoso sample model (SQLBI Contoso Data Generator V2). <a href="../THIRD-PARTY-NOTICES.md">Third-party notices</a>.</footer>
+      <footer className="foot small muted">Part of the Gold Layer Fabric app playground. {DISCLAIMER_FOOTER} Simulated: nothing here connects to Fabric or Power BI. Numbers: the Contoso sample model (SQLBI Contoso Data Generator V2). <a href="../THIRD-PARTY-NOTICES.md">Third-party notices</a>.</footer>
     </>
   );
 }

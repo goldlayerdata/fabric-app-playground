@@ -586,6 +586,9 @@ body.on-splash .top-slot > * { visibility: hidden; }
 .splash-disclaimer { margin: 16px 0 0; max-width: 62ch; padding: 10px 14px; border-left: 2px solid var(--line); background: var(--navy-2); border-radius: 0 6px 6px 0; font-size: 13.5px; line-height: 1.5; color: var(--muted); }
 .splash-disclaimer b { color: var(--text); font-weight: 600; }
 .splash-disclaimer .link-btn { font-size: 13.5px; }
+/* its links (the sources, Found a mistake?): plain, underlined, not pink */
+.splash-disclaimer a, .about-disclaimer a { color: var(--text); text-decoration-color: var(--line); text-underline-offset: 2px; }
+.splash-disclaimer a:hover, .about-disclaimer a:hover { text-decoration-color: currentColor; }
 .about-disclaimer { padding: 10px 14px; border-left: 2px solid var(--line); background: var(--navy-2); border-radius: 0 6px 6px 0; }
 .splash-site { margin: 22px 0 0; padding-top: 14px; border-top: 1px solid var(--line); font-size: 14px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px 18px; }
 .splash-follow { margin-top: 8px; padding-top: 0; border-top: 0; }
