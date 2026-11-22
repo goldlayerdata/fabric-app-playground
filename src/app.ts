@@ -393,8 +393,9 @@ function setPopped(el: HTMLElement | null) {
   editor.updateOptions({ fontSize: big ? 16 : 13.5, lineHeight: big ? 25 : 21 });
 }
 
-/** A divider that sets a CSS size variable while dragged. The size is remembered; double-click resets it. */
-function initSplit(id: string, cssVar: string, sizedClass: string, compute: (e: PointerEvent) => number, min: number, max: number) {
+/** A divider that sets a CSS size variable while dragged. The size is remembered; double-click resets it.
+ *  `unit`: '%' for the panes, 'px' for the file list. */
+function initSplit(id: string, cssVar: string, sizedClass: string, compute: (e: PointerEvent) => number, min: number, max: number, unit = '%') {
   const el = $(id);
   const root = document.documentElement;
   const apply = (value: string | null) => {
@@ -408,7 +409,7 @@ function initSplit(id: string, cssVar: string, sizedClass: string, compute: (e: 
     el.classList.add('dragging');
     // While dragging, the preview iframe must not swallow the pointer (see body.resizing in the CSS).
     document.body.classList.add('resizing');
-    const move = (ev: PointerEvent) => apply(`${Math.max(min, Math.min(max, compute(ev))).toFixed(1)}%`);
+    const move = (ev: PointerEvent) => apply(`${Math.max(min, Math.min(max, compute(ev))).toFixed(unit === 'px' ? 0 : 1)}${unit}`);
     const up = () => {
       el.classList.remove('dragging');
       document.body.classList.remove('resizing');
@@ -2769,6 +2770,9 @@ $('pop-backdrop').addEventListener('click', () => setPopped(null));
   initSplit('split-main', '--left-w', 'sized-main', (e) => pct(e.clientX, window.innerWidth), 25, 75);
   initSplit('split-lesson', '--lesson-h', 'sized-lesson', (e) => pct(e.clientY - left.getBoundingClientRect().top, left.clientHeight), 12, 80);
   initSplit('split-panel', '--panel-h', 'sized-panel', (e) => pct(right.getBoundingClientRect().bottom - e.clientY, right.clientHeight), 10, 75);
+  // The file list's width, in pixels: wide enough for long names, never so wide the code has no room.
+  const files = $('files');
+  initSplit('split-tree', '--tree-w', 'sized-tree', (e) => e.clientX - files.getBoundingClientRect().left, 110, 420, 'px');
 }
 
 // ---------------------------------------------------------------- restart, and the splash screen

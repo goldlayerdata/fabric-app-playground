@@ -281,8 +281,10 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 .editor-body { position: relative; flex: 1; min-height: 0; display: flex; }
 
 /* the file list: the project's folders and files, as a tree */
-.tree { width: 150px; flex-shrink: 0; overflow: auto; scrollbar-width: thin; border-right: 1px solid var(--line); padding-bottom: 6px; }
-.no-tree .tree { display: none; }
+.tree { width: var(--tree-w, 150px); flex-shrink: 0; overflow: auto; scrollbar-width: thin; padding-bottom: 6px; }
+.no-tree .tree, .no-tree .split-tree { display: none; }
+/* the file list's right edge: drag to resize, double-click to reset (the width is remembered) */
+.split-tree { width: 5px; }
 .tree-head { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 5px 6px 5px 10px; background: var(--navy); font-size: 12px; }
 .tree-head .folder { font-family: var(--mono); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tree-head .add { flex-shrink: 0; font-size: 11.5px; padding: 1px 7px; white-space: nowrap; color: var(--muted); background: none; border-style: dashed; }
@@ -550,7 +552,7 @@ table.ref tr.flash { animation: flash 1.6s ease-out; }
 .about-body a { color: var(--text); text-decoration-color: var(--muted); }
 .panel.popped { height: 90vh !important; }
 .editor-wrap.popped { height: 90vh; width: min(1200px, 94vw); overflow: hidden; }
-.editor-wrap.popped .tree { width: 260px; }
+.editor-wrap.popped .tree { width: var(--tree-w, 260px); }
 .editor-wrap.popped .tree .tree-item, .editor-wrap.popped .crumbs { font-size: 14px; }
 .editor-wrap.popped .status { font-size: 14px; }
 .panel.popped .panel-body { font-size: 16px; }
