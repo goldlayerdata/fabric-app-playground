@@ -279,3 +279,7 @@ ol.instead li { margin-bottom: 8px; }
 div.job { background: var(--navy-2); border: 1px solid var(--line); border-radius: 10px; margin-top: 8px; }
 .job-summary { display: grid; grid-template-columns: 28px 230px minmax(0, 1fr); gap: 10px; align-items: baseline; padding: 12px 14px; }
 @media (max-width: 800px) { .job-summary { grid-template-columns: 28px 1fr; } }
+
+/* our interpretation, not a guarantee (src/disclaimer.mjs): calm, not a warning sign */
+.disclaimer { max-width: 75ch; padding: 10px 14px; margin: 8px 0 18px; border-left: 2px solid var(--line); background: var(--navy-2); border-radius: 0 6px 6px 0; color: var(--muted); line-height: 1.5; }
+.disclaimer b { color: var(--text); font-weight: 600; }

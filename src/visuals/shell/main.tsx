@@ -7,6 +7,7 @@ import './shell.css';
 import { Component, Fragment, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import sources from 'virtual:sources';
+import { DISCLAIMER_SHORT, DISCLAIMER_TEXT, DISCLAIMER_TITLE } from '../../disclaimer.mjs';
 import { answerBookInfo, resetUsedAnswers, subscribeAnswers, usedAnswers } from '../sim/answer-book';
 import { CategoryCrossFilter } from '../app/components/category-cross-filter';
 import { MarginGauge } from '../app/components/margin-gauge';
@@ -136,6 +137,9 @@ function Landing() {
         In Power BI you drop fields on a visual. In a Fabric app you write it. Each page shows the same visual both ways, so you
         can see what it takes before you build one. The course then teaches you to build them, one step at a time:{' '}
         <a href="../">open the course →</a>
+      </p>
+      <p className="disclaimer small">
+        <b>{DISCLAIMER_TITLE}</b> {DISCLAIMER_SHORT}
       </p>
       {groups.map((g) => (
         <section key={g} className="group">
@@ -521,6 +525,9 @@ function Notes() {
     <main className="wrap notes">
       <p className="crumbs small"><a href="#/">Visuals</a> / Notes</p>
       <h1>Notes for developers</h1>
+      <p className="disclaimer">
+        <b>{DISCLAIMER_TITLE}</b> {DISCLAIMER_TEXT}
+      </p>
       <section className="card">
         <h2>Versions: 1.0.0 here, 5.4.0 on npm</h2>
         <p className="small">A new Rayfin 2.0 data app pins <code>@microsoft/fabric-visuals</code>, <code>-core</code> and <code>fabric-datagrid</code> at 1.0.0 (May 2026). npm is at 5.4.0 (19 November 2026). What changes for this code. 1.0.0: the installed packages. <b>5.4.0: read from the npm tarballs</b> (type definitions and code, not installed here), except the compile check, which used a scratch install.</p>

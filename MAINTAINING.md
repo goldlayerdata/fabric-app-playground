@@ -109,6 +109,7 @@ visuals page: all checks passed
 | Which saved answer a `.dax` file uses | `tools/visuals-answers.mjs`; answers captured for Visuals only go in `data/visuals-extra-answers.json` |
 | A visual's sketch | `GLYPHS` in `src/visuals/shell/sketches.tsx` |
 | Space kept free for a visual (no layout shift) | `SURFACE_H` in `src/visuals/shell/main.tsx` |
+| The disclaimer ("our interpretation, not a guarantee") on the start screen, the top bar chip, About and the Visuals pages | `src/disclaimer.mjs` (one source for all of them) |
 | Licences of bundled code | `THIRD-PARTY-NOTICES.md` |
 | Deploy | `.github/workflows/pages.yml` |
 
@@ -322,7 +323,7 @@ Then:
 1. Install the real packages in a scratch folder outside the repository, or in the gitignored `reference/` folder.
 2. Compare their `dist/*.d.ts` with the subsets, then update the subsets and their headers.
 3. For a new package, add the file, then add it to `editorLibsPlugin` in `tools/build.mjs` and to `PACKAGE_TYPES` in `tools/check-lessons.mjs`.
-4. A new Rayfin version is a content change. The lessons pin `@2.0.0` in install commands, and the top bar says "mirrors Rayfin 2.0", so every lesson needs a fresh fact-check (section 4).
+4. A new Rayfin version is a content change. The lessons pin `@2.0.0` in install commands, and the disclaimer (`src/disclaimer.mjs`) names Rayfin 2.0, so every lesson needs a fresh fact-check (section 4).
 
 ### 2.10 Preview locally
 
@@ -459,7 +460,7 @@ Each failure is one line starting with `FAIL`. Lesson messages start with the le
 - **Plain words first.** Start each card with a plain sentence in Power BI terms; for example, a component is a visual, and state is a slicer selection. Code words, counts and citations come later or are folded away. Don't talk down; use "we".
 - **No lesson numbers in text.** Numbers come from positions and move whenever a lesson or chapter is added, so refer to lessons by title. The checker enforces this. Write data numbers only where the checker verifies them, and leave out counts that go stale.
 - **Fabric note links** go only to Microsoft Learn and rayfin.ai.
-- **Unofficial.** This is a Gold Layer playground, not a Microsoft product; every page says it's unofficial and not affiliated with Microsoft. It names Rayfin only as what it mirrors.
+- **Unofficial, and our interpretation.** This is a Gold Layer playground, not a Microsoft product. Every screen says it is our reading of the docs, not a guarantee (`src/disclaimer.mjs`): the start screen on the way in, the top bar chip while you work, and About and the Visuals pages in full. Keep that wording in one place.
 - **Nothing private in this repository:** no local paths, personal names or emails, credentials, client names, or real workspace or item ids.
 
 ---

@@ -6,6 +6,8 @@
 // Left to right: the brand, the two pages as tabs (the current one marked, the only pink in the bar), the page's
 // slot (the course: the lessons drawer button and the sign-in switch; the Visuals page: nothing), the Simulated chip.
 
+import { CHIP_MORE, DISCLAIMER_TITLE } from './disclaimer.mjs';
+
 const MARK = '<svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16.6 12 21.2 21 16.6" fill="none" stroke="#2A4A8C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 12.1 12 16.7 21 12.1" fill="none" stroke="#4069C4" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 3 21 7.6 12 12.2 3 7.6Z" fill="#F2C811" stroke="#F2C811" stroke-width="1.2" stroke-linejoin="round"/></svg>';
 
 const PAGES = {
@@ -43,7 +45,7 @@ export function topBar(page, slot = '') {
         ${tab('visuals', 'Visuals', 'Each Power BI visual beside the same visual in a Fabric app')}
       </nav>
       <div class="top-slot">${slot.trim()}</div>
-      <button type="button" class="sim-chip" id="btn-version" title="${p.chip}">Simulated<span class="chip-more"> · mirrors Rayfin 2.0 · unofficial</span></button>
+      <button type="button" class="sim-chip" id="btn-version" title="${DISCLAIMER_TITLE} Our reading of the docs, unofficial. ${p.chip}">Simulated<span class="chip-more">${CHIP_MORE}</span></button>
     </header>`;
 }
 

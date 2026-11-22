@@ -8,6 +8,7 @@ import { answer, entries, readLakehouse, savedResult, snapshotsTakenAt, type Ans
 import { rawPayload } from './connectors-sim.mjs';
 import { STEPS_VERSION, stepMoves } from './step-moves.mjs';
 import { VISUAL_IDS } from './visuals/pages.mjs';
+import { DISCLAIMER_SHORT, DISCLAIMER_TEXT, DISCLAIMER_TITLE } from './disclaimer.mjs';
 import {
   CLAIMS_TYPES,
   FUNCTION_APP,
@@ -2283,6 +2284,7 @@ function renderAbout() {
   const p = (...parts: (string | Node)[]) => h('p', {}, ...parts);
   const a = (href: string, text: string) => h('a', { href, target: '_blank', rel: 'noopener' }, text);
   $('about-body').append(
+    h('p', { class: 'about-disclaimer' }, h('b', {}, DISCLAIMER_TITLE + ' '), DISCLAIMER_TEXT),
     p(
       h('b', {}, 'A Gold Layer tool. '),
       'Unofficial, and not affiliated with Microsoft. It is for Power BI developers who want to read and write the code of a Fabric app, from an empty folder to a reviewed report. More free tools are on the ',
@@ -2938,6 +2940,12 @@ $('splash-go').addEventListener('click', () => {
   else hideSplash();
 });
 $('splash-visuals').textContent = `Or browse the visuals: ${VISUAL_IDS.length} Power BI visuals, and what each one takes in an app →`;
+// Said on the way in: this is our reading of the docs, not a guarantee (src/disclaimer.mjs). The full text is in About.
+{
+  const more = h('button', { type: 'button', class: 'link-btn' }, 'More in About');
+  more.addEventListener('click', () => $('btn-version').click());
+  $('splash-disclaimer').replaceChildren(h('b', {}, DISCLAIMER_TITLE + ' '), DISCLAIMER_SHORT + ' ', more);
+}
 $('splash-restart').addEventListener('click', () => {
   restartCourse();
   hideSplash();

@@ -13,6 +13,7 @@ There is no Fabric and no model behind it:
 
 - **In your browser:** open **https://goldlayerdata.github.io/fabric-app-playground/** on a desktop browser. There's nothing to install and no sign-in. Your project and progress stay in that browser only. The **Visuals** page is at **https://goldlayerdata.github.io/fabric-app-playground/visuals/**.
 - **Your own copy:** clone or fork this repository and follow **Run it** below. It's MIT licensed (see `LICENSE` and `THIRD-PARTY-NOTICES.md`), so you can adapt it for your own team or training.
+- **Our interpretation, not a guarantee.** Everything here is Gold Layer's reading of Microsoft's public documentation and the Rayfin 2.0 packages, checked as carefully as we can. It can still be incomplete, out of date or wrong, and Fabric and Rayfin keep changing. Before you build something real, check Microsoft Learn and rayfin.ai. Unofficial: not made, checked or endorsed by Microsoft. Provided as is, without warranty (see `LICENSE`).
 - **Found a mistake or a step that doesn't work?** Open an issue on this repository. Include the lesson, the step and what you saw.
 
 To update it, troubleshoot it or ship it, start with [MAINTAINING.md](MAINTAINING.md). It covers everyday tasks step by step, what every check failure means, and a release checklist.
