@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Use the playground
+    url: https://goldlayerdata.github.io/fabric-app-playground/
+    about: The live course and the Visuals page, in your browser.
+  - name: How to change it yourself
+    url: https://github.com/goldlayerdata/fabric-app-playground/blob/main/MAINTAINING.md
+    about: Step-by-step tasks, check failures and fixes, and the release checklist.

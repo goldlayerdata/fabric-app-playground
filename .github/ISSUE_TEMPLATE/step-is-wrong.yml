@@ -1,0 +1,42 @@
+name: A step is wrong
+description: Something in a lesson or a Visuals page is wrong, unclear, or doesn't work.
+title: "[Step] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you. The course is our reading of the public docs, so a report with a source helps most.
+        Please don't include private details: names, emails, company names or real ids.
+  - type: input
+    id: where
+    attributes:
+      label: Where
+      description: The lesson and step (as shown, for example "1.7 Types, step 4"), or the Visuals page.
+      placeholder: 1.7 Types, step 4
+    validations:
+      required: true
+  - type: textarea
+    id: saw
+    attributes:
+      label: What you did and what you saw
+      description: What the card asked, what you did, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: right
+    attributes:
+      label: What would be right, and the source
+      description: If you know the correct behaviour, link where it is documented (Microsoft Learn, rayfin.ai, or the package docs).
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and screen
+      placeholder: Edge 131, 1366×768, 100% zoom
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you send
+      options:
+        - label: I tried it again after a reload (Ctrl+F5).
+        - label: This report contains no private details.
+          required: true

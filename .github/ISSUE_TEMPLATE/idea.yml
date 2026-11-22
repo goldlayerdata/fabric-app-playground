@@ -1,0 +1,21 @@
+name: An idea
+description: A lesson, chapter or visual you'd like to see, or something that would make the playground easier to learn from.
+title: "[Idea] "
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: What should a Power BI developer be able to do or understand after it?
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why it matters to you
+      description: Where you got stuck, or what you'd use it for at work, without naming your company.
+  - type: textarea
+    id: sources
+    attributes:
+      label: Sources
+      description: Links to Microsoft Learn, rayfin.ai or package docs that describe it, if you know any.

@@ -57,7 +57,7 @@ It runs two scripts in order and writes nothing. They are joined with `&&`, so i
   - after every step, the project is type-checked (TypeScript 6.0.3, strict), and the number of errors must equal the step's `errors`;
   - every DAX query the project can send must have a saved answer from the model its connector names.
 - **Controls:** behaviour a type check can't see. That covers connector names, permissions and claims, and the numbers shown in "Two models, one page" and "Rows or measures". It also checks that the lakehouse rows add up to the model's `[Revenue]`.
-- **Saved step positions:** `src/step-moves.mjs` must be up to date. This needs Git history, so it runs on your machine only. The deploy prints `skipped: no git history to compare with`. Setting `fetch-depth: 0` on the checkout step in `.github/workflows/pages.yml` would run it in the deploy too.
+- **Saved step positions:** `src/step-moves.mjs` must be up to date. This needs Git history. The deploy and the pull request check fetch the whole history (`fetch-depth: 0`), so it runs there too. A shallow clone prints `skipped: no git history to compare with`.
 
 **`tools/check-visuals.mjs`: the Visuals page**
 
@@ -346,7 +346,9 @@ Every push to `main` publishes the site. The workflow "Publish to GitHub Pages" 
 
 A run takes about two minutes. Pushing another branch publishes nothing.
 
-1. Run `npm run check` locally; it's the only place the saved-positions check runs.
+A pull request gets the same checks without publishing: the workflow "Check a pull request" (`.github/workflows/check.yml`) runs `npm ci`, `npm run check` and `npm run build`. Contributors follow [CONTRIBUTING.md](CONTRIBUTING.md). Issues use the forms in `.github/ISSUE_TEMPLATE/` ("A step is wrong", "An idea"), and the pull request template mirrors section 5.
+
+1. Run `npm run check` locally. The deploy runs it again, but failing there means a failed deploy.
 2. Commit and push:
 
    ```powershell

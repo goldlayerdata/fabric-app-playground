@@ -20,6 +20,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The whole history: the saved step positions check compares the lessons with an older commit.
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
