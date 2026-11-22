@@ -697,7 +697,8 @@ export function claimsContract(text) {
     if (!m) continue;
     if (m[2]) problems.push(`"${m[1]}" is optional: claims must be required`);
     const t = m[3].trim();
-    const type = /^string$|^('[^']*'\s*\|?\s*)+$/.test(t) ? 'string' : /^number$/.test(t) ? 'number' : /^boolean$/.test(t) ? 'boolean' : undefined;
+    // A union of string literals ('a' | 'b') is a string. Written so it can't backtrack: each repeat needs its own "|".
+    const type = /^string$|^'[^']*'(?:\s*\|\s*'[^']*')*$/.test(t) ? 'string' : /^number$/.test(t) ? 'number' : /^boolean$/.test(t) ? 'boolean' : undefined;
     if (!type) problems.push(`"${m[1]}" has type ${t}: only string, number or boolean`);
     claims.push({ name: m[1], type: type ?? 'string' });
   }
@@ -705,7 +706,6 @@ export function claimsContract(text) {
   return { found: true, claims, problems };
 }
 
-/** The file `npx rayfin functions init` generates for the claims (its exact real content isn't documented). */
 /** The file `npx rayfin functions init` generates for the claims: the Rayfin CLI 2.0.0's renderDts, verbatim. */
 export function claimsTypesFile(claims) {
   return [
