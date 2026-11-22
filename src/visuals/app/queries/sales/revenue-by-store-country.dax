@@ -1,0 +1,6 @@
+EVALUATE
+SUMMARIZECOLUMNS (
+    'store'[CountryName],
+    "Revenue", [Revenue]
+)
+ORDER BY [Revenue] DESC

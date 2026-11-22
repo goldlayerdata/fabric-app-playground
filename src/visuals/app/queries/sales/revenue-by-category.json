@@ -1,0 +1,27 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
+  "description": "Revenue by product category, largest first",
+  "params": [{ "name": "highlight", "value": "" }],
+  "encoding": {
+    "y": { "field": "productCategoryName", "type": "nominal", "sort": "-x", "title": "Category" }
+  },
+  "layer": [
+    {
+      "mark": "bar",
+      "encoding": {
+        "x": { "field": "Revenue", "type": "quantitative", "title": "Revenue", "scale": { "rangeMax": { "expr": "width - 90" } } },
+        "fillOpacity": {
+          "condition": { "test": "highlight === '' || datum.productCategoryName === highlight", "value": 1 },
+          "value": 0.35
+        }
+      }
+    },
+    {
+      "mark": { "type": "text", "style": "labelHorizontal" },
+      "encoding": {
+        "x": { "field": "Revenue", "type": "quantitative" },
+        "text": { "field": "Revenue", "type": "quantitative" }
+      }
+    }
+  ]
+}

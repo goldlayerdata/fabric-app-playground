@@ -1,0 +1,7 @@
+EVALUATE
+SUMMARIZECOLUMNS (
+    'product'[CategoryName],
+    TREATAS ( { __YEARS__ }, 'date'[Year] ),
+    "Revenue", [Revenue]
+)
+ORDER BY [Revenue] DESC

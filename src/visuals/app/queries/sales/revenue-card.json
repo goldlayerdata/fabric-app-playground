@@ -1,0 +1,18 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
+  "description": "Revenue as one number with its label below",
+  "layer": [
+    {
+      "mark": { "type": "text", "style": "labelCallout", "limit": { "expr": "width" }, "tooltip": null },
+      "encoding": {
+        "text": { "field": "Revenue", "type": "quantitative" }
+      }
+    },
+    {
+      "mark": { "type": "text", "style": "labelSubtitle", "limit": { "expr": "width" }, "dy": 28, "tooltip": null },
+      "encoding": {
+        "text": { "value": "Revenue" }
+      }
+    }
+  ]
+}

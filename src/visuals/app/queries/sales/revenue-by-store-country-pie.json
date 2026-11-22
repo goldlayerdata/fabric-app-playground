@@ -1,0 +1,19 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
+  "description": "Share of revenue by store country",
+  "params": [{ "name": "highlight", "value": "" }],
+  "mark": "arc",
+  "encoding": {
+    "theta": { "field": "Revenue", "type": "quantitative" },
+    "color": { "field": "storeCountryName", "type": "nominal", "sort": null, "title": "Country" },
+    "order": { "field": "Revenue", "type": "quantitative", "sort": "descending" },
+    "fillOpacity": {
+      "condition": { "test": "highlight === '' || datum.storeCountryName === highlight", "value": 1 },
+      "value": 0.35
+    },
+    "tooltip": [
+      { "field": "storeCountryName", "type": "nominal", "title": "Country" },
+      { "field": "Revenue", "type": "quantitative", "title": "Revenue" }
+    ]
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
+  "description": "Revenue of the latest year over the trend by year",
+  "layer": [
+    {
+      "mark": { "type": "area", "line": true },
+      "encoding": {
+        "x": { "field": "Year", "type": "ordinal", "title": null, "axis": { "labels": false } },
+        "y": { "field": "Revenue", "type": "quantitative", "title": null, "axis": { "labels": false, "grid": false } }
+      }
+    },
+    {
+      "transform": [
+        { "joinaggregate": [{ "op": "max", "field": "Year", "as": "latestYear" }] },
+        { "filter": "datum.Year === datum.latestYear" }
+      ],
+      "mark": { "type": "text", "style": "labelCallout", "tooltip": null },
+      "encoding": {
+        "text": { "field": "Revenue", "type": "quantitative" }
+      }
+    }
+  ]
+}

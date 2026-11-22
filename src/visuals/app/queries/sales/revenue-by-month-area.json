@@ -1,0 +1,25 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
+  "description": "Revenue by month, as an area with markers",
+  "params": [{ "name": "highlight", "value": "" }],
+  "layer": [
+    {
+      "mark": { "type": "area", "line": true },
+      "encoding": {
+        "x": { "field": "Month", "type": "ordinal", "sort": null, "title": "Month" },
+        "y": { "field": "Revenue", "type": "quantitative", "title": "Revenue" }
+      }
+    },
+    {
+      "mark": "point",
+      "encoding": {
+        "x": { "field": "Month", "type": "ordinal", "sort": null },
+        "y": { "field": "Revenue", "type": "quantitative" },
+        "opacity": {
+          "condition": { "test": "highlight === '' || datum.Month === highlight", "value": 1 },
+          "value": 0.35
+        }
+      }
+    }
+  ]
+}

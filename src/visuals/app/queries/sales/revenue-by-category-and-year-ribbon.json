@@ -1,0 +1,34 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
+  "description": "Revenue by year, categories ranked in every column and joined by bands",
+  "params": [{ "name": "highlight", "value": "" }],
+  "encoding": {
+    "x": { "field": "dateYear", "type": "ordinal", "title": "Year" },
+    "color": { "field": "productCategoryName", "type": "nominal", "title": "Category" },
+    "opacity": {
+      "condition": { "test": "highlight === '' || datum.productCategoryName === highlight", "value": 1 },
+      "value": 0.35
+    }
+  },
+  "layer": [
+    {
+      "mark": { "type": "area", "tooltip": null },
+      "encoding": {
+        "y": { "field": "Start", "type": "quantitative", "title": "Revenue" },
+        "y2": { "field": "End" }
+      }
+    },
+    {
+      "mark": { "type": "bar", "width": 36 },
+      "encoding": {
+        "y": { "field": "Start", "type": "quantitative" },
+        "y2": { "field": "End" },
+        "tooltip": [
+          { "field": "productCategoryName", "type": "nominal", "title": "Category" },
+          { "field": "dateYear", "type": "ordinal", "title": "Year" },
+          { "field": "Revenue", "type": "quantitative", "title": "Revenue" }
+        ]
+      }
+    }
+  ]
+}

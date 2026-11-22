@@ -1,0 +1,30 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
+  "description": "Revenue by product category as centred bars, largest first",
+  "params": [{ "name": "highlight", "value": "" }],
+  "encoding": {
+    "y": { "field": "productCategoryName", "type": "nominal", "sort": null, "title": null }
+  },
+  "layer": [
+    {
+      "mark": "bar",
+      "encoding": {
+        "x": { "field": "Revenue", "type": "quantitative", "stack": "center", "title": null, "axis": { "labels": false, "grid": false }, "scale": { "rangeMax": { "expr": "width - 90" } } },
+        "fillOpacity": {
+          "condition": { "test": "highlight === '' || datum.productCategoryName === highlight", "value": 1 },
+          "value": 0.35
+        },
+        "tooltip": [
+          { "field": "productCategoryName", "type": "nominal", "title": "Category" },
+          { "field": "Revenue", "type": "quantitative", "title": "Revenue" }
+        ]
+      }
+    },
+    {
+      "mark": { "type": "text", "align": "right", "x": { "expr": "width" }, "tooltip": null },
+      "encoding": {
+        "text": { "field": "Revenue", "type": "quantitative" }
+      }
+    }
+  ]
+}

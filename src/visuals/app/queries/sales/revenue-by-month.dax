@@ -1,0 +1,7 @@
+EVALUATE
+SUMMARIZECOLUMNS (
+    'date'[YearMonthNumber],
+    'date'[YearMonthShort],
+    "Revenue", [Revenue]
+)
+ORDER BY 'date'[YearMonthNumber]

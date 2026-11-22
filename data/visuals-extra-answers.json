@@ -1,0 +1,4 @@
+{
+  "note": "Answers captured for the Visuals page only, read-only, in Power BI Desktop. Each entry: id, model (the .pbip it was captured from), capturedAt (date), how (\"captured in Power BI Desktop\"), query (the exact DAX text, the same as the app's .dax file) and table ({ columns: [{ name, dataType }], rows }). tools/visuals-answers.mjs loads them; the build and npm run check stop if no .dax file in src/visuals/app sends that text.",
+  "answers": []
+}

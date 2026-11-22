@@ -1,0 +1,27 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
+  "description": "Revenue by year, as columns with data labels",
+  "params": [{ "name": "highlight", "value": 0 }],
+  "encoding": {
+    "x": { "field": "dateYear", "type": "ordinal", "title": "Year" }
+  },
+  "layer": [
+    {
+      "mark": "bar",
+      "encoding": {
+        "y": { "field": "Revenue", "type": "quantitative", "title": "Revenue" },
+        "fillOpacity": {
+          "condition": { "test": "highlight === 0 || datum.dateYear === highlight", "value": 1 },
+          "value": 0.35
+        }
+      }
+    },
+    {
+      "mark": { "type": "text", "style": "labelVertical" },
+      "encoding": {
+        "y": { "field": "Revenue", "type": "quantitative" },
+        "text": { "field": "Revenue", "type": "quantitative" }
+      }
+    }
+  ]
+}

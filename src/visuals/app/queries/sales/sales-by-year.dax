@@ -1,0 +1,7 @@
+EVALUATE
+SUMMARIZECOLUMNS (
+    'date'[Year],
+    "Revenue", [Revenue],
+    "Orders", [# Orders]
+)
+ORDER BY 'date'[Year]

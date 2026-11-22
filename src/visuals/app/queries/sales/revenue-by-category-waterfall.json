@@ -1,0 +1,33 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
+  "description": "Revenue building up category by category to the total",
+  "params": [{ "name": "highlight", "value": "" }],
+  "encoding": {
+    "x": { "field": "productCategoryName", "type": "nominal", "sort": null, "title": "Category", "axis": { "labelAngle": -30, "labelOverlap": false } }
+  },
+  "layer": [
+    {
+      "mark": "bar",
+      "encoding": {
+        "y": { "field": "Start", "type": "quantitative", "title": "Revenue" },
+        "y2": { "field": "End" },
+        "color": { "field": "Kind", "type": "nominal", "sort": null, "title": null },
+        "fillOpacity": {
+          "condition": { "test": "highlight === '' || datum.productCategoryName === highlight", "value": 1 },
+          "value": 0.35
+        },
+        "tooltip": [
+          { "field": "productCategoryName", "type": "nominal", "title": "Category" },
+          { "field": "Revenue", "type": "quantitative", "title": "Revenue" }
+        ]
+      }
+    },
+    {
+      "mark": { "type": "text", "style": "labelVertical", "limit": 120, "tooltip": null },
+      "encoding": {
+        "y": { "field": "End", "type": "quantitative" },
+        "text": { "field": "Revenue", "type": "quantitative" }
+      }
+    }
+  ]
+}

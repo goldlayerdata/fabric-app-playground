@@ -1,0 +1,26 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
+  "description": "Margin % on a half ring from 0% to 100%",
+  "layer": [
+    {
+      "mark": { "type": "arc", "theta": -1.5708, "theta2": 1.5708, "innerRadius": { "expr": "min(width, height) / 3" }, "opacity": 0.2, "tooltip": null },
+      "encoding": {
+        "color": { "datum": "Margin %", "legend": null }
+      }
+    },
+    {
+      "mark": { "type": "arc", "innerRadius": { "expr": "min(width, height) / 3" } },
+      "encoding": {
+        "theta": { "field": "MarginPct", "type": "quantitative", "scale": { "domain": [0, 1], "range": [-1.5708, 1.5708] } },
+        "color": { "datum": "Margin %", "legend": null },
+        "tooltip": [{ "field": "MarginPct", "type": "quantitative", "title": "Margin %" }]
+      }
+    },
+    {
+      "mark": { "type": "text", "style": "labelCallout", "dy": -14, "tooltip": null },
+      "encoding": {
+        "text": { "field": "MarginPct", "type": "quantitative" }
+      }
+    }
+  ]
+}

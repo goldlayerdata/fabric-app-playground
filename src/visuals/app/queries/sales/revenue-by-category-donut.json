@@ -1,0 +1,19 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
+  "description": "Share of revenue by product category, as a ring",
+  "params": [{ "name": "highlight", "value": "" }],
+  "mark": { "type": "arc", "innerRadius": { "expr": "min(width, height) / 4" } },
+  "encoding": {
+    "theta": { "field": "Revenue", "type": "quantitative" },
+    "color": { "field": "productCategoryName", "type": "nominal", "sort": null, "title": "Category" },
+    "order": { "field": "Revenue", "type": "quantitative", "sort": "descending" },
+    "fillOpacity": {
+      "condition": { "test": "highlight === '' || datum.productCategoryName === highlight", "value": 1 },
+      "value": 0.35
+    },
+    "tooltip": [
+      { "field": "productCategoryName", "type": "nominal", "title": "Category" },
+      { "field": "Revenue", "type": "quantitative", "title": "Revenue" }
+    ]
+  }
+}

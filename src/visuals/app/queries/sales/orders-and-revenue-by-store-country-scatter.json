@@ -1,0 +1,19 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
+  "description": "Orders against revenue, one point per store country",
+  "params": [{ "name": "highlight", "value": "" }],
+  "mark": { "type": "point", "size": 150 },
+  "encoding": {
+    "x": { "field": "Orders", "type": "quantitative", "title": "Orders", "scale": { "zero": false } },
+    "y": { "field": "Revenue", "type": "quantitative", "title": "Revenue", "scale": { "zero": false } },
+    "fillOpacity": {
+      "condition": { "test": "highlight === '' || datum.storeCountryName === highlight", "value": 1 },
+      "value": 0.35
+    },
+    "tooltip": [
+      { "field": "storeCountryName", "type": "nominal", "title": "Country" },
+      { "field": "Orders", "type": "quantitative", "title": "Orders" },
+      { "field": "Revenue", "type": "quantitative", "title": "Revenue" }
+    ]
+  }
+}
