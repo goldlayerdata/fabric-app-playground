@@ -9,12 +9,20 @@
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="assets/app.css" />
   </head>
-  <body>
-    <div class="splash" id="splash" role="dialog" aria-modal="true" aria-labelledby="splash-title">
-      <div class="splash-card">
-        <p class="splash-brand"><a class="brand-home" href="https://goldlayerdata.com/" title="Gold Layer, home"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16.6 12 21.2 21 16.6" fill="none" stroke="#2A4A8C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 12.1 12 16.7 21 12.1" fill="none" stroke="#4069C4" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 3 21 7.6 12 12.2 3 7.6Z" fill="#F2C811" stroke="#F2C811" stroke-width="1.2" stroke-linejoin="round"/></svg> Gold Layer</a> <span class="brand-lane">Tools</span> <span class="brand-sep">/</span> Fabric app playground
-          <span class="splash-pages"><span class="top-link" aria-current="page"><span class="burger" aria-hidden="true">☰</span> Course</span><a class="top-link" href="visuals/">Visuals</a></span>
-        </p>
+  <body class="on-splash">
+    <!-- the top bar: tools/build.mjs writes it from src/topbar.mjs; inside the element is this page's slot -->
+    <top-bar page="course">
+      <button type="button" class="course-btn" id="btn-course" aria-expanded="false" aria-controls="course" title="The lessons, and where you are">
+        <span class="burger" aria-hidden="true">☰</span>
+        <span class="course-label">Lessons</span>
+        <span class="course-where" id="course-where"></span>
+        <span class="course-bar" id="course-bar" aria-hidden="true"><i></i></span>
+        <span class="course-count" id="course-count"></span>
+      </button>
+      <div class="signin" id="signin" hidden></div>
+    </top-bar>
+    <div class="splash under-bar" id="splash" role="dialog" aria-modal="true" aria-labelledby="splash-title">
+      <div class="splash-card frame">
         <h1 id="splash-title">Build a Fabric app, one step at a time.</h1>
         <p class="splash-lead">One app, from an empty folder to Fabric data. Nothing to install.</p>
         <p class="splash-sub">For Power BI developers who know DAX and have never written TypeScript. One app that grows chapter by chapter, starting with a report page on a semantic model.</p>
@@ -43,30 +51,6 @@
         <p class="splash-note">Simulated: nothing here connects to Fabric or Power BI. Unofficial, and not affiliated with Microsoft. Made for a desktop browser.</p>
       </div>
     </div>
-    <header class="top">
-      <div class="brand">
-        <a class="brand-home" href="https://goldlayerdata.com/tools.html" target="_blank" rel="noopener" title="Gold Layer Tools on goldlayerdata.com (opens in a new tab)"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16.6 12 21.2 21 16.6" fill="none" stroke="#2A4A8C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 12.1 12 16.7 21 12.1" fill="none" stroke="#4069C4" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 3 21 7.6 12 12.2 3 7.6Z" fill="#F2C811" stroke="#F2C811" stroke-width="1.2" stroke-linejoin="round"/></svg> Gold Layer</a>
-        <span class="brand-sep">/</span>
-        <span class="brand-here" id="brand" role="button" tabindex="0" title="Show the start screen">
-          <span class="brand-lane">Tools</span>
-          <span class="brand-sep">/</span>
-          <span class="brand-page">Fabric app playground</span>
-        </span>
-      </div>
-      <button type="button" class="course-btn" id="btn-course" aria-expanded="false" aria-controls="course">
-        <span class="burger" aria-hidden="true">☰</span>
-        <span class="course-label">Course</span>
-        <span class="course-where" id="course-where"></span>
-        <span class="course-bar" id="course-bar" aria-hidden="true"><i></i></span>
-        <span class="course-count" id="course-count"></span>
-      </button>
-      <a class="top-link" href="visuals/" title="Each Power BI visual beside the same visual in a Fabric app">Visuals</a>
-      <span class="top-gap"></span>
-      <div class="signin" id="signin" hidden></div>
-      <button type="button" class="sim-chip" id="btn-version" title="Nothing here talks to Fabric or Power BI: the connectors answer from saved results, and the app's database, sign-in and permissions run in this browser. Click for more.">
-        Simulated<span class="chip-more"> · mirrors Rayfin 2.0 · unofficial</span>
-      </button>
-    </header>
     <div class="drawer-backdrop" id="course-backdrop" hidden></div>
     <aside class="drawer" id="course" aria-label="Course" hidden>
       <div class="drawer-head">

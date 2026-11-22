@@ -1,5 +1,5 @@
-/* The playground's tokens and top bar, shared by the course (app.css) and the Visuals page
-   (visuals/shell/shell.css), so both pages wear the same header. */
+/* The playground's tokens, its one top bar and its page frame, shared by the course (app.css) and the Visuals
+   page (visuals/shell/shell.css). The bar's markup comes from src/topbar.mjs. */
 :root {
   --navy: #0a1328;
   --navy-2: #111c38;
@@ -10,83 +10,104 @@
   --pink: #ff7fb5;
   --gold: #f2c811; /* the logo, and "In a real Fabric app" notes */
   /* a Gold Layer Tools piece, so pink is the accent, kept for "act here": the mark in the code, the part of the
-     playground a step points at, Next and the start screen's main button (and the Tools lane in the brand line).
+     playground a step points at, Next, the start screen's main button, and the current page's tab in the top bar.
      Everything else is plain text colours. */
   --accent: var(--pink);
   --red: #ff5c5c; /* errors: a clear red, never read as the pink */
   --green: #7fd8a8;
   --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
   color-scheme: dark;
+  --top-h: 54px; /* the top bar's height, on every screen */
+  --frame-w: 1280px; /* the start screen's and the Visuals pages' content width */
+  --frame-top: 28px; /* where their content starts, under the bar */
 }
 
-/* ---------------------------------------------------------------- header */
+/* ---------------------------------------------------------------- the top bar
+   One bar, the same box on every screen: full width, one line, always at the top (the pages scroll under it).
+   Left to right: brand, the two page tabs, the page's slot, the Simulated chip. */
 .top {
+  position: sticky;
+  top: 0;
+  z-index: 15;
+  flex: none;
+  box-sizing: border-box;
+  height: var(--top-h);
   display: flex;
   align-items: center;
   gap: 20px;
-  padding: 10px 16px;
+  padding: 0 16px;
+  background: var(--navy);
   border-bottom: 1px solid var(--line);
-  flex-wrap: wrap;
+  white-space: nowrap;
+  font: 15px/1.5 Figtree, system-ui, sans-serif;
 }
-.brand { display: flex; align-items: center; gap: 8px; font-weight: 700; white-space: nowrap; }
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 700; flex: none; }
 .brand-mark { width: 20px; height: 20px; flex-shrink: 0; }
-.brand-home { display: inline-flex; align-items: center; gap: 8px; color: var(--text); text-decoration: none; }
-.brand-home:hover { color: var(--muted); }
-.brand-here { display: inline-flex; gap: 8px; cursor: pointer; }
-.brand-here:hover .brand-page { color: var(--muted); }
-.brand-lane { color: var(--accent); }
-a:focus-visible, .brand-here:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+.brand-home, .brand-here { display: inline-flex; align-items: center; gap: 8px; color: var(--text); text-decoration: none; }
+.brand-home:hover, .brand-here:hover .brand-page { color: var(--muted); }
+.brand-lane { color: var(--muted); }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
 .brand-sep { color: var(--muted); font-weight: 400; }
 .brand-page { color: var(--text); }
-.top-gap { flex: 1; }
-.course-btn {
+/* the two pages, as tabs: the current one is the only pink in the bar */
+.top-tabs { display: flex; align-self: stretch; flex: none; }
+.top-tab {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  min-width: 92px;
+  padding: 0 14px;
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
   font-size: 14px;
-  padding: 5px 12px;
-  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
 }
+.top-tab:hover { color: var(--text); }
+.top-tab[aria-current] { color: var(--accent); border-bottom-color: var(--accent); }
+.top-tab:focus-visible { outline-offset: -4px; }
+/* the page's own things (the course: the lessons drawer button and the sign-in switch) */
+.top-slot { flex: 1; min-width: 0; display: flex; align-items: center; gap: 14px; }
+.top-slot .signin { margin-left: auto; }
+.course-btn { display: flex; align-items: center; gap: 10px; min-width: 0; font-size: 14px; padding: 5px 12px; border-radius: 8px; }
 .course-btn .burger { color: var(--muted); }
 .course-btn .course-label { font-weight: 600; }
-.course-btn { min-width: 0; }
 .course-btn .course-where { color: var(--muted); white-space: nowrap; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .course-bar { width: 80px; height: 6px; border-radius: 999px; background: var(--navy); border: 1px solid var(--line); overflow: hidden; }
 .course-bar i { display: block; height: 100%; width: 0; background: var(--muted); }
 .course-count { color: var(--muted); font-size: 12px; white-space: nowrap; }
-.sim-chip {
+.top .sim-chip {
+  flex: none;
+  font: inherit;
   font-size: 12px;
+  line-height: 1.5;
   color: var(--gold);
   background: none;
   border: 1px solid color-mix(in srgb, var(--gold) 50%, transparent);
   border-radius: 999px;
   padding: 3px 10px;
-  white-space: nowrap;
+  cursor: pointer;
 }
-.sim-chip:hover { border-color: var(--gold); }
-/* a smaller window (or a zoomed page): the top bar stays one line, so the card and the code keep the height */
-@media (min-width: 1001px) and (max-width: 1250px) {
-  .top { flex-wrap: nowrap; gap: 14px; }
+.top .sim-chip:hover { border-color: var(--gold); }
+/* a smaller window (or a zoomed page): the bar stays one line and keeps its height */
+@media (max-width: 1250px) {
+  .top { gap: 14px; }
   .course-bar, .course-count, .sim-chip .chip-more { display: none; }
 }
-
-/* a link in the top bar that looks like its buttons: Visuals beside the Course button; on the Visuals page,
-   Course and Visuals */
-.top-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  padding: 5px 12px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--navy-3);
-  color: var(--text);
-  text-decoration: none;
-  white-space: nowrap;
+@media (max-width: 700px) {
+  .brand-here, .brand > .brand-sep { display: none; }
+  .top-tab { min-width: 0; }
 }
-.top-link:hover { border-color: var(--muted); }
-.top-link .burger { color: var(--muted); font-weight: 400; }
-.top-link[aria-current] { color: var(--accent); border-color: var(--accent); }
-a.brand-here { color: inherit; text-decoration: none; }
+
+/* ---------------------------------------------------------------- the page frame
+   The start screen and the Visuals pages: the same width, left edge and top under the bar. Each scrolls in its
+   own box under the bar, with room kept for a scrollbar, so the frame never moves sideways. */
+.frame {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--frame-w);
+  margin: 0 auto;
+  padding: var(--frame-top) 24px 40px;
+}
+.under-bar { overflow: auto; scrollbar-gutter: stable; }

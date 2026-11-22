@@ -527,11 +527,11 @@ table.ref tr.flash { animation: flash 1.6s ease-out; }
 .sized-lesson .lesson { height: var(--lesson-h); }
 
 /* ---------------------------------------------------------------- pop-outs: a section shown large */
-.pop-backdrop { position: fixed; inset: 0; z-index: 29; background: rgb(0 0 0 / 0.55); }
+.pop-backdrop { position: fixed; inset: 0; z-index: 69; background: rgb(0 0 0 / 0.55); }
 .pop-btn { margin-left: auto; }
 .popped {
   position: fixed !important;
-  z-index: 30;
+  z-index: 70;
   top: 5vh;
   left: 0;
   right: 0;
@@ -560,26 +560,22 @@ body.resizing { user-select: none; }
 body.resizing iframe, body.resizing .monaco-editor { pointer-events: none; }
 
 /* ---------------------------------------------------------------- splash screen */
+/* under the top bar, scrolling in its own box (.under-bar), its content in the shared frame (top.css) */
 .splash {
   position: fixed;
-  inset: 0;
+  top: var(--top-h);
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 60;
-  display: flex;
-  padding: 24px;
-  overflow: auto;
   background:
     radial-gradient(900px 500px at 15% 10%, rgb(255 127 181 / 0.10), transparent 60%),
     var(--navy);
   transition: opacity 0.3s ease;
 }
 .splash.leaving { opacity: 0; pointer-events: none; }
-/* auto margins centre the card, and a tall card still scrolls from its top */
-.splash-card { width: min(1040px, 100%); margin: auto; }
+body.on-splash .top-slot > * { visibility: hidden; }
 .splash-card > :not(.splash-chapters) { max-width: 760px; }
-.splash-brand { display: flex; align-items: center; gap: 8px; margin: 0 0 18px; font-weight: 700; flex-wrap: wrap; }
-/* the same Course | Visuals pair as the Visuals page's top bar */
-.splash-pages { margin-left: auto; display: flex; gap: 8px; }
-.splash-pages .top-link { font-size: 13px; padding: 3px 10px; }
 /* the quiet second way in, under the one big button */
 .splash-alt { margin: 12px 0 0; font-size: 14.5px; }
 .splash-alt a { color: var(--muted); text-decoration-color: var(--line); }

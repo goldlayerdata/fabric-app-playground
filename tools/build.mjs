@@ -9,6 +9,7 @@ import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import { buildAnswers } from './visuals-answers.mjs';
+import { withTopBar } from '../src/topbar.mjs';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(root, 'dist');
 const serve = process.argv.includes('--serve');
@@ -192,9 +193,11 @@ function weigh(metafile) {
 
 function copyStatic() {
   mkdirSync(dist, { recursive: true });
-  cpSync(join(root, 'src/index.html'), join(dist, 'index.html'));
+  // both pages get the one top bar (src/topbar.mjs) in place of their <top-bar> element
+  const page = (from, to) => writeFileSync(to, withTopBar(readFileSync(from, 'utf8')));
+  page(join(root, 'src/index.html'), join(dist, 'index.html'));
   mkdirSync(join(dist, 'visuals'), { recursive: true });
-  cpSync(join(visualsDir, 'index.html'), join(dist, 'visuals/index.html'));
+  page(join(visualsDir, 'index.html'), join(dist, 'visuals/index.html'));
   cpSync(join(root, 'src/preview.html'), join(dist, 'preview.html'));
   cpSync(join(root, 'src/favicon.svg'), join(dist, 'favicon.svg'));
   cpSync(nm('@tailwindcss/browser/dist/index.global.js'), join(dist, 'tailwind.js'));

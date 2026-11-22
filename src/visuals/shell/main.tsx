@@ -51,6 +51,15 @@ const APPS: Record<string, () => ReactNode> = {
   slicer: () => <YearSlicer />,
 };
 
+/**
+ * The app side's height once its chart or grid has drawn (px, at a desktop width), kept free from the first paint,
+ * so nothing on the page moves when the answer arrives. Pages not listed keep the CSS minimum.
+ */
+const SURFACE_H: Record<string, number> = {
+  bar: 544, column: 385, line: 385, area: 385, combo: 385, pie: 385, donut: 385, scatter: 385,
+  funnel: 365, waterfall: 425, ribbon: 425, gauge: 266, table: 375, matrix: 434, slicer: 346,
+};
+
 // ------------------------------------------------------------------ counting: one rule, every page
 const isCodeLine = (l: string) => l.trim() !== '' && !/^\s*(\/\/|\/\*|\*)/.test(l);
 const countLines = (text: string) => text.split('\n').filter(isCodeLine).length;
@@ -74,7 +83,8 @@ function useRoute() {
   const read = () => location.hash.replace(/^#\/?/, '');
   const [route, setRoute] = useState(read);
   useEffect(() => {
-    const on = () => { setRoute(read()); window.scrollTo(0, 0); };
+    // the page scrolls in #root, under the bar
+    const on = () => { setRoute(read()); document.getElementById('root')?.scrollTo(0, 0); };
     addEventListener('hashchange', on);
     return () => removeEventListener('hashchange', on);
   }, []);
@@ -87,33 +97,6 @@ function useAppDark() {
 }
 
 // ------------------------------------------------------------------ small pieces
-/** The playground's top bar (src/index.html), with Course and Visuals side by side. */
-function Header() {
-  return (
-    <header className="top">
-      <div className="brand">
-        <a className="brand-home" href="https://goldlayerdata.com/tools.html" target="_blank" rel="noopener" title="Gold Layer Tools on goldlayerdata.com (opens in a new tab)">
-          <svg className="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16.6 12 21.2 21 16.6" fill="none" stroke="#2A4A8C" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /><path d="M3 12.1 12 16.7 21 12.1" fill="none" stroke="#4069C4" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /><path d="M12 3 21 7.6 12 12.2 3 7.6Z" fill="#F2C811" stroke="#F2C811" strokeWidth="1.2" strokeLinejoin="round" /></svg> Gold Layer
-        </a>
-        <span className="brand-sep">/</span>
-        <a className="brand-here" href="../" title="The playground's start screen">
-          <span className="brand-lane">Tools</span>
-          <span className="brand-sep">/</span>
-          <span className="brand-page">Fabric app playground</span>
-        </a>
-      </div>
-      <a className="top-link" href="../" title="The course: build a Fabric app, one step at a time">
-        <span className="burger" aria-hidden="true">☰</span> Course
-      </a>
-      <a className="top-link" href="#/" aria-current="page">Visuals</a>
-      <span className="top-gap" />
-      <a className="sim-chip" href="#/notes" title="Nothing here talks to Fabric or Power BI: the app side answers its queries from saved results of the Contoso model. Click for the Notes page.">
-        Simulated<span className="chip-more"> · mirrors Rayfin 2.0 · unofficial</span>
-      </a>
-    </header>
-  );
-}
-
 /** A lesson that builds a similar visual by hand (src/visuals/pages.mjs). */
 function CourseLink({ id }: { id: string }) {
   const c = (COURSE_LINKS as Record<string, { lesson: string; title: string; what: string } | undefined>)[id];
@@ -480,7 +463,7 @@ function VisualPage({ v }: { v: VisualDef }) {
             {live && <button onClick={() => setDark(!dark)} aria-pressed={!dark}>Theme: {dark ? 'dark' : 'light'}</button>}
           </div>
           {v.hint && <p className="hint">→ {v.hint}</p>}
-          <div className="app-surface">
+          <div className="app-surface" style={{ minHeight: SURFACE_H[v.id] }}>
             <Boundary>
               {v.noEquiv ? (
                 <div className="noequiv">
@@ -558,7 +541,7 @@ function Notes() {
       </section>
       <section className="card">
         <h2>Page weight</h2>
-        <Weight />
+        <div className="weight-box"><Weight /></div>
       </section>
       <section className="card">
         <h2>Counting</h2>
@@ -617,8 +600,7 @@ function App() {
   const v = VISUALS.find((x) => x.id === route);
   return (
     <>
-      <Header />
-      <div className="layout">
+      <div className="layout frame">
         <SideNav route={route} />
         <div className="layout-main">{route === 'notes' ? <Notes /> : v ? <VisualPage key={v.id} v={v} /> : <Landing />}</div>
       </div>
@@ -627,4 +609,13 @@ function App() {
   );
 }
 
-createRoot(document.getElementById('root')!).render(<App />);
+// The top bar is the playground's (src/topbar.mjs, written into index.html by the build). Its Simulated chip
+// opens the Notes page here.
+document.getElementById('btn-version')?.addEventListener('click', () => { location.hash = '#/notes'; });
+
+// The page draws once its fonts are in (at most a second and a half), so no text reflows under the reader when
+// they arrive: "Loading the visuals…" stays up meanwhile.
+const fonts = ['400 15px Figtree', '600 15px Figtree', '700 15px Figtree', '400 13px "IBM Plex Mono"'].map((f) => document.fonts.load(f));
+Promise.race([Promise.all(fonts), new Promise((r) => setTimeout(r, 1500))])
+  .catch(() => undefined)
+  .then(() => createRoot(document.getElementById('root')!).render(<App />));

@@ -37,12 +37,18 @@
 
 * { box-sizing: border-box; }
 html, body { margin: 0; }
+/* the bar on top, the page scrolling under it in #root (.under-bar, top.css), as the course's start screen does */
 body {
   background: var(--navy);
   color: var(--text);
   font: 15px/1.5 Figtree, system-ui, sans-serif;
-  min-height: 100vh;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
+#root { flex: 1; min-height: 0; }
+.boot { margin: 0; color: var(--muted); }
 a { color: var(--accent); }
 code, pre { font-family: var(--mono); font-size: 0.86em; }
 h1 { font-size: 28px; margin: 6px 0 4px; }
@@ -60,6 +66,7 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outlin
 
 
 .wrap { max-width: 1240px; margin: 0 auto; padding: 16px; }
+.wrap > :first-child { margin-top: 0; }
 .crumbs { margin: 0; color: var(--muted); }
 .crumbs a { color: var(--muted); }
 
@@ -136,18 +143,20 @@ table.check td { width: 42%; }
   table.check, table.check tbody, table.check tr, table.check th, table.check td { display: block; width: 100%; }
   table.check thead { display: none; }
 }
-.foot { max-width: 1240px; margin: 24px auto; padding: 0 16px; }
+.foot { max-width: var(--frame-w); margin: 0 auto; padding: 0 24px 24px; }
 table.weights { border-collapse: collapse; margin: 4px 0 8px; }
+/* the weight report arrives a moment after the page: its room is kept, so the cards under it stay put */
+.weight-box { min-height: 466px; }
 table.weights td { padding: 2px 12px 2px 0; }
 table.weights td:first-child { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 /* landing: small tiles, a row per group */
 .group-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
 
 /* a sidebar with every visual, like the site's articles page; it stays in view while the page scrolls */
-.layout { max-width: 1480px; margin: 0 auto; padding: 0 16px; display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 32px; }
+.layout { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 32px; }
 .layout-main { min-width: 0; }
-.layout-main .wrap { max-width: none; padding: 16px 0; }
-.side-nav { position: sticky; top: 0; align-self: start; max-height: 100vh; overflow: auto; scrollbar-width: thin; padding: 22px 4px 22px 0; display: grid; gap: 16px; align-content: start; }
+.layout-main .wrap { max-width: none; padding: 0; }
+.side-nav { position: sticky; top: 12px; align-self: start; max-height: calc(100vh - var(--top-h) - 24px); overflow: auto; scrollbar-width: thin; padding: 0 4px 22px 0; display: grid; gap: 16px; align-content: start; }
 .side-group summary { display: flex; align-items: center; gap: 8px; cursor: pointer; list-style: none; margin: 0 0 6px; }
 .side-group summary::-webkit-details-marker { display: none; }
 .side-group summary::before { content: ''; flex-shrink: 0; width: 5px; height: 5px; border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted); transform: rotate(-45deg); transition: transform .15s; }

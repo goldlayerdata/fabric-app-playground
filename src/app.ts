@@ -2813,6 +2813,7 @@ function restartCourse() {
 function hideSplash() {
   const el = $('splash');
   el.classList.add('leaving');
+  document.body.classList.remove('on-splash');
   window.setTimeout(() => (el.hidden = true), 350);
 }
 
@@ -2922,6 +2923,7 @@ function showSplash() {
   $('splash-restart').hidden = !started;
   el.classList.remove('leaving');
   el.hidden = false;
+  document.body.classList.add('on-splash');
   go.focus({ preventScroll: true });
   el.scrollTop = 0;
 }
@@ -2936,13 +2938,13 @@ $('splash-restart').addEventListener('click', () => {
   restartCourse();
   hideSplash();
 });
-$('brand').addEventListener('click', showSplash);
-$('brand').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' || e.key === ' ') {
+// The bar's brand and Course tab are links to this page (src/topbar.mjs); here they show the start screen.
+for (const id of ['brand', 'tab-course']) {
+  $(id).addEventListener('click', (e) => {
     e.preventDefault();
     showSplash();
-  }
-});
+  });
+}
 
 initTerminal();
 renderSignIn();
@@ -2958,7 +2960,9 @@ else showNoFiles();
 // A link to one step or quiz question (for example from a trainer) goes straight in; otherwise, the splash.
 const deepLink = /^#(check\/|[\w-]+\/\d)/.test(location.hash);
 openRoute(parseHash() ?? { lesson: byId.get(store.get('lesson') ?? '') ?? order[0] });
-if (deepLink) $('splash').hidden = true;
-else showSplash();
+if (deepLink) {
+  $('splash').hidden = true;
+  document.body.classList.remove('on-splash');
+} else showSplash();
 showTypeStatus();
 runNow();

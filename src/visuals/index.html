@@ -10,7 +10,10 @@
   <link rel="stylesheet" href="assets/main.css" />
 </head>
 <body>
-  <div id="root"><p style="padding: 24px 16px; color: #9aa6c2; font: 15px/1.5 system-ui, sans-serif">Loading the visuals…</p></div>
+  <!-- the top bar: tools/build.mjs writes it from src/topbar.mjs (this page has nothing in its slot) -->
+  <top-bar page="visuals"></top-bar>
+  <!-- the page scrolls under the bar; until the script has loaded, a line where the content will start -->
+  <div id="root" class="under-bar"><div class="frame"><p class="boot">Loading the visuals…</p></div></div>
   <script type="module" src="assets/main.js"></script>
 </body>
 </html>
