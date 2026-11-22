@@ -18,12 +18,14 @@
 //   run     optional: a command for the terminal. "Do it for me" runs it; done once it has been run.
 //   see     optional: what is visible once it's done
 //   why     optional: the explanation, shown under "see" in a quieter style
-//   file    optional: the file the step is about: it opens in the editor, gets a pink dot in the file
-//           list, and is named on the card. Default: the file of its first edit, or src/App.tsx for a
+//   file    optional: the file the step is about: it opens in the editor and gets a pink dot in the file
+//           list; the card offers "Open …" when another file is open. Default: the file of its first edit, or src/App.tsx for a
 //           step with only a `find`. It must be in the project by then, unless the step creates it.
 //   find    optional: text to mark in that file (pink), and select with "Show me in the code"
 //   point   optional: a part of the playground to outline: editor, files (the file list), preview,
-//           status (the query count), terminal, log, queries, terms, run, reset, data, signin
+//           status (the query count, shown only on such a card), terminal, log, queries, help, run, reset,
+//           data, signin. A tab of the bottom panel (terminal, log, queries, data, help) also opens.
+//           One action per step: creating a file and pasting into it are two steps.
 //   edits   optional: the exact change, as [{ file?, from, to, all? }] (file defaults to src/App.tsx;
 //           from: '' writes a new or empty file). An edit whose `to` starts with its `from` adds under
 //           that line, and "Show me in the code" puts the cursor there; one whose `to` ends with its
@@ -198,7 +200,7 @@ export const lessons = [
     idea: 'A Fabric app is a web app that runs in Fabric and queries Fabric data, such as a semantic model. AI agents often write its code. In this course we write one ourselves, from an empty folder, so we can read, fix and trust what an agent writes. First, where everything is.',
     steps: [
       {
-        do: 'Under the page area, open the **Terminal** tab, type this and press Enter:',
+        do: 'In the **Terminal** tab, under the page, type this and press Enter:',
         run: 'help',
         point: 'terminal',
         see: 'The commands this terminal knows. A terminal works like this: one line, Enter, and the answer is printed underneath.',
@@ -213,7 +215,7 @@ export const lessons = [
         do: 'The code area is where we read and write those files.',
         point: 'editor',
         see: 'Empty too. When a step is about some code, that code is marked in pink.',
-        why: 'Our code is TypeScript: JavaScript, plus [[types|type]] that say what kind of value goes where. The editor checks it as we type and underlines problems in red.',
+        why: 'Our code is TypeScript: JavaScript, plus [[types|type]] that say what kind of value goes where. The editor checks it as we type and underlines problems in red. The page runs again each time you pause typing; Ctrl+S runs it at once.',
       },
       {
         do: 'On the right, the page our app draws.',
@@ -232,8 +234,9 @@ export const lessons = [
         why: 'Nothing here talks to Fabric. The answers were saved once from a real Contoso model, so the numbers are real, but only those queries have answers.',
       },
       {
-        do: 'Underlined words, like [[component]], are explained in the **Terms** tab. **Help** lists common problems.',
-        point: 'terms',
+        do: 'Underlined words, like [[component]], open their explanation in the **Help** tab.',
+        point: 'help',
+        see: 'Common problems first, then the words the lessons use, each with the nearest thing in Power BI.',
       },
       {
         do: 'Steps that change something have **Do it for me**: it types the command or makes the change. **Show me in the code** shows where a change goes, and **Copy** copies a snippet.',
@@ -379,11 +382,16 @@ export const lessons = [
     idea: 'We write `src/services/rayfinClient.ts` in three parts: what we import, the list of connectors, and the client itself. Then a first query from the page.',
     steps: [
       {
-        do: 'Create `src/services/rayfinClient.ts` (**+ New file** in the file list, then type that whole path), and paste these imports:',
+        do: 'Click **+ New file**, at the top of the file list, and type `services/rayfinClient.ts` after the `src/` already there.',
+        edits: [{ file: CLIENT, from: '', to: '' }],
+        point: 'files',
+        see: 'A new, empty `src/services/rayfinClient.ts`, open in the editor. The `services` folder is made with it.',
+      },
+      {
+        do: 'Paste these imports into it:',
         code: C.CLIENT_IMPORTS,
         edits: [{ file: CLIENT, from: '', to: C.CLIENT_IMPORTS }],
-        point: 'files',
-        see: 'A new file, no red lines: every package it names is installed.',
+        see: 'No red lines: every package it names is installed.',
         why: '`import` brings in code from a package (`@microsoft/…`) or another project file. `{ … }` picks named parts; `../../` means two folders up; `as contosoConfig` gives `connectorConfig` a clearer name here.',
       },
       {
@@ -511,10 +519,16 @@ export const lessons = [
     idea: 'Our two cards repeat the same markup. We write a card component once, in its own file, and use it for every card.',
     steps: [
       {
-        do: 'Create `src/components.tsx` (**+ New file**) with the card component:',
+        do: 'Click **+ New file**, at the top of the file list, and type `components.tsx` after the `src/` already there.',
+        edits: [{ file: COMP, from: '', to: '' }],
+        point: 'files',
+        see: 'A new, empty `src/components.tsx`, open in the editor.',
+      },
+      {
+        do: 'Paste the card component into it:',
         code: C.KPI_CARD,
         edits: [{ file: COMP, from: '', to: C.KPI_CARD }],
-        see: 'A new file. `KpiCardProps` lists the props: a `title` that is text (`string`) and a `value` that is a `number`.',
+        see: '`KpiCardProps` lists the props: a `title` that is text (`string`) and a `value` that is a `number`.',
         why: '`export` lets other files use it.',
       },
       {
@@ -640,10 +654,16 @@ export const lessons = [
     idea: 'We add `src/data.ts`: the code that runs a query, the queries themselves, and code that turns results into what the visuals draw. Then the chart and the cards use them.',
     steps: [
       {
-        do: 'Create `src/data.ts` (**+ New file**) with the code that runs queries:',
+        do: 'Click **+ New file**, at the top of the file list, and type `data.ts` after the `src/` already there.',
+        edits: [{ file: DATA, from: '', to: '' }],
+        point: 'files',
+        see: 'A new, empty `src/data.ts`, open in the editor.',
+      },
+      {
+        do: 'Paste the code that runs queries into it:',
         code: C.DATA_START,
         edits: [{ file: DATA, from: '', to: C.DATA_START }],
-        see: 'A new file. Nothing on the page changes yet.',
+        see: 'Nothing on the page changes yet.',
         why: 'We don\'t need every line of it. Two parts matter, and the next two cards mark them.',
       },
       {
@@ -764,7 +784,7 @@ export const lessons = [
         see: 'The bars now show order counts: United States 22,824. No red line, no error.',
       },
       {
-        do: 'Open the **Log** tab and click the newest query (the top one).',
+        do: 'In the **Log** tab, click the newest query (the top one).',
         point: 'log',
         see: 'Its columns: `store[CountryName]`, `[Orders]`, `[Revenue]`.',
         why: 'So `row[1]`, the second column, is now Orders.',
@@ -917,7 +937,7 @@ export const lessons = [
         see: 'The bars are gone. No message.',
       },
       {
-        do: 'Open the **Log** tab and click the failed query (in red).',
+        do: 'In the **Log** tab, click the failed query (in red).',
         point: 'log',
         see: 'The model\'s error: it can\'t find the column `Country`.',
         why: 'The page never showed it: on a failed result, `toBars` returns an empty list.',
@@ -963,8 +983,13 @@ export const lessons = [
         see: 'Nothing changes: it is for a query that works but returns no rows.',
       },
       {
-        do: 'Open the **Queries** tab, pick **Network down**, then press **Run**, above the page.',
+        do: 'In the **Queries** tab, pick **Network down**.',
         point: 'queries',
+        see: 'Nothing changes yet: the page asks again only when it runs.',
+      },
+      {
+        do: 'Press **Run**, above the page.',
+        point: 'run',
         see: 'The error panel shows a network error. In the Log, the query is marked "threw".',
         why: 'This time there is no result at all: the call "throws". In a real browser app, that is what a request that can\'t reach the app\'s backend does.',
       },
@@ -976,7 +1001,13 @@ export const lessons = [
         why: 'So a page needs both: the `status` check for a query the model rejects, and `.catch` for a call that never gets an answer (offline, signed out, connector not deployed).',
       },
       {
-        do: 'Set the **Queries** tab back to **Answer normally**, and press **Run**.',
+        do: 'In the **Queries** tab, pick **Answer normally** again.',
+        point: 'queries',
+        see: 'Nothing changes until the page runs again.',
+      },
+      {
+        do: 'Press **Run**.',
+        point: 'run',
         see: 'The data is back.',
       },
     ],
@@ -1380,7 +1411,7 @@ export const lessons = [
         why: 'The card is right; the bars aren\'t. Which column do they read?',
       },
       {
-        do: 'Open the **Log** tab and click the `sales-by-country-with-orders` query. Which column is second?',
+        do: 'In the **Log** tab, click the `sales-by-country-with-orders` query. Which column is second?',
         point: 'log',
         file: AGENT,
         find: 'value: Number(row[1])',
@@ -1395,8 +1426,18 @@ export const lessons = [
         why: '`col` is the agent\'s own helper, already used by its `toTotals`: it finds a column by name.',
       },
       {
-        do: 'Check 3: what happens when a query fails? Open the **Queries** tab, pick **Network down**, press **Run**, and open **Agent page**.',
+        do: 'Check 3: what happens when a query fails? In the **Queries** tab, pick **Network down**.',
         point: 'queries',
+        see: 'Nothing changes until the page runs again.',
+      },
+      {
+        do: 'Press **Run**, above the page.',
+        point: 'run',
+        see: 'The page starts again on **Overview**, with its error panel.',
+      },
+      {
+        do: 'Open **Agent page**.',
+        point: 'preview',
         see: 'Every card shows 0 (Margin % shows 0%) and the chart is empty. No message.',
         why: 'The agent\'s conversions turn a failed result into zeros, and its page never checks `status`. It even wrote an `ErrorPanel`, but nothing uses it.',
       },
@@ -1414,7 +1455,13 @@ export const lessons = [
         see: '**This page could not load its data**, with the network message.',
       },
       {
-        do: 'Set the **Queries** tab back to **Answer normally**, and press **Run**.',
+        do: 'In the **Queries** tab, pick **Answer normally** again.',
+        point: 'queries',
+        see: 'Nothing changes until the page runs again.',
+      },
+      {
+        do: 'Press **Run**.',
+        point: 'run',
         see: 'The data is back.',
       },
       {
@@ -1458,7 +1505,7 @@ export const lessons = [
         why: 'In a real project, `npx rayfin connector search --all-workspaces --type fabric-semanticmodel` lists the models you can reach, with ready-made `connector add` commands. Re-run `connector add` with `--yes` to replace the ids.',
       },
       {
-        do: 'Open the **Queries** tab.',
+        do: 'Look at the **Queries** tab.',
         point: 'queries',
         see: 'Saved answers. On Fabric, each query goes live to the semantic model.',
         why: 'It runs as the person using the app, so each user needs Build and Read permission on the model, as for Analyze in Excel.',
@@ -1633,30 +1680,46 @@ export const lessons = [
         why: 'Without a `runtime` entry, `executeQuery` hands the page the raw payload the connector received, not the result the types promise: there is no `status: \'success\'` or `\'error\'` for the page to read. The page finds no `error` to show, and `toHeadline` finds no `success`, so it shows nothing. Rayfin\'s own CLI calls this failing silently.',
       },
       {
-        do: 'A slip on purpose: add the runtime with a capital P, so the marked line becomes the one below. Then open **Categories** (the page starts again on **Overview**).',
+        do: 'A slip on purpose: add the runtime with a capital P, so the marked line becomes the one below.',
         code: 'runtime: { contoso: fabricSemanticModel(), Pareto: fabricSemanticModel() },',
         file: CLIENT,
         find: 'runtime: { contoso: fabricSemanticModel() },',
         edits: [{ file: CLIENT, from: 'runtime: { contoso: fabricSemanticModel() },', to: RUNTIME_CASE_SLIP }],
-        see: 'No red line, and the headline is still empty.',
+        see: 'No red line. The page starts again on **Overview**.',
+      },
+      {
+        do: 'Open **Categories**.',
+        point: 'preview',
+        see: 'The headline is still empty.',
         why: 'The client finds a connector by its name in any case, but then looks up its runtime by the exact name in `configs`: `pareto`. `Pareto` is never found.',
       },
       {
-        do: 'Fix the name, so the marked line reads as below. Then open **Categories** again.',
+        do: 'Fix the name, so the marked line reads as below.',
         code: RUNTIME_BOTH.trim(),
         file: CLIENT,
         find: RUNTIME_CASE_SLIP,
         edits: [{ file: CLIENT, from: RUNTIME_CASE_SLIP, to: RUNTIME_BOTH }],
-        see: '**It takes 4 of 8 categories to reach 80% of revenue**.',
+        see: 'The page starts again on **Overview**.',
         why: 'One runtime per semantic model, under its own connector name: the same name in four places, `rayfin.yml`, the schema type, `configs` and `runtime`.',
       },
       {
-        do: 'A slip on purpose: in `src/pareto.ts`, change the marked `connectors.pareto` to `connectors.Pareto`. Then open **Categories**.',
+        do: 'Open **Categories** again.',
+        point: 'preview',
+        see: '**It takes 4 of 8 categories to reach 80% of revenue**.',
+      },
+      {
+        do: 'A slip on purpose: in `src/pareto.ts`, change the marked `connectors.pareto` to `connectors.Pareto`.',
         file: PARETO_TS,
         find: 'connectors.pareto',
         edits: [{ file: PARETO_TS, from: 'rayfinClient.connectors.pareto.executeQuery', to: 'rayfinClient.connectors.Pareto.executeQuery' }],
         errors: 1,
-        see: 'A red line: `Property \'Pareto\' does not exist on type …`, ending `Did you mean \'pareto\'?` And the headline is still there.',
+        see: 'A red line: `Property \'Pareto\' does not exist on type …`, ending `Did you mean \'pareto\'?`',
+      },
+      {
+        do: 'Open **Categories**.',
+        point: 'preview',
+        errors: 1,
+        see: 'The headline is still there.',
         why: 'At run time, a name that differs only by case finds the one connector it matches (two such connectors would throw `AMBIGUOUS_CONNECTOR`). The types want the exact name. As in **Types**, the red line is a check, not a gate: fix it anyway.',
       },
       {
@@ -1692,10 +1755,15 @@ export const lessons = [
         why: '`paretoQuery` names the model\'s own measures (`[Revenue Share %]`, `[Revenue Cumulative %]`): the running share stays in the model, as **Measure or query** advised.',
       },
       {
-        do: '**Do it for me** replaces `src/ParetoPage.tsx` with the full page. Then open **Categories**.',
+        do: '**Do it for me** replaces `src/ParetoPage.tsx` with the full page.',
         code: C.PARETO_PAGE,
         file: PARETO_PAGE,
         edits: [{ file: PARETO_PAGE, from: C.PARETO_PAGE_V1, to: C.PARETO_PAGE }],
+        see: 'No red lines. The page starts again on **Overview**.',
+      },
+      {
+        do: 'Open **Categories**.',
+        point: 'preview',
         see: 'Two cards, **Revenue, contoso model** and **Revenue, pareto model**, both 150.6M; the headline; eight bars (scroll inside their card for the rest), the first four starred: `★ Computers (46.1%)`, `★ Cell phones (61%)`, `★ Home Appliances (72.4%)`, `★ Cameras and camcorders (83%)`.',
       },
       {
@@ -1712,17 +1780,27 @@ export const lessons = [
         why: 'The number of vital categories is 4 in every year, but which four changes: try **2023**, where Cameras is second. The stars use the model\'s count, `[# Categories to 80%]`: the page doesn\'t redo the maths.',
       },
       {
-        do: 'A slip on purpose: in the marked line, change `runPareto` to `runDax`. Then open **Categories** (the page starts again on **Overview**).',
+        do: 'A slip on purpose: in the marked line, change `runPareto` to `runDax`.',
         file: PARETO_PAGE,
         find: 'useDax(runPareto, paretoQuery(year))',
         edits: [{ file: PARETO_PAGE, from: 'useDax(runPareto, paretoQuery(year))', to: 'useDax(runDax, paretoQuery(year))' }],
         queryFails: true,
-        see: 'No red line, and the page shows its error panel: `Query (4, 73) The value for \'Revenue Cumulative %\' cannot be determined. Either the column doesn\'t exist, or there is no current row for this column.`',
+        see: 'No red line. The page starts again on **Overview**.',
+      },
+      {
+        do: 'Open **Categories**.',
+        point: 'preview',
+        see: 'The page shows its error panel: `Query (4, 73) The value for \'Revenue Cumulative %\' cannot be determined. Either the column doesn\'t exist, or there is no current row for this column.`',
         why: 'The query went to `contoso`, which has no Pareto measures. TypeScript can\'t catch it: both runners have the same type, and the DAX is text. Only the model can.',
       },
       {
-        do: `${UNDO} Then open **Categories**.`,
+        do: UNDO,
         edits: [{ file: PARETO_PAGE, from: 'useDax(runDax, paretoQuery(year))', to: 'useDax(runPareto, paretoQuery(year))' }],
+        see: 'The page starts again on **Overview**.',
+      },
+      {
+        do: 'Open **Categories** again.',
+        point: 'preview',
         see: 'The bars come back.',
       },
       {
@@ -1842,10 +1920,15 @@ export const lessons = [
     idea: 'In a real project an agent usually writes these files from `metadata.json`: Rayfin\'s docs spell out the rules for it. We write the small one, `Store`, by hand, let the "agent" write `Sales`, and check it against the same rules.',
     steps: [
       {
-        do: 'Create `rayfin/connectors/lake/Store.ts` (**+ New file**), and paste the imports:',
+        do: 'Click **+ New file**, at the top of the file list, and type `rayfin/connectors/lake/Store.ts` in place of the `src/` already there.',
+        edits: [{ file: LAKE_STORE, from: '', to: '' }],
+        point: 'files',
+        see: 'A new, empty `Store.ts`, beside `schema.ts` in `rayfin/connectors/lake`, open in the editor.',
+      },
+      {
+        do: 'Paste the imports into it:',
         code: C.STORE_IMPORTS,
         edits: [{ file: LAKE_STORE, from: '', to: C.STORE_IMPORTS }],
-        point: 'files',
         see: 'No red lines.',
         why: '`@microsoft/rayfin-core` has the decorators, the `@…` lines that describe a class to Rayfin. `Source` points a class at a table in the connector\'s source.',
       },
@@ -1935,7 +2018,13 @@ export const lessons = [
         why: 'No `runtime` entry this time: `runtime` is for function-style connectors such as the semantic model, whose `fabricSemanticModel()` decodes the answer. An entity connector, such as a lakehouse, needs its configuration only.',
       },
       {
-        do: 'Create `src/lake.ts` (**+ New file**) with a hook that waits for any promise:',
+        do: 'Click **+ New file**, at the top of the file list, and type `lake.ts` after the `src/` already there.',
+        edits: [{ file: LAKE_TS, from: '', to: '' }],
+        point: 'files',
+        see: 'A new, empty `src/lake.ts`, open in the editor.',
+      },
+      {
+        do: 'Paste a hook that waits for any promise into it:',
         code: C.LAKE_HOOK,
         edits: [{ file: LAKE_TS, from: '', to: C.LAKE_HOOK }],
         see: 'No red lines.',
@@ -2047,7 +2136,7 @@ export const lessons = [
         why: 'The lakehouse holds France\'s 2023 lines only, so this is the same slice. The model\'s `[Revenue]` is `SUMX ( sales, sales[Quantity] * sales[NetPrice] )`: the same formula the page used.',
       },
       {
-        do: 'Open the **Log** and click the `lake.Sales` read with 100 rows (it selects `quantity` and `netPrice`: the one behind the card).',
+        do: 'In the **Log**, click the `lake.Sales` read with 100 rows (it selects `quantity` and `netPrice`: the one behind the card).',
         point: 'log',
         see: 'It returned exactly 100 rows, though France has more lines.',
         why: '`execute()` returns one [[page of rows|page-of-rows]], 100 by default, and doesn\'t say there are more. No red line, no error: just a wrong total.',
@@ -2108,7 +2197,7 @@ export const lessons = [
         why: 'Semantic model connectors only run as the person using the app, so each person needs Read and Build permission on the model.',
       },
       {
-        do: 'Open the **Log**, then click a `contoso` query and a `lake` read to open them.',
+        do: 'In the **Log**, click a `contoso` query and a `lake` read to open them.',
         point: 'log',
         see: '`runs as: the signed-in user (delegated)` and `runs as: the app owner (application)`.',
         why: 'The playground prints this line; a real app doesn\'t. `connector add` and `inspect` ran as you, the developer: discovery and the running app use different identities.',
@@ -2185,7 +2274,7 @@ export const lessons = [
         why: 'Rerunning `init` here would offer to write a new `rayfin.yml` from defaults, without our connectors. Before running a command on a real project, check what it changes.',
       },
       {
-        do: 'Turn the service on by hand: **Do it for me** sets `enabled: true` under `data:` and adds `dialect: mssql`.',
+        do: 'Turn the service on without `rayfin init`: **Do it for me** sets `enabled: true` under `data:` and adds `dialect: mssql`.',
         file: YML,
         edits: [{ file: YML, from: DATA_OFF, to: DATA_ON }],
         see: 'The two lines under `data:`.',
@@ -2204,7 +2293,7 @@ export const lessons = [
         why: 'The tables come from our code, so we change them with Rayfin commands, not in the Fabric portal: Microsoft Learn warns that changes made there are overwritten at the next deploy. A connector can\'t point at this database: `connector add` rejects it. Connectors are for data the app doesn\'t own.',
       },
       {
-        do: 'Open the new **Data** tab.',
+        do: 'Look at the new **Data** tab, beside **Queries**.',
         point: 'data',
         see: 'No tables yet. The tab will show each table, its rows, and who may do what. In the top bar: **Signed in as: Alice**.',
         why: 'Both are the playground\'s. The Data tab shows every row, whatever the permissions: no real app has this view. Sign-in is simulated too: on Fabric, people sign in with Microsoft Entra ID, and **Who is using it** comes back to it.',
@@ -2230,10 +2319,15 @@ export const lessons = [
     idea: 'One class, `SalesTarget`: a country, a year, an amount. Then a slip that shows why every entity names its permissions.',
     steps: [
       {
-        do: 'Create `rayfin/data/SalesTarget.ts` (**+ New file**), and paste the import:',
+        do: 'Click **+ New file**, at the top of the file list, and type `rayfin/data/SalesTarget.ts` in place of the `src/` already there.',
+        edits: [{ file: TARGET, from: '', to: '' }],
+        point: 'files',
+        see: 'A new, empty `SalesTarget.ts`, in a new `rayfin/data` folder, open in the editor.',
+      },
+      {
+        do: 'Paste the import into it:',
         code: C.TARGET_IMPORTS.trim(),
         edits: [{ file: TARGET, from: '', to: C.TARGET_IMPORTS }],
-        point: 'files',
         see: 'No red lines.',
         why: 'The same package as the lakehouse entities, `@microsoft/rayfin-core`, with more decorators: `uuid` for the key, `authenticated` for who may do what.',
       },
@@ -2289,10 +2383,15 @@ export const lessons = [
     idea: 'We list the entity in the schema, [[apply|schema-apply]] it, and check the deployment. Then a slip that a successful apply hides.',
     steps: [
       {
-        do: 'Create `rayfin/data/schema.ts` (**+ New file**), and paste:',
+        do: 'Click **+ New file**, at the top of the file list, and type `rayfin/data/schema.ts` in place of the `src/` already there.',
+        edits: [{ file: DATA_SCHEMA, from: '', to: '' }],
+        point: 'files',
+        see: 'A new, empty `schema.ts`, beside `SalesTarget.ts`, open in the editor.',
+      },
+      {
+        do: 'Paste the schema into it:',
         code: C.DATA_SCHEMA,
         edits: [{ file: DATA_SCHEMA, from: '', to: C.DATA_SCHEMA }],
-        point: 'files',
         see: 'No red lines.',
         why: 'Two lists, kept in step: the type `AppSchema` (for the client\'s types) and the array `schema`, the list Rayfin\'s docs ask you to keep. Every new entity goes in both. As in **Entities from the metadata**, imports under `rayfin/` end in `.js`.',
       },
@@ -2380,7 +2479,13 @@ export const lessons = [
         why: 'The client has only the services we register: until now, connectors. `<AppSchema>` gives it our entities\' types.',
       },
       {
-        do: 'Create `src/targets.ts` (**+ New file**) with a read:',
+        do: 'Click **+ New file**, at the top of the file list, and type `targets.ts` after the `src/` already there.',
+        edits: [{ file: TARGETS_TS, from: '', to: '' }],
+        point: 'files',
+        see: 'A new, empty `src/targets.ts`, open in the editor.',
+      },
+      {
+        do: 'Paste a read into it:',
         code: C.TARGETS_LOAD,
         edits: [{ file: TARGETS_TS, from: '', to: C.TARGETS_LOAD }],
         see: 'No red lines.',
@@ -2539,7 +2644,13 @@ export const lessons = [
         why: 'Simulated. On Fabric, people sign in with Microsoft Entra ID through Fabric, and nobody can switch to someone else.',
       },
       {
-        do: 'Create `src/session.ts` (**+ New file**):',
+        do: 'Click **+ New file**, at the top of the file list, and type `session.ts` after the `src/` already there.',
+        edits: [{ file: SESSION_TS, from: '', to: '' }],
+        point: 'files',
+        see: 'A new, empty `src/session.ts`, open in the editor.',
+      },
+      {
+        do: 'Paste this into it:',
         code: C.SESSION_READ,
         edits: [{ file: SESSION_TS, from: '', to: C.SESSION_READ }],
         see: 'No red lines.',
@@ -2890,8 +3001,13 @@ export const lessons = [
         why: 'What a person may read now depends on who they are, so a new person means a new read. The key decides when `useLoad` runs again.',
       },
       {
-        do: 'Switch to Bob. On **Targets**, add France at `1000000`.',
+        do: 'Switch to Bob.',
         point: 'signin',
+        see: '**Signed in as: Bob**, in the top bar.',
+      },
+      {
+        do: 'On **Targets**, add France at `1000000`.',
+        point: 'preview',
         see: 'The France row.',
         why: 'Bob is the director, so the create rule lets him.',
       },

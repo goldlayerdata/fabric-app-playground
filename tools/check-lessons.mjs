@@ -74,14 +74,16 @@ for (const l of lessons) {
 }
 for (const id of placed) if (!byId.has(id)) fail(`course.mjs names a lesson that doesn't exist: ${id}`);
 const order = placed.map((id) => byId.get(id)).filter(Boolean);
+// Lessons are numbered within their chapter: "4.2" is the second lesson of the fourth chapter.
+const chapterLessons = (c) => (c.modules ?? []).flatMap((id) => modules.find((m) => m.id === id)?.lessons ?? []);
 const numOf = (l) => {
-  const m = modules.find((x) => x.lessons.includes(l.id));
-  return `${modules.indexOf(m)}.${m.lessons.indexOf(l.id) + 1}`;
+  const c = chapters.find((x) => chapterLessons(x).includes(l.id));
+  return `${chapters.indexOf(c) + 1}.${chapterLessons(c).indexOf(l.id) + 1}`;
 };
 
 const LESSON_FIELDS = ['id', 'title', 'goal', 'builds', 'pbi', 'idea', 'steps', 'summary', 'fabric'];
 const STEP_FIELDS = ['do', 'code', 'run', 'see', 'why', 'file', 'find', 'point', 'edits', 'errors', 'done', 'queryFails', 'commandFails', 'nth', 'copy'];
-const POINTS = ['editor', 'files', 'preview', 'status', 'terminal', 'log', 'queries', 'terms', 'run', 'reset', 'data', 'signin'];
+const POINTS = ['editor', 'files', 'preview', 'status', 'terminal', 'log', 'queries', 'help', 'run', 'reset', 'data', 'signin'];
 const LINK_HOSTS = ['learn.microsoft.com', 'rayfin.ai'];
 
 for (const l of order) {
@@ -127,6 +129,7 @@ const termIds = new Set(terms.map((t) => t.id));
 if (termIds.size !== terms.length) fail('terms.mjs: duplicate term id');
 for (const t of terms) if (!byId.has(t.lesson)) fail(`term ${t.id}: unknown lesson ${t.lesson}`);
 const texts = [];
+const lessonNums = new Set(order.map(numOf));
 const collect = (v, where) => {
   if (typeof v === 'string') texts.push([v, where]);
   else if (Array.isArray(v)) v.forEach((x) => collect(x, where));
@@ -144,6 +147,10 @@ for (const [text, where] of texts) {
   }
   if (/\blesson \d/i.test(text)) fail(`${where}: refers to a lesson by number ("${text.match(/\blesson \d+/i)[0]}"); use its title`);
   if (/\b(chapter|module) \d/i.test(text)) fail(`${where}: refers to a chapter or module by number ("${text.match(/\b(chapter|module) \d+/i)[0]}"); use its title`);
+  // Nor by its number on screen, as in "4.2 Model a sales target": numbers move when a lesson or chapter is added.
+  for (const [, n] of text.matchAll(/(?<![\d.])(\d+\.\d+)\s+(?:\*\*)?[A-Z]/g)) {
+    if (lessonNums.has(n)) fail(`${where}: refers to a lesson by its number ("${n}"); use its title`);
+  }
 }
 
 // ---------------------------------------------------------------- type-checking a project
@@ -294,7 +301,7 @@ for (const lesson of order) {
   console.log(`\n${numOf(lesson)} ${lesson.title}  (${lesson.steps.length} steps)`);
   lesson.steps.forEach((step, si) => {
     const label = `${lesson.id} step ${si + 1}`;
-    // The step's file opens in the editor, is marked in the file list and named on the card: it must be
+    // The step's file opens in the editor and is marked in the file list: it must be
     // in the project when the card opens, unless the step itself creates it.
     const file = stepFile(step);
     if (file !== undefined && project.files[file] === undefined && !step.edits?.some((e) => (e.file ?? PAGE_FILE) === file && e.from === '')) {

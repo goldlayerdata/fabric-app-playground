@@ -2,8 +2,8 @@
 // lesson-list.mjs), and each module's knowledge check (2 to 4 questions).
 //
 // Numbers come from positions here, so they are never written anywhere else (tools/check-lessons.mjs
-// checks every reference). A chapter's number is its place in `chapters`, from 1. Module numbers run
-// on across chapters, from 0: Chapter 1 has modules 0 to 5, Chapter 2 starts at module 6 (lesson 6.1).
+// checks every reference). A chapter's number is its place in `chapters`, from 1, and a lesson's is its
+// place in its chapter: Chapter 4's lessons are 4.1, 4.2 and so on. Modules have no number on screen.
 // A chapter added at the end moves no number; one put between others moves the numbers of the chapters
 // after it. Links such as #failure/9 and the progress kept in the browser never move: they are stored
 // by lesson and module id.
@@ -149,7 +149,7 @@ export const modules = [
         answer: 2,
         why: 'The client registers each connector under its name, in all three places, and the page calls `rayfinClient.connectors.contoso`.',
         lesson: 'client',
-        step: 4,
+        step: 5,
       },
       {
         q: 'Why does the client check `VITE_RAYFIN_API_URL` before using it?',
@@ -157,7 +157,7 @@ export const modules = [
         answer: 0,
         why: 'The template declares it as `string | undefined`. After the check, TypeScript knows it is text.',
         lesson: 'client',
-        step: 5,
+        step: 6,
       },
     ],
   },
@@ -181,7 +181,7 @@ export const modules = [
         answer: 0,
         why: 'Props are the values a component is given, like the fields and settings of a visual. They are written in the page code, not in the model.',
         lesson: 'component',
-        step: 1,
+        step: 2,
       },
       {
         q: '`value="7.3K"` is passed where a `number` goes. What happens?',
@@ -221,7 +221,7 @@ export const modules = [
         answer: 1,
         why: 'The call throws; `.catch` in `useDax` turns that into an error result, and the status check shows its message on the page.',
         lesson: 'failure',
-        step: 9,
+        step: 10,
       },
     ],
   },
@@ -277,7 +277,7 @@ export const modules = [
         answer: 0,
         why: 'The conversions turned a failed result into zeros. Check `status` and show the error instead.',
         lesson: 'review',
-        step: 8,
+        step: 10,
       },
       {
         q: 'An agent\'s query defines its own margin formula, and the model already has `[Margin %]`. What do you do?',
@@ -285,7 +285,7 @@ export const modules = [
         answer: 1,
         why: 'One formula, in the model, shared by every report and app. A copy can drift without any error.',
         lesson: 'review',
-        step: 11,
+        step: 14,
       },
       {
         q: 'On Fabric, whose permissions does a semantic model query run with?',
@@ -326,7 +326,7 @@ export const modules = [
         answer: 0,
         why: 'Both runners have the same type and the DAX is text, so only the model can see that it lacks those measures.',
         lesson: 'two-models-page',
-        step: 5,
+        step: 7,
       },
       {
         q: 'Two models both have `[Revenue]`, and the numbers match today. When is it the same measure?',
@@ -334,7 +334,7 @@ export const modules = [
         answer: 1,
         why: 'Same name isn\'t proof of same meaning, and matching numbers can be luck. Check the definitions where the models are built.',
         lesson: 'two-models-page',
-        step: 10,
+        step: 13,
       },
     ],
   },
@@ -359,7 +359,7 @@ export const modules = [
         answer: 1,
         why: 'Never invent a key from column names: the entity is keyless, so it has no `findByKey`, `update` or `delete`.',
         lesson: 'lakehouse-entities',
-        step: 4,
+        step: 5,
       },
       {
         q: 'Both tables have a `storeKey` column. Does the generated `Sales` get a relationship to `Store`?',
@@ -367,7 +367,7 @@ export const modules = [
         answer: 2,
         why: 'The metadata has no foreign keys, so there is no relationship. To combine the tables, the app joins them itself.',
         lesson: 'lakehouse-entities',
-        step: 6,
+        step: 7,
       },
     ],
   },
@@ -424,7 +424,7 @@ export const modules = [
         answer: 1,
         why: 'An entity without a permission decorator silently gets full create, read, update and delete for every signed-in person. Always write one.',
         lesson: 'sales-target',
-        step: 5,
+        step: 6,
       },
       {
         q: '`db apply` reports success, then every read says "Internal server error". What do you check first?',
@@ -432,7 +432,7 @@ export const modules = [
         answer: 0,
         why: 'Text with no `max` becomes `NVARCHAR(MAX)`, which can break the data API\'s schema after an apply that succeeded. Add `max`, then apply with `--force`.',
         lesson: 'register-apply',
-        step: 6,
+        step: 7,
       },
       {
         q: 'A new entity is in the `schema` array but not in `AppSchema`. What happens?',
@@ -440,7 +440,7 @@ export const modules = [
         answer: 2,
         why: 'Rayfin\'s docs ask for both lists. The type is what the client knows: without it there is no `rayfinClient.data.NewEntity`, so its uses get red lines. (The 2.0 CLI applies every exported entity under `rayfin/data/` anyway.)',
         lesson: 'register-apply',
-        step: 1,
+        step: 2,
       },
     ],
   },
@@ -456,7 +456,7 @@ export const modules = [
         answer: 2,
         why: 'A result has only the fields it selects, and TypeScript knows it, so reading another one is a red line.',
         lesson: 'read-write',
-        step: 9,
+        step: 10,
       },
       {
         q: 'A field is marked `?`, with no `optional: true`. Is its database column nullable?',
@@ -489,7 +489,7 @@ export const modules = [
         answer: 0,
         why: '`getSession()` is read when the page draws. `useSession()` keeps it in state and redraws on each `onSessionChange`.',
         lesson: 'signed-in-as',
-        step: 4,
+        step: 5,
       },
       {
         q: 'A policy compares `claims.sub` with `item.owner_id`, and the code stores the email in `owner_id`. What happens?',
@@ -529,7 +529,7 @@ export const modules = [
         answer: 1,
         why: 'No row has the country `All`. The director needs a rule of his own: `.or(claims.salesRole.eq(\'director\'))`.',
         lesson: 'country-targets',
-        step: 9,
+        step: 10,
       },
       {
         q: '**Add** is hidden from country managers, and `SalesTarget` lets every signed-in person create (`@authenticated([\'read\', \'create\'])`, no policy). What can Alice do?',
@@ -537,7 +537,7 @@ export const modules = [
         answer: 0,
         why: 'The data API, not the page, decides. A hidden button is a hint; the policy on the server is the security.',
         lesson: 'country-targets',
-        step: 14,
+        step: 15,
       },
     ],
   },

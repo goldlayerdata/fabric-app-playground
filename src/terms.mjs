@@ -1,4 +1,4 @@
-// The glossary (Terms tab) and the troubleshooting table (Help tab).
+// The troubleshooting table and the glossary, both in the Help tab.
 // Lesson text links a term with [[term]] or [[shown text|id]]; tools/check-lessons.mjs checks
 // that every link resolves and that each term's lesson exists.
 export const terms = [
