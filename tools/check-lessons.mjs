@@ -28,6 +28,8 @@ import { createConnectorsApi, rawPayload } from '../src/connectors-sim.mjs';
 import lakehouse from '../data/lakehouse.json' with { type: 'json' };
 import * as C from '../src/course-code.mjs';
 import { checkClaimsResult, claimsContract, entityFiles, handleRequest, parseEntity, planApply } from '../src/app-data.mjs';
+import { STEPS_FROM, stepMoves } from '../src/step-moves.mjs';
+import { lessonsAt, movesFor, stepKey } from './step-moves-lib.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const catalog = JSON.parse(readFileSync(join(root, 'data', 'catalog.json'), 'utf8'));
@@ -704,6 +706,49 @@ function runApp(project) {
 
   // Every entity the course writes is read without problems.
   for (const e of entityFiles(final)) expect(!e.problems.length && e.explicitRules, `${e.file}: decorators read, permissions explicit`);
+}
+
+// ---------------------------------------------------------------- saved step positions
+// Steps split since STEPS_FROM move the positions saved in a browser: src/step-moves.mjs says where each old
+// one goes. It must be what tools/make-step-moves.mjs makes from the two lesson lists today, and every old
+// position must land on the same step, on the first part of the step that was split, or on the summary.
+console.log(`\nsaved step positions (lessons as at ${STEPS_FROM})`);
+{
+  let old;
+  try {
+    old = await lessonsAt(STEPS_FROM);
+  } catch (e) {
+    console.log(`   skipped: no git history to compare with (${e.message.split('\n')[0]})`);
+  }
+  if (old) {
+    const fresh = movesFor(old, lessons);
+    if (JSON.stringify(fresh) !== JSON.stringify(stepMoves)) fail('src/step-moves.mjs is out of date: run node tools/make-step-moves.mjs');
+    let moved = 0;
+    for (const [id, moves] of Object.entries(stepMoves)) {
+      const before = old.find((l) => l.id === id)?.steps;
+      const now = byId.get(id)?.steps;
+      if (!before || !now) {
+        fail(`step-moves: ${id} is not a lesson in both lists`);
+        continue;
+      }
+      const label = `step-moves ${id}`;
+      if (moves.length !== before.length + 2) fail(`${label}: ${moves.length} positions for ${before.length} old steps`);
+      if (moves[0] !== 0) fail(`${label}: the idea card moves`);
+      if (moves.at(-1) !== now.length + 1) fail(`${label}: a saved summary is no longer the summary`);
+      if (moves.some((m, i) => i && m <= moves[i - 1])) fail(`${label}: positions out of order`);
+      const keysNow = now.map(stepKey);
+      for (let i = 1; i <= before.length; i++) {
+        const key = stepKey(before[i - 1]);
+        const to = moves[i];
+        const range = keysNow.slice(to - 1, (moves[i + 1] ?? now.length + 1) - 1);
+        // the same step; or the first part of the steps it became (its content is in them, or it was rewritten into them)
+        const ok = keysNow[to - 1] === key || range.includes(key) || (!keysNow.includes(key) && range.length >= 1);
+        if (!ok) fail(`${label}: old step ${i} lands on step ${to}, which is not that step or its first part`);
+        if (to !== i) moved++;
+      }
+    }
+    console.log(`   ${Object.keys(stepMoves).length} lessons, ${moved} old step positions moved`);
+  }
 }
 
 console.log(failures ? `\n${failures} failure(s)` : `\nall checks passed (TypeScript ${ts.version})`);

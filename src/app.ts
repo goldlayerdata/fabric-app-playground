@@ -6,6 +6,7 @@ import { terms, help } from './terms.mjs';
 import editorLibs from 'virtual:editor-libs';
 import { answer, entries, readLakehouse, savedResult, snapshotsTakenAt, type Answer, type Mode, type ReadAnswer, type ReadRequest } from './stand-in';
 import { rawPayload } from './connectors-sim.mjs';
+import { STEPS_VERSION, stepMoves } from './step-moves.mjs';
 import {
   CLAIMS_TYPES,
   FUNCTION_APP,
@@ -189,6 +190,18 @@ try {
   /* storage blocked */
 }
 
+// Step positions saved before some steps were split (one action per card) point too early: move them once,
+// through the table in src/step-moves.mjs (a finished lesson's summary stays its summary). Links such as
+// #client/3 can't tell an old position from a new one, so they are left as they are.
+if (store.get('steps-v') !== STEPS_VERSION) {
+  for (const [id, moves] of Object.entries(stepMoves)) {
+    const saved = store.get(`step:${id}`);
+    const to = saved === null ? undefined : moves[Number(saved)];
+    if (to !== undefined) store.set(`step:${id}`, String(to));
+  }
+  store.set('steps-v', STEPS_VERSION);
+}
+
 /** Progress, kept in this browser. A lesson is done once its summary card has been shown. */
 const progress = {
   done: (l: Lesson) => store.get(`done:${l.id}`) === '1',
@@ -319,7 +332,13 @@ function goTo(p: number) {
   }
   writeHash();
   renderPanel();
+  // One part under the other (a narrow or zoomed window): a new card starts in view, wherever the page was scrolled to.
+  if (stacked.matches) {
+    const top = $('lesson').getBoundingClientRect().top;
+    if (top < 0 || top > window.innerHeight - 80) $('lesson').scrollIntoView({ block: 'start' });
+  }
 }
+const stacked = window.matchMedia('(max-width: 1000px)');
 
 // ---------------------------------------------------------------- lesson panel, one card at a time
 function copyButton(text: string, label = 'Copy') {
@@ -827,6 +846,12 @@ function pointAt(p?: Point) {
   if (!p) return;
   const tabs: Point[] = ['terminal', 'log', 'queries', 'data', 'help'];
   if (tabs.includes(p) && !tabButton(p)?.hidden) selectTab(p, false);
+  // Help, for a step about an underlined word: open at that word's row, as clicking the word does.
+  const word = p === 'help' ? currentStep()?.do.match(/\[\[([^\]]+)\]\]/)?.[1] : undefined;
+  if (word) {
+    const [shown, id = shown.toLowerCase()] = word.split('|');
+    showTerm(id);
+  }
   const target = {
     editor: $('editor'),
     files: $('files'),
@@ -1367,6 +1392,7 @@ function drawTree(nav: HTMLElement, paths: string[], stepPath: string | undefine
       'button',
       { type: 'button', class: 'tree-item tree-file', 'data-path': p, 'aria-current': on ? 'true' : undefined, title, style: `--depth: ${depth}` },
       h('span', { class: 'name' }, p.split('/').pop()!),
+      n ? h('span', { class: 'err-mark', 'aria-hidden': 'true' }, '✕') : null,
       generated ? h('span', { class: 'lock', 'aria-hidden': 'true' }, '🔒') : null,
       p === stepPath ? pill('step', 'This step is about this file') : newFiles.has(p) ? pill('new', 'Just created') : null,
     );
@@ -1394,6 +1420,7 @@ function drawTree(nav: HTMLElement, paths: string[], stepPath: string | undefine
           { type: 'button', class: `tree-item tree-folder${bad ? ' bad' : ''}`, 'data-path': `${sub.path}/`, 'aria-expanded': String(open), title: `${project.appDir ? `${project.appDir}/` : ''}${sub.path}/`, style: `--depth: ${depth}` },
           h('span', { class: 'caret', 'aria-hidden': 'true' }),
           h('span', { class: 'name' }, name),
+          bad ? h('span', { class: 'err-mark', 'aria-hidden': 'true' }, '✕') : null,
           !open && holds(stepPath) ? pill('step', 'This step is about a file in this folder') : null,
         );
         b.addEventListener('click', () => {
@@ -2217,7 +2244,9 @@ function showTerm(id: string) {
   selectTab('help', false);
   const row = document.getElementById(`term-${id}`);
   if (!row) return;
-  row.scrollIntoView({ block: 'center' });
+  // Scroll the tab only: scrollIntoView could move the page as well.
+  const box = $('tab-help');
+  box.scrollTop += row.getBoundingClientRect().top - box.getBoundingClientRect().top - box.clientHeight / 3;
   row.classList.remove('flash');
   void row.offsetWidth; // restart the highlight
   row.classList.add('flash');
@@ -2734,7 +2763,8 @@ $('pop-backdrop').addEventListener('click', () => setPopped(null));
 /** Everything the course keeps in this browser, except the layout sizes. */
 const courseKeys = () => {
   try {
-    return Object.keys(localStorage).filter((k) => k.startsWith('page-playground:') && !k.startsWith('page-playground:size:'));
+    // not the layout sizes, nor the version of the saved step positions (they stay in today's numbering)
+    return Object.keys(localStorage).filter((k) => k.startsWith('page-playground:') && !k.startsWith('page-playground:size:') && k !== 'page-playground:steps-v');
   } catch {
     return [];
   }

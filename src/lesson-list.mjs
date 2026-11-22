@@ -1174,6 +1174,7 @@ export const lessons = [
           { from: "import { rayfinClient } from './services/rayfinClient';\n", to: '' },
         ],
         done: { file: APP, absent: 'const runDax' },
+        point: 'status',
         see: 'Press **Run again**: a few queries, and the count stays put.',
       },
       {
@@ -1403,6 +1404,7 @@ export const lessons = [
           },
         ],
         done: { file: AGENT, before: ['const runDax', 'export default function SalesOverview'] },
+        point: 'status',
         see: 'Press **Run again** and open **Agent page**: the count stays put.',
       },
       {
@@ -2864,7 +2866,7 @@ export const lessons = [
       {
         do: 'Sort every call by identity. Read this card.',
         see: 'The signed-in person: semantic model connectors, `client.data`, `ctx.getDataClient()`, and SQL connectors set to `delegated`. The app (the item\'s owner): `ctx.Tokens.*`, `ctx.sql`, and SQL connectors set to `application`.',
-        why: 'The knowledge check at the end of this module asks about it.',
+        why: 'The questions right after this lesson ask about it.',
       },
     ],
     summary: [

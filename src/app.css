@@ -343,7 +343,7 @@ a:focus-visible, .brand-here:focus-visible { outline: 2px solid var(--accent); o
 .crumbs .sep { margin: 0 6px; opacity: 0.7; }
 .crumbs .here { color: var(--text); }
 .crumbs .lock { margin-left: 10px; font-family: Figtree, system-ui, sans-serif; font-size: 11.5px; }
-.editor-body { flex: 1; min-height: 0; display: flex; }
+.editor-body { position: relative; flex: 1; min-height: 0; display: flex; }
 
 /* the file list: the project's folders and files, as a tree */
 .tree { width: 150px; flex-shrink: 0; overflow: auto; scrollbar-width: thin; border-right: 1px solid var(--line); padding-bottom: 6px; }
@@ -383,6 +383,7 @@ a:focus-visible, .brand-here:focus-visible { outline: 2px solid var(--accent); o
 .tree li.on { background: var(--navy-3); }
 .tree li.on > .tree-item, .tree li.on > .tree-item:hover { color: var(--text); background: none; border-left-color: var(--text); }
 .tree .bad .name { color: var(--red); }
+.tree .err-mark { flex-shrink: 0; color: var(--red); font-size: 10px; }
 .tree .lock { flex-shrink: 0; font-size: 9px; }
 /* a dot after the name: pink for the step's file, green for a file just created */
 .tree .dot-mark { flex-shrink: 0; width: 7px; height: 7px; border-radius: 50%; }
@@ -393,7 +394,14 @@ a:focus-visible, .brand-here:focus-visible { outline: 2px solid var(--accent); o
 .tree li.file:hover .file-del, .tree li.file:focus-within .file-del { display: block; }
 .tree .file-del { flex-shrink: 0; font-size: 13px; line-height: 1; padding: 2px 4px; margin-right: 2px; color: var(--muted); background: none; border-color: transparent; }
 .tree .file-del:hover { color: var(--red); border-color: var(--red); }
+/* over the top of the code, not above it: the code area doesn't move while it shows */
 .undo-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 6;
+  box-shadow: 0 6px 16px rgb(0 0 0 / 0.35);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -492,6 +500,7 @@ a:focus-visible, .brand-here:focus-visible { outline: 2px solid var(--accent); o
 .term-in { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-top: 1px solid var(--line); }
 .term-prompt { color: var(--muted); font: 12.5px var(--mono); white-space: nowrap; }
 .term-input { flex: 1; background: none; border: 0; color: var(--text); font: 12.5px var(--mono); outline: none; }
+.term-input:focus-visible { outline: 1px solid var(--line); outline-offset: 3px; }
 [hidden] { display: none !important; }
 
 /* ---------------------------------------------------------------- bottom panel */
@@ -548,7 +557,9 @@ table.snap td.num { text-align: right; }
 table.ref { border-collapse: collapse; width: 100%; font-size: 13px; }
 table.ref th, table.ref td { border-bottom: 1px solid var(--line); padding: 5px 8px; text-align: left; vertical-align: top; }
 table.ref thead th { color: var(--muted); font-weight: 600; font-size: 12px; }
-table.ref tbody th { font-weight: 600; white-space: nowrap; }
+table.ref tbody th { font-weight: 600; }
+/* long code words wrap: no sideways scroll in a narrow panel */
+table.ref th, table.ref td { overflow-wrap: anywhere; }
 table.ref code { background: var(--navy-3); padding: 1px 4px; border-radius: 4px; color: #ffe27a; }
 table.ref tr.flash { animation: flash 1.6s ease-out; }
 @keyframes flash { from { background: color-mix(in srgb, var(--text) 18%, transparent); } }
