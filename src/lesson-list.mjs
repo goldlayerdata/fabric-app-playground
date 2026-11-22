@@ -38,6 +38,8 @@
 //           The card then offers "Show the red line", which opens the file it is in.
 //   queryFails  optional: after this step, the page sends a query saved as the model's error
 //   commandFails  optional: the step's `run` command fails on purpose (the checker expects the failure)
+//   visual  optional: a page of the Visuals page (an id in src/visuals/pages.mjs) with the same kind of visual,
+//           drawn with Microsoft's visuals packages. Shown as a small link under Why, never as an action.
 //
 // Text formatting: inline `code`, **bold**, and [[term]] or [[shown text|term-id]] for a word in the
 // glossary (terms.mjs). Nothing else.
@@ -727,6 +729,7 @@ export const lessons = [
           },
         ],
         see: 'Real bars: United States 60,466,772, then Online, Canada…',
+        visual: 'bar',
       },
       {
         do: 'Now the cards. At the end of `src/data.ts`, add the totals query:',
@@ -1037,6 +1040,7 @@ export const lessons = [
         edits: [{ file: COMP, from: '      <p className="mt-1 text-sm">{message}</p>\n    </div>\n  );\n}\n', to: `      <p className="mt-1 text-sm">{message}</p>\n    </div>\n  );\n}\n${C.YEAR_SLICER}` }],
         see: 'Nothing on the page yet.',
         why: 'The slicer shows a year and reports clicks. It doesn\'t keep the year itself: the page will.',
+        visual: 'slicer',
       },
       {
         do: 'In `src/App.tsx`, add this line at the very top, above the marked line:',
@@ -1266,6 +1270,7 @@ export const lessons = [
         edits: [{ from: '<BarList rows={countries} />', to: '<BarList rows={countries} selected={country} onSelect={(c) => setCountry(c === country ? undefined : c)} />' }],
         see: 'Clicking a country fades the others; clicking it again clears it.',
         why: '`c === country ? undefined : c`: the same country again means nothing selected.',
+        visual: 'bar',
       },
       {
         do: 'Pass the country to the cards\' and the categories\' queries: `totalsQuery(year, country)` and `salesByCategoryQuery(year, country)`. **Do it for me** makes both.',

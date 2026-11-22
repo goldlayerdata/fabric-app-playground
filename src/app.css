@@ -153,6 +153,10 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 .card .why summary { width: fit-content; cursor: pointer; }
 .card .why summary:hover { color: var(--text); }
 .card .why p { margin: 4px 0 0; }
+/* an optional link to the Visuals page, under Why: quiet, never an action of the card */
+.card .visual-link { margin: 6px 0 0; font-size: 13px; }
+.card .visual-link a { color: var(--muted); text-decoration-color: var(--line); }
+.card .visual-link a:hover { color: var(--text); }
 .lesson code { background: var(--navy-3); padding: 1px 5px; border-radius: 4px; color: #ffe27a; }
 .lesson a { color: var(--text); text-decoration-color: var(--muted); }
 .card .goal { margin-top: 10px; }
@@ -619,6 +623,10 @@ body.resizing iframe, body.resizing .monaco-editor { pointer-events: none; }
 .splash-nav .side-list .coming { opacity: 0.7; }
 .splash-nav .side-count { font: 500 12px/1 var(--mono); color: var(--muted); white-space: nowrap; }
 .splash-nav .side-list button[aria-current] .side-count { color: var(--text); }
+/* the Visuals page, under the parts */
+.splash-nav .side-list a { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-left: -1px; padding: 5px 0 5px 12px; border-left: 2px solid transparent; color: var(--muted); font-size: 14.5px; line-height: 1.4; text-decoration: none; }
+.splash-nav .side-list a:hover { color: var(--text); }
+.splash-nav .side-sub { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
 .splash-main { min-width: 0; }
 .splash-main .main-part { font: 500 12px/1.4 var(--mono); letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
 .splash-main .main-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }

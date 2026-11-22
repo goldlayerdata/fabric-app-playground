@@ -54,6 +54,7 @@ type Step = {
   errors?: number | '1+';
   done?: { file?: string; before?: [string, string]; absent?: string };
   copy?: false;
+  visual?: string;
 };
 type Link = { href: string; label: string };
 type Lesson = {
@@ -561,6 +562,16 @@ function renderLesson() {
       const why = h('details', { class: 'why' }, h('summary', {}, 'Why?'), h('p', {}, rich(step.why)));
       why.addEventListener('toggle', () => (why as HTMLDetailsElement).open && why.scrollIntoView({ block: 'nearest' }));
       card.append(why);
+    }
+    // Optional, and only a link: the same kind of visual on the Visuals page, drawn with Microsoft's visuals packages.
+    if (step.visual) {
+      card.append(
+        h(
+          'p',
+          { class: 'visual-link' },
+          h('a', { href: `visuals/#/${step.visual}`, target: '_blank', rel: 'noopener', title: 'Opens the Visuals page in a new tab' }, 'The same kind of visual with Microsoft\'s visuals packages →'),
+        ),
+      );
     }
   }
 
@@ -2891,6 +2902,14 @@ function showSplash() {
           h('p', { class: 'side-part' }, p.title),
           h('ul', { class: 'side-list' }, ...chaptersOf(p).map(navLink)),
         ),
+      ),
+      // The playground's other page: every Power BI visual beside the same visual in an app (visuals/).
+      h(
+        'div',
+        { class: 'side-block' },
+        h('h2', { class: 'side-title' }, 'Reference'),
+        h('ul', { class: 'side-list' }, h('li', {}, h('a', { href: 'visuals/' }, h('span', { class: 't' }, 'Visuals'), h('span', { class: 'side-count' }, '→')))),
+        h('p', { class: 'side-sub' }, 'Each Power BI visual beside the same visual in a Fabric app, and what it takes.'),
       ),
     ),
     main,

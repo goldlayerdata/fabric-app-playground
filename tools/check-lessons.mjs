@@ -1,7 +1,8 @@
 // Checks the course, outside the browser. `npm run check`. Writes nothing.
 //
 // First the course itself: every lesson in one module, links only to Microsoft Learn and rayfin.ai,
-// glossary terms, knowledge-check questions and the steps they cite, no "lesson N" references.
+// glossary terms, knowledge-check questions and the steps they cite, no "lesson N" references, links to the
+// Visuals page that name one of its pages.
 //
 // Then it builds the whole course from an empty folder, exactly as a reader with "Do it for me"
 // would: terminal steps run through the simulated CLI (src/project.mjs), edit steps change the
@@ -30,6 +31,7 @@ import * as C from '../src/course-code.mjs';
 import { checkClaimsResult, claimsContract, entityFiles, handleRequest, parseEntity, planApply } from '../src/app-data.mjs';
 import { STEPS_FROM, stepMoves } from '../src/step-moves.mjs';
 import { lessonsAt, movesFor, stepKey } from './step-moves-lib.mjs';
+import { VISUAL_IDS } from '../src/visuals/pages.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const catalog = JSON.parse(readFileSync(join(root, 'data', 'catalog.json'), 'utf8'));
@@ -84,7 +86,7 @@ const numOf = (l) => {
 };
 
 const LESSON_FIELDS = ['id', 'title', 'goal', 'builds', 'pbi', 'idea', 'steps', 'summary', 'fabric'];
-const STEP_FIELDS = ['do', 'code', 'run', 'see', 'why', 'file', 'find', 'point', 'edits', 'errors', 'done', 'queryFails', 'commandFails', 'nth', 'copy'];
+const STEP_FIELDS = ['do', 'code', 'run', 'see', 'why', 'file', 'find', 'point', 'edits', 'errors', 'done', 'queryFails', 'commandFails', 'nth', 'copy', 'visual'];
 const POINTS = ['editor', 'files', 'preview', 'status', 'terminal', 'log', 'queries', 'help', 'run', 'reset', 'data', 'signin'];
 const LINK_HOSTS = ['learn.microsoft.com', 'rayfin.ai'];
 
@@ -105,6 +107,7 @@ for (const l of order) {
   for (const s of l.steps) {
     for (const k of Object.keys(s)) if (!STEP_FIELDS.includes(k)) fail(`${l.id}: unknown step field "${k}"`);
     if (s.point && !POINTS.includes(s.point)) fail(`${l.id}: unknown point "${s.point}"`);
+    if (s.visual !== undefined && !VISUAL_IDS.includes(s.visual)) fail(`${l.id}: unknown visual "${s.visual}" (not a page in src/visuals/pages.mjs)`);
     if (s.run && s.edits) fail(`${l.id}: a step either runs a command or edits files, not both`);
     // One action per card: a step with several edits must say Do it for me makes them.
     if ((s.edits?.length ?? 0) > 1 && !/Do it for me/.test(s.do) && !/^Replace the typed-in numbers/.test(s.do)) {
