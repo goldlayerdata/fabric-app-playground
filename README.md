@@ -6,7 +6,7 @@ There is no Fabric and no model behind it:
 
 - **The terminal** simulates the Rayfin 2.0 commands the course uses (`npm create @microsoft/rayfin@latest … --template dataapp`, `npm install`, `npx rayfin connector add`, `connector invoke`, `connector search`, `connector inspect`, `npm run dev`, `npx rayfin up`, `npx rayfin up connector apply`). What they write (`package.json`, `rayfin/rayfin.yml`, the connector's `schema.ts`) follows the Rayfin docs and the data app template as installed by the Rayfin CLI 2.0.0. Lines we could not check against the real output start with `Playground:`. Sign-in is skipped.
 - **The lakehouse** (Chapter 3) is simulated too. `connector add --type fabric-sqlanalytics` writes what the Rayfin CLI 2.0.0 writes (its placeholder `schema.ts` and messages are taken from its code); `metadata.json` has the documented shape, with the playground's own types and values. Reads (`select`, `where`, `orderBy`, `first`, `after`, `execute`, `executePaginated`) are answered in the browser from `data/lakehouse.json`, one page of 100 rows unless `first` says otherwise, as rayfin.ai describes; cursors are made up. The Log's "runs as" line comes from each connector's `auth` in `rayfin.yml`.
-- **The app's own database** (Chapters 4 and 5) is simulated in the browser (`src/app-data.mjs`). `npx rayfin up db apply` reads the entities in `rayfin/data/` (a small parser of their decorators; the real CLI collects every exported entity class), compares them with what it applied last, and stops before the changes Rayfin's docs call potentially destructive unless `--force` is given; a `@text()` without `max` applies, then the data API answers "Internal server error", as the docs describe. The page's `rayfinClient.data` calls are checked against the entity's permission rules (`policy` with `.eq`, `.neq`, `.and`, `.or`; `include`, `exclude`) for the claims of the person on the **Signed in as** switch (made-up people), and rows are kept with the project in this browser. With dynamic claims on, the project's `udf.authClaims` function runs in the preview's sandbox at each switch. The **Data** tab shows every row, ignoring permissions (no real app has that view), and can send a request directly. The real CLI's output and the data API's refusals aren't documented word for word: those lines start with `Playground:`. `rayfin init` is not rerun (what it writes in a data app project isn't documented); the lesson turns the service on by hand, as Microsoft Learn describes.
+- **The app's own database** (Chapters 4 and 5) is simulated in the browser (`src/app-data.mjs`). `npx rayfin up db apply` reads the entities in `rayfin/data/` (a small parser of their decorators; the real CLI collects every exported entity class), compares them with what it applied last, and stops before the changes Rayfin's docs call potentially destructive unless `--force` is given; a `@text()` without `max` applies, then the data API answers "Internal server error", as the docs describe. The page's `rayfinClient.data` calls are checked against the entity's permission rules (`policy` with `.eq`, `.neq`, `.and`, `.or`; `include`, `exclude`) for the claims of the person on the **Signed in as** switch (made-up people), and rows are kept with the project in this browser. With dynamic claims on, the project's `udf.authClaims` function runs in the preview's sandbox at each switch. The **Data** tab appears once the data service is on; it shows every row, ignoring permissions (no real app has that view), and can send a request directly. The real CLI's output and the data API's refusals aren't documented word for word: those lines start with `Playground:`. `rayfin init` is not rerun (what it writes in a data app project isn't documented); the lesson turns the service on by hand, as Microsoft Learn describes.
 - **The Rayfin packages** are simulated. The editor checks the learner's code against their real 2.0 signatures (a subset, MIT: `src/editor-types/packages/`), and only once the project has "installed" them. In the page, `executeQuery` matches the connector and the query text against saved results from that connector's model (two Contoso models: `contoso` and `pareto`) and returns them in the connector's result shape. Connector names resolve as in Rayfin 2.0 (`src/connectors-sim.mjs`): any case finds a connector, but its runtime is looked up by the exact configured name, and a semantic model connector without one hands the page the raw payload (placeholder bytes here), with no error.
 
 ## Run it
@@ -26,23 +26,25 @@ npm run check      # checks the course, then builds it from an empty folder, ste
 | Part | File |
 | --- | --- |
 | The project (files, installed packages, terminal history) and the simulated CLI, as pure functions | `src/project.mjs` |
-| Editor: Monaco 0.57.0, one model per project file, React 19 types, Rayfin types per installed package | `src/app.ts`, `src/monaco.js`, `src/editor-types/packages/` |
-| File list: a folder tree left of the editor that mirrors the project (folders fold, a green dot marks a new file, files with type errors turn red with a count). A step's file opens on its own, has a pink dot in the tree and is named beside the step number on the card, which becomes an **Open `<path>`** button when another file is open. The open file's full path is above the code; **Files** hides the tree, which starts hidden in a window under 1100 px wide | `src/app.ts` (`renderFiles`, `renderCrumbs`, `updateFileNote`, `stepFileOf`) |
+| Editor: Monaco 0.57.0, one model per project file, React 19 types, Rayfin types per installed package. Long lines wrap, so a narrow editor never cuts a line or scrolls sideways | `src/app.ts`, `src/monaco.js`, `src/editor-types/packages/` |
+| File list: a folder tree left of the editor that mirrors the project (folders fold, a green dot marks a new file, files with type errors turn red; hover a row for its full path). A step's file opens on its own and has a pink dot in the tree; the card says **Creates `<path>`** for a new file, or shows an **Open `<path>`** button when another file is open. The open file's full path is above the code. Until the reader presses **Files**, the tree shows only in a window at least 1500 px wide; a card that points at it or creates a file opens it for that card only. **Files** always wins and is remembered | `src/app.ts` (`renderFiles`, `renderCrumbs`, `updateFileNote`, `applyTree`) |
 | The marked code of a step: a Monaco decoration plus a bar in the margin, kept in view when the editor changes size. The code font is a web font, so Monaco measures its characters again once it has loaded (`remeasureFonts`); without that, marks sit left of the text until the browser zoom changes | `src/app.ts` (`markFind`, `revealMark`, `remeasureFonts`) |
-| Red lines: the playground's own type check asks the TypeScript worker about every code file after every change (at once after a step's edit, 300 ms after typing), so a change in one file marks the others. Monaco's built-in check is off. The status line's file names and the card's **Show the red line** go to the first error | `src/app.ts` (`checkTypes`, `showProblem`) |
+| Red lines: the playground's own type check asks the TypeScript worker about every code file after every change (at once after a step's edit, 300 ms after typing), so a change in one file marks the others. Monaco's built-in check is off. "No type errors" shows only after a real answer about the project's code files. The status line's file names and the card's **Show the red line** go to the first error | `src/app.ts` (`checkTypes`, `showProblem`) |
 | Compile on pause: Monaco's TypeScript worker emits each file as a System module (keeps `import.meta.env`) | `src/app.ts` (`compile`) |
 | Preview: sandboxed iframe (`allow-scripts`, no same-origin) that links the modules, simulates the Rayfin packages, and draws `src/App.tsx` | `src/preview.html`, `src/runtime.tsx` |
 | Saved answers: the iframe asks the parent page, which answers from the snapshots of the connector's model after a short delay and logs every query | `src/stand-in.ts`, `src/app.ts` (`onQuery`) |
 | Connector names, runtimes and the raw payload, as Rayfin 2.0 resolves them; shared by the preview and the checker | `src/connectors-sim.mjs`, `src/runtime.tsx` (`semanticConnector`) |
-| Cut-off: more than 40 queries in 10 seconds stops the page | `src/app.ts` (`CUTOFF`) |
+| Cut-off: more than 40 queries in 10 seconds stops the page. Above the page, "Running" shows the number of queries sent only on a card about it (its tooltip always has it); the Log tab gets a dot, not a number, when something new arrives | `src/app.ts` (`CUTOFF`, `showRunning`, `markLogNew`) |
 | Course: chapters, modules, their order, knowledge checks | `src/course.mjs` |
 | Lakehouse reads (filter, sort, pages) | `src/stand-in.ts` (`readLakehouse`), `src/runtime.tsx` (`entityConnector`) |
 | The app's own database: decorators read, `db apply`, permission policies, claim rules | `src/app-data.mjs`; `src/runtime.tsx` (`client.data`, the session, the claims function); `src/app.ts` (`onData`, the Data tab, the **Signed in as** switch) |
 | Lessons: goals, steps, summaries, Fabric notes; the longer code pieces they paste | `src/lesson-list.mjs`, `src/course-code.mjs` |
-| Glossary (Terms tab) and troubleshooting (Help tab) | `src/terms.mjs` |
-| Start screen (chapters), course drawer, progress, routing (`#lesson-id/step`, `#check/module-id`), terminal tab | `src/app.ts` |
-| Layout: three draggable dividers (sizes remembered, double-click resets) and **Pop out** on the lesson card, the editor and the bottom panel (large text, Esc docks) | `src/app.ts` (`initSplit`, `setPopped`), `src/app.css` |
-| Colours: a Gold Layer Tools piece, so Tools pink `#FF7FB5` leads (`--accent`), in text and lines only; gold for the logo and the "In a real Fabric app" notes. The logo links to goldlayerdata.com/tools.html, and the start screen lists the site sections and socials | `src/app.css` |
+| Troubleshooting and the glossary, both in the Help tab (underlined words in a lesson open their row there) | `src/terms.mjs` |
+| Start screen (chapters), course drawer (with **Copy link** beside the lesson on screen), progress, routing (`#lesson-id/step`, `#check/module-id`), terminal tab | `src/app.ts` |
+| The step card: one height per window size (`.lesson` in the CSS), so the code area under it never moves. The instruction, then its buttons, then the code to paste (at most about 8 lines, scrolling inside itself), then **You should see**; **Why?** is folded. The card leaves room for about 8 lines of code | `src/app.ts` (`renderLesson`), `src/app.css` |
+| The bottom panel: Terminal, Log, Queries, Data (once the data service is on) and Help. A step that points at a tab (`point: 'log'`…) opens it, and the tab blinks. The **Simulated** chip in the top bar opens About | `src/app.ts` (`pointAt`, `selectTab`, `renderAbout`) |
+| Layout: three draggable dividers (sizes remembered, double-click resets) and **Pop out** on the editor and the bottom panel (large text, Esc docks). In a window under 1000 px wide (or a zoomed page) the parts stack, each with a height of its own | `src/app.ts` (`initSplit`, `setPopped`), `src/app.css` |
+| Colours: a Gold Layer Tools piece, so Tools pink `#FF7FB5` is the accent (`--accent`), kept for "act here": the mark in the code, the part a step points at, **Next** and the start screen's main button (and the Tools lane in the brand line). Everything else is plain text colours; errors are a clear red with ✕. Gold for the logo and the "In a real Fabric app" notes. The logo links to goldlayerdata.com/tools.html, and the start screen lists the site sections and socials | `src/app.css` |
 
 ## Data
 
@@ -63,49 +65,49 @@ Queries match on the connector and the text, ignoring spacing and letter case: `
 
 One app, built from an empty folder. Structured the way Microsoft Learn builds training (modules of short units, a knowledge check at the end of a module, summaries) and the way the Rayfin docs teach (numbered steps, then what to read next). Only the structure is borrowed.
 
-Chapters group the modules (`chapters` in `src/course.mjs`), and parts group the chapters (`parts`): Read your data (first steps), Store and protect data (building on it), Extend and ship (going further). Every chapter is in exactly one part, in order; `npm run check` verifies it. Module numbers run on across chapters: Chapter 1 is modules 0 to 5, Chapter 2 starts at module 6. A chapter added at the end moves no number; one put between others moves the numbers after it. Progress is kept by lesson and module id. Chapters not built yet are listed as Coming soon, with their planned lesson titles. The start screen shows each chapter's state (done, in progress, not started, coming soon); **Start this chapter** builds the project as that chapter begins, with Undo.
+Chapters group the modules (`chapters` in `src/course.mjs`), and parts group the chapters (`parts`): Read your data (first steps), Store and protect data (building on it), Extend and ship (going further). Every chapter is in exactly one part, in order; `npm run check` verifies it. Lessons are numbered within their chapter: Chapter 4's lessons are 4.1, 4.2 and so on. Modules have no number on screen; they are plain headings. A chapter added at the end moves no number; one put between others moves the numbers after it. Links and progress are kept by lesson and module id, so a number that moves breaks nothing. Chapters not built yet are listed as Coming soon, with their planned lesson titles. The start screen shows each chapter's state (done, in progress, not started, coming soon); its main button follows the chapter picked, and starting a chapter not started yet builds the project as that chapter begins and clears the terminal, with Undo.
 
 **Chapter 1: An app on a semantic model**
 
 | Module | Lessons |
 | --- | --- |
-| 0 Start here | 0.1 Tour |
-| 1 Set up the project | 1.1 Create the project · 1.2 Add the connector · 1.3 Wire the client |
-| 2 Build a page | 2.1 The grid · 2.2 A component · 2.3 Types |
-| 3 Get data from the model | 3.1 The first queries · 3.2 The conversion · 3.3 Measure or query · 3.4 Failure |
-| 4 Make it interactive | 4.1 State as a slicer · 4.2 The redraw trap · 4.3 Cross-filter · 4.4 Two pages |
-| 5 Own what the agent wrote | 5.1 Review an agent's page · 5.2 Take it to Fabric |
+| Start here | 1.1 Tour |
+| Set up the project | 1.2 Create the project · 1.3 Add the connector · 1.4 Wire the client |
+| Build a page | 1.5 The grid · 1.6 A component · 1.7 Types |
+| Get data from the model | 1.8 The first queries · 1.9 The conversion · 1.10 Measure or query · 1.11 Failure |
+| Make it interactive | 1.12 State as a slicer · 1.13 The redraw trap · 1.14 Cross-filter · 1.15 Two pages |
+| Own what the agent wrote | 1.16 Review an agent's page · 1.17 Take it to Fabric |
 
 **Chapter 2: Two semantic models**
 
 | Module | Lessons |
 | --- | --- |
-| 6 Two models in one app | 6.1 Add a second model · 6.2 Register the second model · 6.3 Two models, one page |
+| Two models in one app | 2.1 Add a second model · 2.2 Register the second model · 2.3 Two models, one page |
 
 **Chapter 3: Read a lakehouse**
 
 | Module | Lessons |
 | --- | --- |
-| 7 Connect a lakehouse | 7.1 Add a lakehouse connector · 7.2 Entities from the metadata |
-| 8 Rows, not measures | 8.1 Rows on a page · 8.2 Rows or measures · 8.3 Who runs this query |
+| Connect a lakehouse | 3.1 Add a lakehouse connector · 3.2 Entities from the metadata |
+| Rows, not measures | 3.3 Rows on a page · 3.4 Rows or measures · 3.5 Who runs this query |
 
 **Chapter 4: Store your own data**
 
 | Module | Lessons |
 | --- | --- |
-| 9 Model it | 9.1 Turn on the data service · 9.2 Model a sales target · 9.3 Register and apply |
-| 10 Use it | 10.1 Read and write targets · 10.2 Change the model |
+| Model it | 4.1 Turn on the data service · 4.2 Model a sales target · 4.3 Register and apply |
+| Use it | 4.4 Read and write targets · 4.5 Change the model |
 
 **Chapter 5: Who is using it**
 
 | Module | Lessons |
 | --- | --- |
-| 11 Sign-in and claims | 11.1 Signed in as · 11.2 My rows only · 11.3 Two identities |
-| 12 Roles from the business | 12.1 Roles the business knows · 12.2 Each country, its own targets |
+| Sign-in and claims | 5.1 Signed in as · 5.2 My rows only · 5.3 Two identities |
+| Roles from the business | 5.4 Roles the business knows · 5.5 Each country, its own targets |
 
-Lesson numbers come from positions in `src/course.mjs` and are never written anywhere else: lesson text refers to lessons and chapters by title, and `npm run check` fails on "lesson 4" or "chapter 2"-style references.
+Lesson numbers come from positions in `src/course.mjs` and are never written anywhere else: lesson text refers to lessons and chapters by title, and `npm run check` fails on "lesson 4", "chapter 2" or "4.2 Model a sales target"-style references.
 
-Each lesson is the same set of cards: the idea in Power BI terms with "You'll be able to" and "Builds on", then one card per step, then a summary with an **In a real Fabric app** note linking to Microsoft Learn or rayfin.ai. Every module after the tour ends with two to four questions; each answer links to the step that taught it. Mistakes the course is about (a wrong column, a query loop, a mistyped measure) are made on purpose by the learner, then undone; the review lesson is the one place an "agent" drops a ready-made file into the project.
+Each lesson is the same set of cards: the idea in Power BI terms with "You'll be able to" and "Builds on", then one card per step (one action each: creating a file and pasting into it are two steps), then a summary with an **In a real Fabric app** note linking to Microsoft Learn or rayfin.ai. Every module after the tour ends with two to four questions; each answer links to the step that taught it. Mistakes the course is about (a wrong column, a query loop, a mistyped measure) are made on purpose by the learner, then undone; the review lesson is the one place an "agent" drops a ready-made file into the project.
 
 ## One project, step by step
 
@@ -117,9 +119,9 @@ There are no start files. A lesson's starting point (its checkpoint) is every ea
 
 Opening a lesson on a project that isn't at that lesson's start offers the course's version (with Undo). **Reset** takes a lesson back to its start; **Finish the lesson for me** applies all its steps; **Restart the whole course** (course drawer and start screen) empties the project and clears progress. All offer Undo.
 
-The playground opens on a start screen with the modules and a Start or Continue button; a link to a single step skips it, and clicking the brand in the header shows it again.
+The playground opens on a start screen with the chapters and one main button, which follows the chapter picked (Start or Continue); a link to a single step skips it, and clicking the brand in the header shows it again.
 
-When a step card opens, its spot in the code is marked in gold and its file opens; **Show me in the code** selects it. A step can also point at a part of the playground (`point`), which gets a gold outline.
+When a step card opens, its spot in the code is marked in pink and its file opens; **Show me in the code** selects it. A step can also point at a part of the playground (`point`), which gets a pink outline that blinks three times; a step that points at a tab of the bottom panel opens that tab.
 
 ## Adding a lesson
 
