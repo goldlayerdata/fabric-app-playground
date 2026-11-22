@@ -1,13 +1,33 @@
 # Fabric app playground
 
-A Gold Layer playground where Power BI developers build a Fabric app from an empty folder, chapter by chapter. Chapter 1: create the project, add a semantic model connector, wire the client, then build a report-style 16:9 page in TypeScript and React, make it interactive, and review a page "an agent" wrote. Chapter 2: add a second semantic model, register it in the client, and ask both models from one page. Chapter 3: read a lakehouse through an entity connector, and keep totals in the model. Chapter 4: give the app a database of its own and read and write sales targets. Chapter 5: sign-in, claims and permissions: who sees and changes which targets. A second page, **Visuals** (`visuals/`), shows each Power BI visual beside the same visual running in a Fabric app, with what it takes. Unofficial, and not affiliated with Microsoft.
+**Learn to read and build a Fabric app the way you learned to read a Power BI project.**
 
-There is no Fabric and no model behind it:
+[Open the playground →](https://goldlayerdata.github.io/fabric-app-playground/) · [Visuals →](https://goldlayerdata.github.io/fabric-app-playground/visuals/) · Free, in your browser, nothing to install
 
-- **The terminal** simulates the Rayfin 2.0 commands the course uses (`npm create @microsoft/rayfin@latest … --template dataapp`, `npm install`, `npx rayfin connector add`, `connector invoke`, `connector search`, `connector inspect`, `npm run dev`, `npx rayfin up`, `npx rayfin up connector apply`). What they write (`package.json`, `rayfin/rayfin.yml`, the connector's `schema.ts`) follows the Rayfin docs and the data app template as installed by the Rayfin CLI 2.0.0. Lines we could not check against the real output start with `Playground:`. Sign-in is skipped.
-- **The lakehouse** (Chapter 3) is simulated too. `connector add --type fabric-sqlanalytics` writes what the Rayfin CLI 2.0.0 writes (its placeholder `schema.ts` and messages are taken from its code); `metadata.json` has the documented shape, with the playground's own types and values. Reads (`select`, `where`, `orderBy`, `first`, `after`, `execute`, `executePaginated`) are answered in the browser from `data/lakehouse.json`, one page of 100 rows unless `first` says otherwise, as rayfin.ai describes; cursors are made up. The Log's "runs as" line comes from each connector's `auth` in `rayfin.yml`.
-- **The app's own database** (Chapters 4 and 5) is simulated in the browser (`src/app-data.mjs`). `npx rayfin up db apply` reads the entities in `rayfin/data/` (a small parser of their decorators; the real CLI collects every exported entity class), compares them with what it applied last, and stops before the changes Rayfin's docs call potentially destructive unless `--force` is given; a `@text()` without `max` applies, then the data API answers "Internal server error", as the docs describe. The page's `rayfinClient.data` calls are checked against the entity's permission rules (`policy` with `.eq`, `.neq`, `.and`, `.or`; `include`, `exclude`) for the claims of the person on the **Signed in as** switch (made-up people), and rows are kept with the project in this browser. With dynamic claims on, the project's `udf.authClaims` function runs in the preview's sandbox at each switch. The **Data** tab appears once the data service is on; it shows every row, ignoring permissions (no real app has that view), and can send a request directly. The real CLI's output and the data API's refusals aren't documented word for word: those lines start with `Playground:`. `rayfin init` is not rerun (what it writes in a data app project isn't documented); the lesson turns the service on by hand, as Microsoft Learn describes.
-- **The Rayfin packages** are simulated. The editor checks the learner's code against their real 2.0 signatures (a subset, MIT: `src/editor-types/packages/`), and only once the project has "installed" them. In the page, `executeQuery` matches the connector and the query text against saved results from that connector's model (two Contoso models: `contoso` and `pareto`) and returns them in the connector's result shape. Connector names resolve as in Rayfin 2.0 (`src/connectors-sim.mjs`): any case finds a connector, but its runtime is looked up by the exact configured name, and a semantic model connector without one hands the page the raw payload (placeholder bytes here), with no error.
+## Why this exists
+
+If you've saved a report as a **Power BI project (PBIP)**, you've seen the idea: the report and the semantic model become **folders of plain text files** that you can open, read, compare and keep in Git ([Power BI Desktop projects](https://learn.microsoft.com/power-bi/developer/projects/projects-overview)).
+
+**A Fabric app is a folder of text files too**, but nobody generates it for you from a canvas. The pages are code (TypeScript and React), and the links to your Fabric data are small config files. You, or an AI agent, write them, and someone has to be able to read them.
+
+This playground teaches Power BI developers to do exactly that, one step at a time, from an empty folder to an app with report pages, a lakehouse, its own data and permissions. Each idea starts in Power BI terms. A companion page, **Visuals**, puts 21 Power BI visuals beside the code each one takes in an app.
+
+## The files, in Power BI terms
+
+These are the files the course creates, with the closest thing in a PBIP project. They're comparisons to help you find your feet, not exact equivalents.
+
+| In the Fabric app folder | What it is | Closest thing in a PBIP project |
+| --- | --- | --- |
+| `package.json` | The app's name, the packages it uses and its commands (`npm run dev`) | The `.pbip` file at the root, which points at the report to open |
+| `rayfin/rayfin.yml` | The app's settings: which Fabric items it connects to, and how each one signs in | `definition.pbir`, pointing the report at its semantic model |
+| `rayfin/connectors/<name>/schema.ts` | Generated by the CLI: what each connection can do (for a semantic model, run a DAX query). Not edited by hand | Files Power BI Desktop writes for you |
+| `src/services/rayfinClient.ts` | The one place the connections are wired into the app | The report's connection to its model |
+| `src/App.tsx`, `src/SalesOverview.tsx`, `src/components.tsx` | The pages and the visuals on them, written as code | The `.Report` folder's pages and visuals (`page.json`, `visual.json`), but written by you, not by Desktop |
+| `src/data.ts` | The DAX queries the pages send, and the code that reads the results | The queries a visual sends for you (what Performance analyzer shows) |
+| `rayfin/data/SalesTarget.ts` | A table the app keeps itself, with who may read and change it | No real match: a small database the app owns. The "who may" part is a bit like a role in the model |
+| `.gitignore`, Git | What stays out of source control, and the history | The same idea as a PBIP's `.gitignore` |
+
+The cheat sheet [Fabric apps: can you read what the AI wrote?](https://goldlayerdata.com/post.html?slug=fabric-apps-can-you-read-what-the-ai-wrote) shows the folder of a new Fabric app on one page.
 
 ## Use it
 
@@ -16,9 +36,22 @@ There is no Fabric and no model behind it:
 - **Our interpretation, not a guarantee.** Everything here is Gold Layer's reading of Microsoft's public documentation and the Rayfin 2.0 packages, checked as carefully as we can. It can still be incomplete, out of date or wrong, and Fabric and Rayfin keep changing. Before you build something real, check Microsoft Learn and rayfin.ai. Unofficial: not made, checked or endorsed by Microsoft. Provided as is, without warranty (see `LICENSE`).
 - **Found a mistake or a step that doesn't work?** [Open an issue](https://github.com/goldlayerdata/fabric-app-playground/issues/new?template=step-is-wrong.yml) with the lesson, the step, what you saw and, if you have one, a source.
 
+Found a security problem? Please don't open an issue; see [SECURITY.md](SECURITY.md) to report it privately.
+
 Want to help? [CONTRIBUTING.md](CONTRIBUTING.md) explains how to report a mistake or propose a change, and the rules every change follows. Everyone taking part agrees to the [code of conduct](CODE_OF_CONDUCT.md).
 
 To update it, troubleshoot it or ship it, start with [MAINTAINING.md](MAINTAINING.md). It covers everyday tasks step by step, what every check failure means, and a release checklist.
+
+## The course, and what is simulated
+
+A Gold Layer playground where Power BI developers build a Fabric app from an empty folder, chapter by chapter. Chapter 1: create the project, add a semantic model connector, wire the client, then build a report-style 16:9 page in TypeScript and React, make it interactive, and review a page "an agent" wrote. Chapter 2: add a second semantic model, register it in the client, and ask both models from one page. Chapter 3: read a lakehouse through an entity connector, and keep totals in the model. Chapter 4: give the app a database of its own and read and write sales targets. Chapter 5: sign-in, claims and permissions: who sees and changes which targets. A second page, **Visuals** (`visuals/`), shows each Power BI visual beside the same visual running in a Fabric app, with what it takes. Unofficial, and not affiliated with Microsoft.
+
+There is no Fabric and no model behind it:
+
+- **The terminal** simulates the Rayfin 2.0 commands the course uses (`npm create @microsoft/rayfin@latest … --template dataapp`, `npm install`, `npx rayfin connector add`, `connector invoke`, `connector search`, `connector inspect`, `npm run dev`, `npx rayfin up`, `npx rayfin up connector apply`). What they write (`package.json`, `rayfin/rayfin.yml`, the connector's `schema.ts`) follows the Rayfin docs and the data app template as installed by the Rayfin CLI 2.0.0. Lines we could not check against the real output start with `Playground:`. Sign-in is skipped.
+- **The lakehouse** (Chapter 3) is simulated too. `connector add --type fabric-sqlanalytics` writes what the Rayfin CLI 2.0.0 writes (its placeholder `schema.ts` and messages are taken from its code); `metadata.json` has the documented shape, with the playground's own types and values. Reads (`select`, `where`, `orderBy`, `first`, `after`, `execute`, `executePaginated`) are answered in the browser from `data/lakehouse.json`, one page of 100 rows unless `first` says otherwise, as rayfin.ai describes; cursors are made up. The Log's "runs as" line comes from each connector's `auth` in `rayfin.yml`.
+- **The app's own database** (Chapters 4 and 5) is simulated in the browser (`src/app-data.mjs`). `npx rayfin up db apply` reads the entities in `rayfin/data/` (a small parser of their decorators; the real CLI collects every exported entity class), compares them with what it applied last, and stops before the changes Rayfin's docs call potentially destructive unless `--force` is given; a `@text()` without `max` applies, then the data API answers "Internal server error", as the docs describe. The page's `rayfinClient.data` calls are checked against the entity's permission rules (`policy` with `.eq`, `.neq`, `.and`, `.or`; `include`, `exclude`) for the claims of the person on the **Signed in as** switch (made-up people), and rows are kept with the project in this browser. With dynamic claims on, the project's `udf.authClaims` function runs in the preview's sandbox at each switch. The **Data** tab appears once the data service is on; it shows every row, ignoring permissions (no real app has that view), and can send a request directly. The real CLI's output and the data API's refusals aren't documented word for word: those lines start with `Playground:`. `rayfin init` is not rerun (what it writes in a data app project isn't documented); the lesson turns the service on by hand, as Microsoft Learn describes.
+- **The Rayfin packages** are simulated. The editor checks the learner's code against their real 2.0 signatures (a subset, MIT: `src/editor-types/packages/`), and only once the project has "installed" them. In the page, `executeQuery` matches the connector and the query text against saved results from that connector's model (two Contoso models: `contoso` and `pareto`) and returns them in the connector's result shape. Connector names resolve as in Rayfin 2.0 (`src/connectors-sim.mjs`): any case finds a connector, but its runtime is looked up by the exact configured name, and a semantic model connector without one hands the page the raw payload (placeholder bytes here), with no error.
 
 ## Run it
 

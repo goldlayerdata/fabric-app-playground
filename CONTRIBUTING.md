@@ -9,6 +9,7 @@ By taking part, you agree to the [code of conduct](CODE_OF_CONDUCT.md).
 - **A step is wrong, or doesn't work.** [Open an issue](https://github.com/goldlayerdata/fabric-app-playground/issues/new?template=step-is-wrong.yml), with the lesson, the step, what you saw, and a source if you have one.
 - **An idea** for a lesson, a chapter or a visual. [Open an idea](https://github.com/goldlayerdata/fabric-app-playground/issues/new?template=idea.yml).
 - **A fix you can make yourself.** Open a pull request, as below.
+- **A security problem?** Don't open an issue: report it privately, as [SECURITY.md](SECURITY.md) explains.
 
 ## Making a change
 
