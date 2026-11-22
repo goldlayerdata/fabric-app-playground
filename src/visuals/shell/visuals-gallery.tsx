@@ -2,7 +2,7 @@
 // Package claims cite the installed package file they were read from; Power BI claims cite Microsoft Learn.
 import type { ReactNode } from 'react';
 import {
-  CORE, DG, V, VD, LEARN_A11Y, LEARN_SHOW, PBI_EXPORT, PBI_KEYS, PBI_QUERY, PBI_ROWS, PBI_THEME,
+  CORE, DG, NOT_BUILT, V, VD, LEARN_A11Y, LEARN_SHOW, PBI_EXPORT, PBI_KEYS, PBI_QUERY, PBI_ROWS, PBI_THEME,
   chartFormat, chartShowTable, chartTheme,
   type Excerpt, type Job, type ScoreItem, type Side, type VisualDef,
 } from './visuals';
@@ -21,6 +21,7 @@ const LEARN_MATRIX = 'learn.microsoft.com/power-bi/visuals/power-bi-visualizatio
 const LEARN_DECOMP = 'learn.microsoft.com/power-bi/visuals/power-bi-visualization-decomposition-tree';
 const LEARN_MAP = 'learn.microsoft.com/azure/azure-maps/power-bi-visual-get-started';
 const LEARN_MAP_ADMIN = 'learn.microsoft.com/azure/azure-maps/power-bi-visual-manage-access';
+const LEARN_COMBO = 'learn.microsoft.com/power-bi/visuals/power-bi-visualization-combo-chart';
 const LEARN_AXES = 'learn.microsoft.com/power-bi/visuals/power-bi-visualization-customize-x-axis-and-y-axis';
 const LEARN_CARD = 'learn.microsoft.com/power-bi/visuals/power-bi-visualization-card';
 const LEARN_PIE = 'learn.microsoft.com/power-bi/visuals/power-bi-visualization-pie-donut-chart';
@@ -98,14 +99,13 @@ const APP_EXPORT: Side = {
   why: <>No export in 1.0.0. A <code>ref</code> on <code>VegaVisual</code> gives you the Vega <code>View</code>, from which you could write an image or CSV download.</>,
   cite: [`${VD} (VegaVisualHandle)`],
 };
-const PBI_SHOW: Side = { mark: 'pbi', short: 'More options > Show as a table.', why: <>Alt+Shift+F11 opens a table a screen reader can read.</>, cite: [LEARN_SHOW, LEARN_A11Y] };
+const PBI_SHOW: Side = { mark: 'pbi', short: 'More actions (...) > Show as a table.', why: <>Alt+Shift+F11 opens a table a screen reader can read.</>, cite: [LEARN_SHOW, LEARN_A11Y] };
 const PBI_NO_CLICK: Side = { mark: 'pbi', short: 'Slicers and other visuals filter it.', why: <>Whether a click on this visual filters anything else was not checked.</> };
 const APP_NO_CLICK: Side = {
   mark: 'you',
   short: 'Pass the filter into its query, as the Slicer page does.',
   why: <>Nothing to write until the page has a filter. Then the query takes it, like the <code>TREATAS</code> line on the Slicer page.</>,
 };
-const NOT_BUILT = 'Not built on this page.';
 const NO_SORT: [Side, Side] = [{ mark: 'pbi', short: 'Nothing to sort: one value.' }, { mark: 'pkg', short: 'Nothing to sort: one value.' }];
 /** Why a page shows a different variation from the owner's gallery page. */
 const variation = (gallery: string, here: string) => (
@@ -328,7 +328,7 @@ export const GALLERY: VisualDef[] = [
     blurb: 'Revenue as columns, orders as a line, two axes.',
     inPowerBI: 'drop 3 fields',
     hint: 'Click a column: the others dim and the page names the year. Click it again to clear.',
-    pbiText: <>A line and clustered column chart: Year in the X-axis well, Revenue in Column y-axis and # Orders in Line y-axis. Power BI gives the line its own axis on the right. The app side builds the same chart.</>,
+    pbiText: <>A line and clustered column chart: Year in the X-axis well, Revenue in the Column y-axis well and # Orders in the Line y-axis well. Power BI gives the line its own axis on the right. The app side builds the same chart.</>,
     wells: [{ name: 'X-axis', fields: ['Year'] }, { name: 'Column y-axis', fields: ['Revenue'] }, { name: 'Line y-axis', fields: ['# Orders'] }],
     packages: PKG_CHART,
     ...files('sales-by-year.dax', 'sales-by-year-combo.json', 'revenue-and-orders-combo-chart.tsx', 'sales-by-year-combo.ts'),
@@ -348,7 +348,7 @@ export const GALLERY: VisualDef[] = [
     ],
     score: score({
       sort: [SORT_PBI, SORT_YEARS],
-      pbiDraw: { mark: 'pbi', short: 'Pick the visual, drop the fields; the second axis comes with it.', why: <>Learn: "When you add a line value to a combo chart, Power BI creates a secondary Y-axis."</>, cite: [`${LEARN_AXES}#dual-y-axes`] },
+      pbiDraw: { mark: 'pbi', short: 'Pick the visual, drop the fields; the second axis comes with it.', why: <>Learn: "When you add a line value to a combo chart, Power BI creates a secondary Y-axis." The well names are Learn's too: "Drag Gross Margin Last Year % from Column y-axis into Line y-axis."</>, cite: [`${LEARN_AXES}#dual-y-axes`, `${LEARN_COMBO}#create-a-combo-chart-with-two-axes`] },
       draw: { ...DRAW, short: 'VegaVisual draws both layers; one spec line adds the second axis.' },
       format: { ...FORMAT, short: 'Each axis takes the format of its own column.', why: <>Revenue shows as $ on the left axis and Orders as a plain count on the right, each from its column format. That works because each layer is a plain mark with its own <code>y</code>: the package formats the encodings of first-level layers only.</>, cite: [`${V}:126-133`, `${V}:175-179`] },
     }),
@@ -368,7 +368,7 @@ export const GALLERY: VisualDef[] = [
     blurb: 'Share of revenue by store country.',
     inPowerBI: 'drop 2 fields',
     hint: 'Click a slice: the others dim and the page names the country. Click it again to clear.',
-    pbiText: <>A pie chart: the store's CountryName in the Legend well, Revenue in the Values well. Each slice is a country's share of revenue. The app side builds the same pie, largest slice first.</>,
+    pbiText: <>A pie chart: the store's CountryName in the Legend well, Revenue in the Values well. Each slice is a store country's (or Online's) share of revenue. The app side builds the same pie, largest slice first.</>,
     wells: [{ name: 'Legend', fields: ['CountryName'] }, { name: 'Values', fields: ['Revenue'] }],
     packages: PKG_CHART,
     ...files('revenue-by-store-country.dax', 'revenue-by-store-country-pie.json', 'revenue-by-country-pie-chart.tsx', 'revenue-by-store-country-pie.ts'),
@@ -555,7 +555,7 @@ export const GALLERY: VisualDef[] = [
     blurb: 'Revenue building up by category to the total. An approximation.',
     inPowerBI: 'drop 2 fields',
     hint: 'Click a column: the others dim and the page names the category. Click it again to clear.',
-    pbiText: <>A waterfall chart: CategoryName in the Category well, Revenue in the Y-axis well. Each column starts where the one before ended, and the last column is the total. Power BI works out the running total. The app side works it out in code, then draws floating columns.</>,
+    pbiText: <>A waterfall chart: CategoryName in the Category well, Revenue in the Y-axis well. Each column starts where the one before ended: Power BI works out the running total. The Gold Layer example report's waterfall ends with a total column. The app side works out the running total in code, adds that total column, then draws floating columns.</>,
     wells: [{ name: 'Category', fields: ['CategoryName'] }, { name: 'Y-axis', fields: ['Revenue'] }],
     packages: PKG_CHART,
     ...files('revenue-by-category.dax', 'revenue-by-category-waterfall.json', 'revenue-by-category-waterfall-chart.tsx', 'revenue-by-category-waterfall.ts'),
@@ -744,7 +744,7 @@ export const GALLERY: VisualDef[] = [
     group: 'Cards and KPIs',
     blurb: 'The latest year\'s revenue over its trend. No target. An approximation.',
     inPowerBI: 'drop 2 fields',
-    pbiText: <>A KPI: Revenue in the Value well, Year in the Trend axis well, and no Target. Power BI shows the latest year's value over the trend as a background. With a Target it also shows the distance to it and colours the value. The app side draws the number over an area; it has no target either. The latest year here is 2026, which is not a full year in this data.</>,
+    pbiText: <>A KPI: Revenue in the Value well, Year in the Trend axis well, and no Target. Power BI shows a value over the trend as a background; in the Gold Layer example report's KPI, it is the latest year's. With a Target it also shows the distance to it and colours the value. The app side draws the number over an area; it has no target either. The latest year here is 2026, which is not a full year in this data.</>,
     wells: [{ name: 'Value', fields: ['Revenue'] }, { name: 'Trend axis', fields: ['Year'] }],
     packages: PKG_CHART,
     ...files('sales-by-year.dax', 'sales-by-year-kpi.json', 'revenue-kpi.tsx', 'sales-by-year-kpi.ts'),
@@ -792,7 +792,7 @@ export const GALLERY: VisualDef[] = [
     blurb: 'Orders and revenue by store country. A click picks a row.',
     inPowerBI: 'drop 3 fields',
     hint: 'Click a row: the page names the country. Click it again to clear. Click a header to sort.',
-    pbiText: <>A table: the store's CountryName, # Orders and Revenue in the Columns well. Power BI adds a Total row. The app side shows the same rows in a grid, without the total.</>,
+    pbiText: <>A table: the store's CountryName, # Orders and Revenue in the Columns well. A Power BI table can also show a row for totals. The app side shows the same rows in a grid, without a total.</>,
     wells: [{ name: 'Columns', fields: ['CountryName', '# Orders', 'Revenue'] }],
     packages: PKG_GRID,
     ...files('orders-and-revenue-by-store-country.dax', null, 'sales-by-country-table.tsx', 'orders-and-revenue-by-store-country.ts'),
@@ -847,7 +847,7 @@ export const GALLERY: VisualDef[] = [
     blurb: 'Categories down, years across. A grid, pivoted in code. An approximation.',
     inPowerBI: 'drop 3 fields',
     hint: 'Click a row: the page names the category. Click it again to clear. Click a header to sort.',
-    pbiText: <>A matrix: CategoryName in the Rows well, Year in the Columns well, Revenue in the Values well. Power BI turns the years into columns and adds totals for rows and columns. The app side turns the years into columns in code and shows them in a grid, without totals.</>,
+    pbiText: <>A matrix: CategoryName in the Rows well, Year in the Columns well, Revenue in the Values well. Power BI turns the years into columns, and can add totals for rows and columns. The app side turns the years into columns in code and shows them in a grid, without totals.</>,
     wells: [{ name: 'Rows', fields: ['CategoryName'] }, { name: 'Columns', fields: ['Year'] }, { name: 'Values', fields: ['Revenue'] }],
     packages: PKG_GRID,
     ...files('revenue-by-category-and-year.dax', null, 'revenue-by-category-matrix.tsx', 'revenue-by-category-and-year.ts'),

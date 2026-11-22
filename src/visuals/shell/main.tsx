@@ -26,7 +26,7 @@ import { RevenueKpi } from '../app/components/revenue-kpi';
 import { SalesByCountryTable } from '../app/components/sales-by-country-table';
 import { YearSlicer } from '../app/components/year-slicer';
 import { Glyph } from './sketches';
-import { MARK_LABEL, MISMATCHES, PLAIN, type Excerpt, type Job, type Mark, type ScoreItem, type Side, type VisualDef } from './visuals';
+import { MARK_LABEL, MISMATCHES, NOT_BUILT, PLAIN, type Excerpt, type Job, type Mark, type ScoreItem, type Side, type VisualDef } from './visuals';
 import { VISUALS } from './all-visuals';
 import { COURSE_LINKS } from '../pages.mjs';
 
@@ -106,6 +106,10 @@ function Header() {
         <span className="burger" aria-hidden="true">☰</span> Course
       </a>
       <a className="top-link" href="#/" aria-current="page">Visuals</a>
+      <span className="top-gap" />
+      <a className="sim-chip" href="#/notes" title="Nothing here talks to Fabric or Power BI: the app side answers its queries from saved results of the Contoso model. Click for the Notes page.">
+        Simulated<span className="chip-more"> · mirrors Rayfin 2.0 · unofficial</span>
+      </a>
     </header>
   );
 }
@@ -145,7 +149,11 @@ function Landing() {
   return (
     <main className="wrap">
       <h1>Visuals</h1>
-      <p className="lead">Pick a Power BI visual and see what it takes to build the same thing in a Fabric app.</p>
+      <p className="lead">
+        In Power BI you drop fields on a visual. In a Fabric app you write it. Each page shows the same visual both ways, so you
+        can see what it takes before you build one. The course then teaches you to build them, one step at a time:{' '}
+        <a href="../">open the course →</a>
+      </p>
       {groups.map((g) => (
         <section key={g} className="group">
           <h2>{g}</h2>
@@ -154,6 +162,7 @@ function Landing() {
               <a key={v.id} className="tile" href={`#/${v.id}`} title={v.blurb}>
                 <TilePreview id={v.id} />
                 <span className="tile-name">{v.name}</span>
+                {v.noEquiv && <span className="tile-tag">no drop-in</span>}
               </a>
             ))}
           </div>
@@ -302,7 +311,9 @@ const plainName = (s: ScoreItem) => s.plain ?? PLAIN[s.item] ?? s.item;
 
 function WhatItTakes({ v }: { v: VisualDef }) {
   const [open, setOpen] = useState<string | null>(null);
-  const names = (m: Mark) => v.score.filter((s) => s.app.mark === m && !s.unlisted).map(plainName).join(', ');
+  const notBuilt = (s: ScoreItem) => s.app.short === NOT_BUILT || /\(not built here\)/.test(plainName(s));
+  const names = (m: Mark) => v.score.filter((s) => s.app.mark === m && !s.unlisted && !notBuilt(s)).map(plainName).join(', ');
+  const leftOut = v.score.filter(notBuilt).map((s) => plainName(s).replace(/ \(not built here\)$/, ''));
   const notPossible = names('no');
   const allInPowerBI = v.score.every((s) => s.pbi.mark === 'pbi');
   const lists: [string, Mark, string][] = [
@@ -328,6 +339,7 @@ function WhatItTakes({ v }: { v: VisualDef }) {
       <details className="takes-more">
         <summary>More detail</summary>
         <p className="small muted">Each item, in Power BI and in an app. "Why?" opens the explanation and its sources.</p>
+        {leftOut.length > 0 && <p className="small">Not built on this page, so not in the lists above: {leftOut.join(', ')}.</p>}
         <table className="score">
           <thead><tr><th>Item</th><th>In Power BI</th><th>In a Fabric app</th><th /></tr></thead>
           <tbody>
@@ -412,7 +424,7 @@ function ForDevelopers({ v }: { v: VisualDef }) {
           <p className="small muted">Saved answers: {answerBookInfo.source}, {answerBookInfo.takenAt}. The build stops if the app's DAX differs from the saved query text.</p>
           <h3>Counting</h3>
           <p className="small">{HEADLINE_RULE}</p>
-          <p className="small">This page: headline <b>{sumLines(v.headlineFiles)}</b> lines in {v.headlineFiles.length} files; second line <b>+{extraLines(v)}</b>; full count <b>{total}</b> lines in {v.allFiles.length} files.</p>
+          <p className="small">This page: headline <b>{sumLines(v.headlineFiles)}</b> lines in {v.headlineFiles.length} files; second line <b>+{extraLines(v)}</b>; full count <b>{total}</b> lines in {v.allFiles.length} files. The cards under How it's built show {v.jobs.reduce((a, j) => a + shownLines(j), 0)} of the {runLines(v)} lines this page runs.</p>
           <h3>Every file</h3>
           <AllFiles v={v} />
         </>
@@ -454,6 +466,7 @@ function VisualPage({ v }: { v: VisualDef }) {
       {v.extras.map((x) => (
         <p key={x.label} className="headline-2">+ {sumLines(x.files)} lines in {x.files.length} files {x.label}.</p>
       ))}
+      <CourseLink id={v.id} />
 
       <div className="sides">
         <section className="card side">
@@ -486,11 +499,10 @@ function VisualPage({ v }: { v: VisualDef }) {
           <h2>How it's built</h2>
           <p className="small muted">Three jobs you know from Power BI, each with the code that does it in an app. Open one.</p>
           {v.jobs.map((j, i) => <JobCard key={j.pbi} n={i + 1} job={j} />)}
-          <p className="small muted done">The cards show {shown} of the {runLines(v)} lines this page runs. The rest: {v.restNote}.</p>
+          <p className="small muted done">The cards show the key lines. The rest: {v.restNote}.</p>
           <p className="small muted">Done for you by Rayfin's template: sending the query, and turning the answer into rows the visuals read.</p>
         </section>
       ) : <Instead v={v} />}
-      <CourseLink id={v.id} />
 
       <WhatItTakes v={v} />
       <ForDevelopers v={v} />
@@ -577,11 +589,10 @@ function SideNav({ route }: { route: string }) {
       <a className="side-top" href="#/" aria-current={home ? 'page' : undefined}>All visuals</a>
       {groups.map((g) => {
         const items = VISUALS.filter((v) => v.group === g);
-        // Each group folds, like the archive years on the site: the group of the visual you're on is open,
-        // and on the landing and notes pages every group is.
-        const open = home || route === 'notes' || items.some((v) => v.id === route);
+        // Each group folds, like the archive years on the site, and starts folded on every page, the group of
+        // the visual you're on included; the visual stays marked inside it.
         return (
-          <details key={g} className="side-group" open={open}>
+          <details key={g} className="side-group">
             <summary>
               <span className="side-title">{g}</span>
               <span className="side-count">{items.length}</span>

@@ -5,6 +5,9 @@ import type { ReactNode } from 'react';
 
 export type Mark = 'pbi' | 'pkg' | 'you' | 'no' | 'unchecked';
 
+/** An app side's short text for something this page left out. */
+export const NOT_BUILT = 'Not built on this page.';
+
 export const MARK_LABEL: Record<Mark, string> = {
   pbi: 'done for you',
   pkg: 'done for you',
@@ -310,7 +313,7 @@ export const FIRST_VISUALS: VisualDef[] = [
       { item: 'Keyboard and screen reader', plain: 'keyboard use', pbi: PBI_KEYS, app: chartKeys },
       { item: 'Theme and dark mode', pbi: PBI_THEME, app: chartTheme },
       { item: 'Export', pbi: PBI_EXPORT, app: chartExport },
-      { item: '"Show as table"', pbi: { mark: 'pbi', short: 'More options > Show as a table.', why: <>Alt+Shift+F11 opens a table a screen reader can read.</>, cite: [LEARN_SHOW, LEARN_A11Y] }, app: chartShowTable },
+      { item: '"Show as table"', pbi: { mark: 'pbi', short: 'More actions (...) > Show as a table.', why: <>Alt+Shift+F11 opens a table a screen reader can read.</>, cite: [LEARN_SHOW, LEARN_A11Y] }, app: chartShowTable },
     ],
     devNotes: [
       QUIRK_NOTE,
@@ -320,7 +323,7 @@ export const FIRST_VISUALS: VisualDef[] = [
   {
     id: 'slicer',
     name: 'Slicer',
-    group: 'Slicers and buttons',
+    group: 'Slicers',
     blurb: 'A year dropdown that filters the bar chart.',
     inPowerBI: 'drop 1 field, pick the Dropdown style',
     hint: 'Open the Year dropdown and untick years: the chart reloads for those years.',
@@ -426,7 +429,7 @@ export const FIRST_VISUALS: VisualDef[] = [
       why: <>Key influencers runs an analysis for you: regressions that find which factors move the metric, and a decision tree that finds segments. The Fabric visuals packages draw charts and tables; none of them runs an analysis. So there is nothing honest to show here, and this page doesn't fake it.</>,
       instead: [
         <><b>Run the analysis ahead of time.</b> In a Fabric notebook, fit a regression (in Python, for example) on one row per customer, and save the results to a lakehouse table: factor, value, effect. The app reads that table and draws an ordinary bar chart, like the Bar chart page.</>,
-        <><b>Or run it on demand</b> in a server-side function the app calls. The data-app template includes a package for calling your app's own server functions (<code>@microsoft/rayfin-functions</code>); a Fabric user data function is another option. Whether either can load the libraries a regression needs is still an open question.</>,
+        <><b>Or run it on demand</b> in a server-side function the app calls. The data-app template includes a package for calling your app's own server functions; a Fabric user data function is another option. Whether either can load the libraries a regression needs is still an open question.</>,
         <><b>Not the same thing:</b> a DAX query comparing average revenue per customer by gender or continent is easy to draw, but it is a difference of averages, with no regression and no significance test. Label it that way.</>,
       ],
       source: <>How Power BI does it: Microsoft Learn, "Create key influencers visualizations".</>,
@@ -451,7 +454,9 @@ export const FIRST_VISUALS: VisualDef[] = [
       { item: 'Export', pbi: { mark: 'unchecked', short: '—', why: <>Not checked for this visual.</> }, app: { ...chartExport, short: 'Export your results table from where it lives.' } },
       { item: '"Show as table"', pbi: { mark: 'unchecked', short: 'Not in the all-visuals table view.', why: <>Learn: the "Show visuals as tables" view doesn't apply to Key influencers. The per-visual "Show as a table" was not checked.</>, cite: [LEARN_CONSUME] }, app: { ...chartShowTable, short: 'A DataGrid of your results.' } },
     ],
-    devNotes: [],
+    devNotes: [
+      <>The template's package for calling your app's own server functions, named under "What you'd do in an app instead": <code>@microsoft/rayfin-functions</code>.</>,
+    ],
   },
 ];
 

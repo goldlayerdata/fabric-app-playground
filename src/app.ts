@@ -7,6 +7,7 @@ import editorLibs from 'virtual:editor-libs';
 import { answer, entries, readLakehouse, savedResult, snapshotsTakenAt, type Answer, type Mode, type ReadAnswer, type ReadRequest } from './stand-in';
 import { rawPayload } from './connectors-sim.mjs';
 import { STEPS_VERSION, stepMoves } from './step-moves.mjs';
+import { VISUAL_IDS } from './visuals/pages.mjs';
 import {
   CLAIMS_TYPES,
   FUNCTION_APP,
@@ -2930,6 +2931,7 @@ $('splash-go').addEventListener('click', () => {
   if (c) openChapter(c);
   else hideSplash();
 });
+$('splash-visuals').textContent = `Or browse the visuals: ${VISUAL_IDS.length} Power BI visuals, and what each one takes in an app →`;
 $('splash-restart').addEventListener('click', () => {
   restartCourse();
   hideSplash();
