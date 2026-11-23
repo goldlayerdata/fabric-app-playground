@@ -8,6 +8,7 @@ import * as jsxRuntime from 'react/jsx-runtime';
 import { createRoot, type Root } from 'react-dom/client';
 import { checkClaimsResult } from './app-data.mjs';
 import { connectorsError, createConnectorsApi } from './connectors-sim.mjs';
+import { WORKSPACE_MODULES } from './workspace.mjs';
 
 type ExecuteQueryInput = { query: string; resultSetRowCountLimit?: number };
 
@@ -401,6 +402,8 @@ function link(run: RunMessage): (id: string) => Record<string, unknown> {
   const env = { ...run.env, MODE: 'development', DEV: true, PROD: false, BASE_URL: '/' } as Record<string, any>;
 
   const resolve = (from: string, spec: string) => {
+    // npm workspaces link @rayfin-app/* by name: the package's src.
+    if (WORKSPACE_MODULES[spec] && run.files[WORKSPACE_MODULES[spec]] !== undefined) return WORKSPACE_MODULES[spec];
     if (!spec.startsWith('.')) return spec;
     const parts = from.split('/').slice(0, -1);
     for (const p of spec.split('/')) {

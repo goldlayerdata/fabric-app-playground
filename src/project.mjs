@@ -8,115 +8,273 @@
 // prints that we could not check is not imitated: those lines start with "Playground:".
 import lakehouse from '../data/lakehouse.json' with { type: 'json' };
 import { claimsContract, claimsTypesFile, dataService, emptyDb, planApply, unlimitedText } from './app-data.mjs';
+import { CONNECTORS_KIT, WIRING } from './wiring-fixtures.mjs';
+import { WORKSPACE_MODULES } from './workspace.mjs';
 
-// ---------------------------------------------------------------- the data app template (Rayfin CLI 2.0.0)
-// From @microsoft/rayfin-cli 2.0.0 templates/data-app as bundled with the CLI (MIT, Microsoft Corporation):
-// rayfin/data/schema.ts and src/vite-env.d.ts verbatim; rayfin/rayfin.yml verbatim but for `id` and `name`, which
-// `rayfin init --from-template` sets from the app's name (rayfin-cli, commands/init.js, applyRayfinYmlIdentityEdits:
-// name, and id = createSlug(name)); package.json's scripts and dependencies verbatim, with devDependencies cut to a
-// subset and the other fields left out, and `name` set to the app's slug (rayfin-tools-common, templates/scaffolding.js,
-// customizeTemplateFiles). App names are limited to that slug's shape, [a-z0-9] words joined by single hyphens, so all
-// three names are the folder name. A real `npm create` may fetch a newer copy of the template from GitHub. Most of
-// the template's other files, and the agent files the CLI adds after creating it, are written at their real paths as
-// locked placeholders (TEMPLATE_PLACEHOLDERS): one or two lines each, written for the playground, saying what the real
-// file does. src/lib/rayfin-client.ts starts as an editable note, since the lessons replace it; src/App.tsx starts
-// empty (the real one starts with a placeholder page), so we write the app ourselves.
-const TEMPLATE_PACKAGE = {
-  name: 'data-app',
+export { WORKSPACE_MODULES };
+
+// ---------------------------------------------------------------- the default template: Universal App (Rayfin CLI 2.0.0)
+// `--template blankapp` is the Universal App (rayfin-guide: getting-started/create-app-with-cli.md, cli/templates.md;
+// rayfin-tools-common templates/scaffolding.js, addBundledTemplateAliases). From @microsoft/rayfin-cli 2.0.0
+// templates/universal-app (MIT, Microsoft Corporation): the four package.json files' scripts and dependencies verbatim
+// (the root's description, license, author and template fields left out); rayfin/rayfin.yml verbatim but for `id` and
+// `name`, which `rayfin init --from-template` sets from the app's name (commands/init.js, applyRayfinYmlIdentityEdits);
+// packages/frontend/src/vite-env.d.ts verbatim. The root package.json `name` is the app's slug (templates/scaffolding.js,
+// customizeTemplateFiles); member package names never change (rayfin-guide project-structure.md). The `finley` feature
+// overlay is not applied by default, so create removes it (templates/engine/features.js). App names are limited to the
+// slug's shape, so all names are the folder name. Most of the template's other files, and the agent files the CLI adds
+// after creating it, are locked placeholders (TEMPLATE_PLACEHOLDERS), one or two lines each, written for the playground.
+// Two files are stand-ins with working code, written for the playground and locked: the template's client
+// (packages/frontend/src/lib/rayfin-client.ts) and, once the analytics pack adds it, its query hook.
+export const FE = 'packages/frontend';
+const ROOT_PACKAGE = {
   private: true,
+  version: '0.0.0',
+  type: 'module',
+  engines: { node: '>=22.13.0' },
+  workspaces: ['packages/*'],
+  scripts: {
+    dev: 'rayfin dev',
+    'dev:frontend': 'npm run -w @rayfin-app/frontend dev',
+    build: 'npm run -w @rayfin-app/shared build && npm run -w @rayfin-app/data build && npm run -w @rayfin-app/frontend build',
+    'build:fabric': 'npm run -w @rayfin-app/shared build && npm run -w @rayfin-app/data build && npm run -w @rayfin-app/frontend build:fabric',
+    lint: 'npm run -w @rayfin-app/frontend lint',
+    preview: 'npm run -w @rayfin-app/frontend preview',
+    test: 'npm run -w @rayfin-app/frontend test',
+    'test:watch': 'npm run -w @rayfin-app/frontend test:watch',
+    typecheck: 'tsc -b',
+    'pack:add': 'node scripts/scaffold.mjs',
+    'test:template': 'node scripts/run-template-tests.mjs',
+    'rayfin:up': 'rayfin up',
+  },
+  devDependencies: { '@microsoft/rayfin-cli': '^2.0.0', '@microsoft/rayfin-guide': '^2.0.0', typescript: '~6.0.2' },
+};
+const FRONTEND_PACKAGE = {
+  name: '@rayfin-app/frontend',
+  private: true,
+  version: '0.0.0',
   type: 'module',
   scripts: {
     prebuild: 'rayfin env --framework vite',
-    dev: 'rayfin dev',
-    'dev:frontend': 'vite',
-    build: 'npx fabric-app-data generate -o src/fabric.generated.ts && tsc -b --noCheck && vite build',
-    'build:fabric': 'npx fabric-app-data generate -o src/fabric.generated.ts && tsc -b --noCheck && vite build',
+    'prebuild:fabric': 'rayfin env --framework vite',
+    dev: 'vite',
+    build: 'tsc -b --noCheck && vite build',
+    'build:fabric': 'tsc -b --noCheck && vite build',
     lint: 'eslint .',
     preview: 'vite preview',
     test: 'vitest run',
     'test:watch': 'vitest',
-    'test:fabric': 'node scripts/open-fabric-portal.mjs',
   },
   dependencies: {
-    '@microsoft/fabric-app-data': '1.0.0',
-    '@microsoft/fabric-app-data-embed-client': '1.0.0',
-    '@microsoft/fabric-app-data-proxy': '1.0.0',
-    '@microsoft/fabric-datagrid': '1.0.0',
-    '@microsoft/fabric-visuals': '1.0.0',
-    '@microsoft/fabric-visuals-core': '1.0.0',
     '@microsoft/rayfin-auth': '^2.0.0',
     '@microsoft/rayfin-auth-provider-fabric': '^2.0.0',
     '@microsoft/rayfin-client': '^2.0.0',
-    '@microsoft/rayfin-core': '^2.0.0',
     '@microsoft/rayfin-data': '^2.0.0',
-    '@microsoft/rayfin-functions': '^2.0.0',
     '@microsoft/rayfin-lib': '^2.0.0',
-    '@microsoft/rayfin-local-dev': '^2.0.0',
-    '@tailwindcss/vite': '^4.2.1',
+    '@rayfin-app/shared': '*',
+    '@tailwindcss/vite': '^4.3.0',
     clsx: '^2.1.1',
-    'framer-motion': '^12.6.2',
-    'lucide-react': '^0.577.0',
-    react: '^19.0.0',
-    'react-dom': '^19.2.5',
-    'react-error-boundary': '^6.0.0',
-    'tailwind-merge': '^3.5.0',
-    tailwindcss: '^4.2.1',
+    'framer-motion': '^12.40.0',
+    'lucide-react': '^1.17.0',
+    react: '^19.2.7',
+    'react-dom': '^19.2.7',
+    'react-error-boundary': '^6.1.2',
+    'tailwind-merge': '^3.6.0',
+    tailwindcss: '^4.3.0',
   },
   devDependencies: {
-    '@microsoft/rayfin-cli': '^2.0.0',
-    '@types/react': '^19.2.14',
+    '@eslint/js': '^9.21.0',
+    '@microsoft/rayfin-local-dev': '^2.0.0',
+    '@testing-library/dom': '^10.4.1',
+    '@testing-library/jest-dom': '^6.9.1',
+    '@testing-library/react': '^16.3.2',
+    '@types/react': '^19.2.17',
     '@types/react-dom': '^19.2.3',
-    typescript: '~5.7.2',
-    vite: '^7.2.6',
+    '@vitejs/plugin-react-swc': '^4.3.1',
+    eslint: '^10.4.1',
+    'eslint-plugin-react-hooks': '^7.1.1',
+    'eslint-plugin-react-refresh': '^0.5.2',
+    globals: '^17.6.0',
+    jsdom: '^29.1.1',
+    'rollup-plugin-license': '^3.7.1',
+    typescript: '~6.0.2',
+    'typescript-eslint': '^8.38.0',
+    vite: '^8.0.16',
+    vitest: '^4.1.8',
   },
 };
+const DATA_PACKAGE = {
+  name: '@rayfin-app/data',
+  private: true,
+  version: '0.0.0',
+  type: 'module',
+  exports: { '.': { import: './dist/index.js', types: './dist/index.d.ts' } },
+  scripts: { build: 'tsc -b' },
+  dependencies: { '@microsoft/rayfin-core': '^2.0.0', '@rayfin-app/shared': '*' },
+  devDependencies: { '@types/node': '^20.4.2', typescript: '~6.0.2' },
+};
+const SHARED_PACKAGE = {
+  name: '@rayfin-app/shared',
+  private: true,
+  version: '0.0.0',
+  type: 'module',
+  exports: { '.': { import: './dist/index.js', types: './dist/index.d.ts' } },
+  scripts: { build: 'tsc -b' },
+  devDependencies: { typescript: '~6.0.2' },
+};
+const json = (o) => `${JSON.stringify(o, null, 2)}\n`;
+/** The workspace packages, by the name `npm install -w` takes. */
+export const WORKSPACES = { '@rayfin-app/frontend': FE, '@rayfin-app/data': 'packages/data', '@rayfin-app/shared': 'packages/shared' };
 
-const TEMPLATE_RAYFIN_YML = `id: data-app
-name: Data App
+const TEMPLATE_RAYFIN_YML = `id: universal-app
+name: Universal App
 version: 1.0.0
 services:
   auth:
     enabled: true
     fabric:
       enabled: true
+      externalEntraExchange: true
+    password:
+      enabled: false
     allowedRedirectUris:
       - http://localhost:5173
   data:
     enabled: false
+    path: packages/data
+    buildCommand: npm run build
   staticHosting:
     enabled: true
+    path: packages/frontend
     folder: dist
     buildCommand: npm run build:fabric
     indexDocument: index.html
     assetAccess: protected
-  functions:
-    enabled: false
+    embedded:
+      only: false
 `;
 
-// rayfin/data/schema.ts as the template ships it (verbatim).
-export const TEMPLATE_DATA_SCHEMA = `export type DataAppSchema = {};
+// packages/shared/src/index.ts and packages/data/src/index.ts: the template's code, with our own one-line comments
+// (the template's are longer). Editable: the app-data lessons add to them.
+export const TEMPLATE_SHARED_INDEX = `// The record types the data package and the browser share (empty until the app owns data).
+export type UniversalAppSchema = Record<string, never>;
+`;
+export const TEMPLATE_DATA_INDEX = `// The app's data schema: its entities, registered in \`schema\` (none until the app owns data).
+export type { UniversalAppSchema } from '@rayfin-app/shared';
 
 export const schema = [];
 `;
 
-// src/lib/rayfin-client.ts at the start: an editable note in place of the template's client, which the lessons replace.
-export const CLIENT_PLACEHOLDER = `// In a real data app project, this file builds the template's client, which its sign-in uses.
-// The playground starts it with this note instead: we replace it with a small client of our own.
+// The template's client, as a working stand-in (locked). Same exported function as the real one, getRayfinClient().
+export const CLIENT_STANDIN = `// Playground: a stand-in for the template's client, shortened: the same getRayfinClient(). The real one also resolves
+// the app's settings at run time (rayfin.config.json) and says which ones are missing.
+import { RayfinClient } from '@microsoft/rayfin-client';
+import { browserSession } from '@microsoft/rayfin-auth';
+import { dataService } from '@microsoft/rayfin-data';
+import type { UniversalAppSchema } from '@rayfin-app/shared';
+
+function createClient() {
+  return RayfinClient.create({
+    baseUrl: import.meta.env.VITE_RAYFIN_API_URL ?? '',
+    publishableKey: import.meta.env.VITE_RAYFIN_PUBLISHABLE_KEY ?? '',
+    auth: browserSession({ storage: true }),
+    services: { data: dataService<UniversalAppSchema>() },
+  });
+}
+
+export type AppClient = ReturnType<typeof createClient>;
+let client: AppClient | undefined;
+
+// Async in the template: wait for it, then use .data, .auth or (with the connectors pack) .connectors.
+export async function getRayfinClient(): Promise<AppClient> {
+  client ??= createClient();
+  return client;
+}
+`;
+// The same, as the connectors pack replaces it (kit/rayfin-client.ts): connectors composed from ./connectors.
+export const CLIENT_STANDIN_CONNECTORS = `// Playground: a stand-in for the client the connectors pack installs, shortened: the same getRayfinClient(), now with
+// connectors. It reads the connectors from ./connectors, which \`rayfin connector add\` keeps up to date.
+import { RayfinClient } from '@microsoft/rayfin-client';
+import { browserSession } from '@microsoft/rayfin-auth';
+import { connectorsService } from '@microsoft/rayfin-connectors';
+import { dataService } from '@microsoft/rayfin-data';
+import type { UniversalAppSchema } from '@rayfin-app/shared';
+import { connectorConfigs, connectorRuntimes, type AppConnectorsSchema } from './connectors';
+
+function createClient() {
+  return RayfinClient.create({
+    baseUrl: import.meta.env.VITE_RAYFIN_API_URL ?? '',
+    publishableKey: import.meta.env.VITE_RAYFIN_PUBLISHABLE_KEY ?? '',
+    auth: browserSession({ storage: true }),
+    services: {
+      data: dataService<UniversalAppSchema>(),
+      connectors: connectorsService<AppConnectorsSchema>({
+        configs: connectorConfigs,
+        runtime: connectorRuntimes,
+      }),
+    },
+  });
+}
+
+export type AppClient = ReturnType<typeof createClient>;
+let client: AppClient | undefined;
+
+// Async in the template: wait for it, then use .data, .auth or .connectors.
+export async function getRayfinClient(): Promise<AppClient> {
+  client ??= createClient();
+  return client;
+}
+`;
+// The analytics pack's hook (kit/hooks/use-semantic-model-query.ts), as a working stand-in (locked).
+export const HOOK_STANDIN = `// Playground: a stand-in for the analytics pack's use-semantic-model-query.ts, shortened: the same inputs and outputs.
+// The real hook also keeps only the newest answer when queries overlap, and has refetch().
+import { useEffect, useState } from 'react';
+import type { SemanticModelQueryResult } from '@microsoft/rayfin-connector-fabric-semanticmodel';
+import { getRayfinClient } from '../lib/rayfin-client';
+
+type ExecuteQueryClient = { executeQuery(input: { query: string }): Promise<SemanticModelQueryResult> };
+
+// Runs one DAX query through the connector named \`connection\` in rayfin/rayfin.yml. Two ways to fail, kept apart:
+// data.status === 'error' when the model rejects the query; error when the call itself throws.
+export function useSemanticModelQuery({ connection, query }: { connection: string; query: string }) {
+  const [state, setState] = useState<{ data?: SemanticModelQueryResult; isLoading: boolean; error?: Error }>({ isLoading: true });
+
+  useEffect(() => {
+    let live = true;
+    setState((s) => ({ data: s.data, isLoading: true, error: undefined }));
+    getRayfinClient()
+      .then((client) => (client.connectors as unknown as Record<string, ExecuteQueryClient>)[connection].executeQuery({ query }))
+      .then((data) => live && setState({ data, isLoading: false, error: undefined }))
+      .catch((e: unknown) => live && setState({ data: undefined, isLoading: false, error: e instanceof Error ? e : new Error(String(e)) }));
+    return () => {
+      live = false;
+    };
+  }, [connection, query]);
+
+  return state;
+}
 `;
 
-// The template's other files, as placeholders (locked: see isGenerated). Each says, in that file type's own comment
-// syntax, what the real file does (read from the installed template) and why the playground doesn't need it.
 const PG_JSON = (text) => `${JSON.stringify({ _playground: `Playground: ${text}` }, null, 2)}\n`;
 const SKILLS = {
-  'app-design': 'how to lay out and style the app\'s pages and components',
-  'app-validation': 'what to check in a browser with Playwright, and how',
-  'dax-authoring': 'how to write and test DAX queries against the model',
-  'fabric-cli': 'how to manage the fabric-app-data connections in fabric.yaml',
-  'fabric-sdk': 'how to query a semantic model at run time with @microsoft/fabric-app-data, the template\'s own data path',
-  'playwright-cli': 'how to drive a browser with playwright-cli',
+  analytics: 'reading an existing Power BI semantic model: the analytics pack, its query hook, and .dax query files',
+  'app-deployment': 'checking and deploying the app with the Rayfin CLI',
+  'app-design': 'laying out and styling the app\'s pages and components',
+  'app-validation': 'the checks to run, in a browser too, before calling the app done',
+  'capability-router': 'where to start: which packs and skills a request needs',
+  connectors: 'connecting existing Fabric data (a warehouse, SQL database, lakehouse SQL endpoint or semantic model)',
+  'crud-ui': 'pages that list, add, edit and delete the app\'s own records',
+  'data-modeling': 'storing the app\'s own data: entities, the database, row-level access',
+  'dax-authoring': 'writing and testing DAX queries against a semantic model',
+  'external-api-workflows': 'calling outside APIs from a server-side function',
+  'fabric-data-agent': 'calling a published Fabric data agent from a function',
+  'fabric-sdk': 'querying Fabric data at run time through the Rayfin connectors client',
+  'functions-capability': 'adding server-side functions (the functions pack)',
+  observability: 'telemetry and Application Insights',
   'query-design': 'what to work out in DAX and what in TypeScript',
-  'schema-discovery': 'how to explore a model\'s tables, columns and measures with DAX INFO functions',
-  visuals: 'how to build charts and grids with the template\'s VegaVisual and DataGrid',
+  'schema-discovery': 'exploring a semantic model\'s tables, columns and measures',
+  storage: 'storing files: uploads, images, documents',
+  visuals: 'charts and grids with VegaVisual and DataGrid (the visuals pack)',
 };
 // The skills the Rayfin CLI adds after creating the app (rayfin-cli, services/agent-files/descriptors.js).
 const RAYFIN_SKILLS = {
@@ -126,53 +284,60 @@ const RAYFIN_SKILLS = {
   'rayfin-storage': 'file and blob storage',
   'rayfin-auth-claims': 'dynamic auth claims',
 };
-const SECOND_PATH = "Microsoft's walkthrough says to use the connector client instead, which these lessons do";
+const TEST_LINE = 'No tests run here.';
 export const TEMPLATE_PLACEHOLDERS = {
-  '.gitignore': '# Playground: what Git leaves out (logs, node_modules, the dist build, src/fabric.generated.ts). The CLI writes it from the template\'s .gitignore.template, and Rayfin\'s init adds its own lines (rayfin/.env*, rayfin/.deployments.json, rayfin/.temp/ and temporary files).\n',
-  '.playwright-config.json': PG_JSON('settings for the template\'s browser checks with Playwright, in Microsoft Edge. Not used here.'),
-  '.playwright/cli.config.json': PG_JSON('settings for playwright-cli, the tool the template\'s browser checks use. Not used here.'),
-  'AGENTS.md': 'Playground: the template\'s instructions for coding agents: the project layout, the rules these lessons follow for queries (a .dax file per visual, in src/queries), and a way of working. Read the real one in a project you create.\n',
-  'README.md': 'Playground: the template\'s README: what to install first (Node.js, GitHub Copilot CLI, Playwright CLI, Azure CLI) and how to build an app with a coding agent.\n',
-  'LICENSE': 'Playground: the template\'s licence: MIT, Microsoft Corporation.\n',
+  '.gitignore': '# Playground: what Git leaves out (logs, node_modules, build output). The CLI writes it from the template\'s .gitignore.template, and Rayfin\'s init adds its own lines (rayfin/.env*, rayfin/.deployments.json, rayfin/.temp/ and temporary files).\n',
+  'README.md': 'Playground: the template\'s README: how to run the app, the workspace\'s packages, and how to add capabilities with npm run pack:add.\n',
+  'AGENTS.md': 'Playground: the template\'s instructions for coding agents: start with the capability-router skill, which picks the packs and skills a request needs. Read the real one in a project you create.\n',
+  LICENSE: 'Playground: the template\'s licence: MIT, Microsoft Corporation.\n',
   'SECURITY.md': 'Playground: the template\'s page on how to report a security issue to Microsoft.\n',
   'CODE_OF_CONDUCT.md': 'Playground: the template\'s pointer to the Microsoft Open Source Code of Conduct.\n',
-  'manifest.json': PG_JSON('the template\'s description for the Rayfin tools: its id (dataapp), the services it uses, and the placeholder tokens it holds for the app\'s API address, key and Fabric ids.'),
-  'rayfin-template.yml': '# Playground: the template\'s catalog entry for the Rayfin tools: its name (data-app), display name and description.\n',
+  'rayfin-template.yml': '# Playground: the template\'s catalog entry for the Rayfin tools: its name (universal-app) and how it is shown (Use default template).\n',
+  'tsconfig.base.json': PG_JSON('the TypeScript settings every package shares.'),
+  'tsconfig.json': PG_JSON('the root TypeScript project: it lists the three packages, for npm run typecheck.'),
   '.mcp.json': PG_JSON('added by the Rayfin CLI after creating the app: the Rayfin MCP server entry for coding agents (npx @microsoft/rayfin-mcp start). Not used here.'),
-  'rayfin/.lockfile.json': PG_JSON('written by the Rayfin CLI: which CLI version installed its agent files, and a record of each, so it can update them later.'),
-  ...Object.fromEntries(Object.entries(RAYFIN_SKILLS).map(([name, what]) => [`.agents/skills/${name}/SKILL.md`, `Playground: added by the Rayfin CLI after creating the app: a Rayfin skill for coding agents, on ${what}.\n`])),
-  'components.json': PG_JSON('settings for shadcn/ui, which the template\'s components are set up with (its style, src/global.css, the @/ paths). Not used here.'),
-  'eslint.config.js': '// Playground: the template\'s lint rules (ESLint, with TypeScript and React hooks checks), run by `npm run lint`. Not run here.\n',
-  'fabric.yaml': `# Playground: the connections of the template's own data path (fabric-app-data, managed by npx fabric-app-data). ${SECOND_PATH}: our connectors are in rayfin/rayfin.yml.\n`,
-  'index.html': '<!-- Playground: the page the browser opens: one empty div that src/main.tsx draws the app into. The preview here draws App directly. -->\n',
-  'tsconfig.json': PG_JSON('TypeScript settings: strict checks, and the @/ shortcut for src/. The playground\'s editor has its own settings and resolves relative paths only.'),
-  'vite.config.ts': '// Playground: the settings Vite builds the app with: React, Tailwind CSS, Rayfin\'s local dev, and the @/ shortcut for src/. The playground builds the preview itself.\n',
-  'vitest.config.ts': '// Playground: the settings for the template\'s tests (Vitest, in a simulated browser, set up by src/test/setup.ts). No tests run here.\n',
   'rayfin/.gitignore': '# Playground: what Git leaves out of the rayfin folder (its .temp folder). The CLI writes it from the template\'s .gitignore.template.\n',
-  'rayfin/tsconfig.json': PG_JSON('TypeScript settings for the rayfin folder (entities, functions), built on the root tsconfig.json.'),
-  'scripts/open-fabric-portal.mjs': '// Playground: opens the app inside the Fabric portal in a browser, for `npm run test:fabric`. Not available here.\n',
-  ...Object.fromEntries(Object.entries(SKILLS).map(([name, what]) => [`.agents/skills/${name}/SKILL.md`, `Playground: one of the template's skills for coding agents: ${what}. Read the real one in a project you create.\n`])),
-  'src/main.tsx': '// Playground: the app\'s entry point: it draws App inside the template\'s error boundary, sign-in gate and theme. The preview here draws App directly.\n',
-  'src/App.spec.tsx': '// Playground: the template\'s test that App draws without an error (Vitest). No tests run here.\n',
-  'src/EmptyStatePreview.tsx': '// Playground: the template\'s placeholder page, which its starting App.tsx shows until you replace it. Our App.tsx starts empty instead.\n',
-  'src/ErrorFallback.tsx': '// Playground: what the template shows when the app crashes (main.tsx\'s error boundary uses it).\n',
-  'src/global.css': '/* Playground: the template\'s styles: Tailwind CSS and its colour tokens, light and dark. The preview here loads Tailwind CSS itself. */\n',
-  'src/components/auth-gate.component.tsx': '// Playground: the template\'s sign-in gate: a loading screen until the person is signed in, then the app, or, outside Fabric, a notice that the app can\'t open there.\n',
-  'src/hooks/auth.context.ts': '// Playground: the template\'s sign-in state (useAuth), which its components read.\n',
-  'src/hooks/use-auth.tsx': '// Playground: the template\'s sign-in provider: inside Fabric, it gets the person\'s session from the Fabric host.\n',
-  'src/hooks/theme.context.ts': '// Playground: the template\'s light or dark theme, which its components read.\n',
-  'src/hooks/use-theme.ts': '// Playground: the template\'s hook that follows the light or dark setting and switches it.\n',
-  'src/hooks/use-semantic-model-query.ts': `// Playground: the template's own hook for DAX queries, its second data path. ${SECOND_PATH} (src/hooks/use-dax.ts).\n`,
-  'src/hooks/use-semantic-model-query.spec.ts': '// Playground: the template\'s tests for use-semantic-model-query.ts. No tests run here.\n',
-  'src/lib/fabric-client.ts': `// Playground: the client of the template's second data path (fabric-app-data). ${SECOND_PATH} (src/lib/rayfin-client.ts).\n`,
-  'src/lib/to-data-table.ts': '// Playground: turns a query result into a table for the template\'s VegaVisual and DataGrid, with each column\'s name, display name and format (columnMetadata). Our own visuals use src/lib/conversions.ts.\n',
-  'src/lib/to-data-table.spec.ts': '// Playground: the template\'s tests for to-data-table.ts. No tests run here.\n',
-  'src/lib/utils.ts': '// Playground: cn(), which merges Tailwind CSS class names. Our components write their classes out in full.\n',
-  'src/services/rayfin-auth.service.ts': '// Playground: the template\'s Fabric sign-in, which uses the client in src/lib/rayfin-client.ts. No sign-in happens here: the playground simulates who is signed in.\n',
-  'src/test/setup.ts': '// Playground: setup for the template\'s tests (Testing Library\'s extra checks). No tests run here.\n',
+  'rayfin/tsconfig.json': PG_JSON('TypeScript settings for the rayfin folder (connectors, functions), built on the root settings.'),
+  'rayfin/.lockfile.json': PG_JSON('written by the Rayfin CLI: which CLI version installed its agent files, and a record of each, so it can update them later.'),
+  'scripts/scaffold.mjs': '// Playground: what npm run pack:add runs: it copies a pack\'s files into the app, turns on its services in rayfin.yml, adds its packages and installs them. The playground simulates the packs the lessons use.\n',
+  ...Object.fromEntries(Object.entries(SKILLS).map(([n, w]) => [`.agents/skills/${n}/SKILL.md`, `Playground: one of the template's skills for coding agents, on ${w}. Read the real one in a project you create.\n`])),
+  ...Object.fromEntries(Object.entries(RAYFIN_SKILLS).map(([n, w]) => [`.agents/skills/${n}/SKILL.md`, `Playground: added by the Rayfin CLI after creating the app: a Rayfin skill for coding agents, on ${w}.\n`])),
+  [`${FE}/components.json`]: PG_JSON('settings for shadcn/ui, which the template\'s components are set up with. Not used here.'),
+  [`${FE}/eslint.config.js`]: '// Playground: the frontend\'s lint rules (ESLint, with TypeScript and React hooks checks). Not run here.\n',
+  [`${FE}/index.html`]: '<!-- Playground: the page the browser opens: one empty div that src/main.tsx draws the app into. The preview here draws App directly. -->\n',
+  [`${FE}/tsconfig.json`]: PG_JSON('the frontend\'s TypeScript settings, with the @/ shortcut for src/. The playground\'s editor follows relative paths only.'),
+  [`${FE}/vite.config.ts`]: '// Playground: the settings Vite builds the frontend with: React, Tailwind CSS, Rayfin\'s local dev, and the @/ shortcut for src/. The playground builds the preview itself.\n',
+  [`${FE}/vitest.config.ts`]: `// Playground: the settings for the frontend's tests (Vitest). ${TEST_LINE}\n`,
+  [`${FE}/src/main.tsx`]: '// Playground: the app\'s entry point: it signs the person in and draws Root. The preview here draws App directly.\n',
+  [`${FE}/src/Root.tsx`]: '// Playground: the template\'s frame around App: the error boundary, the sign-in gate and the theme.\n',
+  [`${FE}/src/Welcome.tsx`]: '// Playground: the template\'s welcome screen, the first thing a new app shows.\n',
+  [`${FE}/src/Welcome.css`]: '/* Playground: the welcome screen\'s styles. */\n',
+  [`${FE}/src/Welcome.activity.ts`]: '// Playground: part of the template\'s welcome screen.\n',
+  [`${FE}/src/EmptyStatePreview.tsx`]: '// Playground: the template\'s starting view, which its App.tsx shows until you replace it. Our App.tsx starts empty instead.\n',
+  [`${FE}/src/FabricAppMark.tsx`]: '// Playground: the Fabric app mark the welcome screen shows.\n',
+  [`${FE}/src/ErrorFallback.tsx`]: '// Playground: what the template shows when the app crashes.\n',
+  [`${FE}/src/global.css`]: '/* Playground: the template\'s styles: Tailwind CSS and its colour tokens, light and dark. The preview here loads Tailwind CSS itself. */\n',
+  [`${FE}/src/App.spec.tsx`]: `// Playground: the template's test for App. ${TEST_LINE}\n`,
+  [`${FE}/src/Root.spec.tsx`]: `// Playground: the template's test for Root. ${TEST_LINE}\n`,
+  [`${FE}/src/Welcome.spec.tsx`]: `// Playground: the template's test for the welcome screen. ${TEST_LINE}\n`,
+  [`${FE}/src/components/auth-gate.component.tsx`]: '// Playground: the template\'s sign-in gate: a loading screen until the person is signed in, then the app.\n',
+  [`${FE}/src/hooks/auth.context.ts`]: '// Playground: the template\'s sign-in state (useAuth), which its components read.\n',
+  [`${FE}/src/hooks/use-auth.tsx`]: '// Playground: the template\'s sign-in provider: inside Fabric, it gets the person\'s session from the Fabric host.\n',
+  [`${FE}/src/hooks/theme.context.ts`]: '// Playground: the template\'s light or dark theme, which its components read.\n',
+  [`${FE}/src/hooks/use-theme.ts`]: '// Playground: the template\'s hook that follows the light or dark setting and switches it.\n',
+  [`${FE}/src/hooks/use-theme.spec.ts`]: `// Playground: the template's tests for use-theme.ts. ${TEST_LINE}\n`,
+  [`${FE}/src/lib/rayfin-client.spec.ts`]: `// Playground: the template's tests for its client. ${TEST_LINE}\n`,
+  [`${FE}/src/lib/utils.ts`]: '// Playground: cn(), which merges Tailwind CSS class names. Our components write their classes out in full.\n',
+  [`${FE}/src/services/rayfin-auth.service.ts`]: '// Playground: the template\'s Fabric sign-in, which uses getRayfinClient(). No sign-in happens here: the playground simulates who is signed in.\n',
+  [`${FE}/src/services/rayfin-auth.service.spec.ts`]: `// Playground: the template's tests for its sign-in. ${TEST_LINE}\n`,
+  [`${FE}/src/test/setup.ts`]: `// Playground: setup for the template's tests (Testing Library's extra checks). ${TEST_LINE}\n`,
+  [`${FE}/src/test/stage3-decorator-fixture.ts`]: `// Playground: part of the template's tests. ${TEST_LINE}\n`,
+  [`${FE}/src/test/stage3-decorator.spec.ts`]: `// Playground: part of the template's tests. ${TEST_LINE}\n`,
+  'packages/data/tsconfig.json': PG_JSON('the data package\'s TypeScript settings.'),
+  'packages/shared/tsconfig.json': PG_JSON('the shared package\'s TypeScript settings.'),
 };
 /** Folders of placeholders only, folded in the file list until opened. */
-export const FOLDED_AT_START = ['.agents', '.playwright', 'scripts', 'src/test'];
+export const FOLDED_AT_START = ['.agents', 'scripts', `${FE}/src/test`];
 
 const TEMPLATE_VITE_ENV = `/// <reference types="vite/client" />
 
@@ -195,7 +360,7 @@ interface ImportMeta {
 `;
 
 /** The page file the preview draws: its default export. */
-export const PAGE_FILE = 'src/App.tsx';
+export const PAGE_FILE = 'packages/frontend/src/App.tsx';
 /** The file a step is about: the one it names, or the one its first edit changes (the page, when neither says). */
 export const stepFile = (step) => step?.file ?? step?.edits?.[0]?.file ?? (step?.edits || step?.find ? PAGE_FILE : undefined);
 
@@ -253,9 +418,16 @@ const CONNECTOR_PACKAGES = [
 ];
 /** Installed by `npx rayfin functions init`, in the functions package (rayfin/functions/). */
 const FUNCTIONS_PACKAGE = '@microsoft/fabric-user-data-functions';
+/** Everything `npm install` installs at the workspace root: every package's dependencies. */
+const TEMPLATE_INSTALL = [
+  ...Object.keys(ROOT_PACKAGE.devDependencies),
+  ...Object.keys(FRONTEND_PACKAGE.dependencies),
+  ...Object.keys(FRONTEND_PACKAGE.devDependencies),
+  ...Object.keys(DATA_PACKAGE.dependencies),
+  ...Object.keys(DATA_PACKAGE.devDependencies),
+];
 const KNOWN_PACKAGES = new Set([
-  ...Object.keys(TEMPLATE_PACKAGE.dependencies),
-  ...Object.keys(TEMPLATE_PACKAGE.devDependencies),
+  ...TEMPLATE_INSTALL,
   ...CONNECTOR_PACKAGES,
   FUNCTIONS_PACKAGE,
 ]);
@@ -266,13 +438,16 @@ export function emptyProject() {
 
 const clone = (p) => JSON.parse(JSON.stringify(p));
 
-/** Is a file generated by the CLI (and read-only here)? metadata.json is never edited by hand (rayfin.ai). */
+/** Is a file generated by the CLI (and read-only here)? metadata.json is never edited by hand (rayfin.ai). package.json files
+ * change through npm and the packs here. The connector wiring carries the CLI's own @generated marker. */
 /** Is a file one of the template's placeholders (TEMPLATE_PLACEHOLDERS)? */
 export const isPlaceholder = (text = '') => /^(?:\/\/|#|\/\*|<!--)?\s*Playground:/.test(text) || /^\{\s*"_playground"/.test(text);
 
 export const isGenerated = (path, text = '') =>
   /^\/\/ @generated/.test(text) ||
-  isPlaceholder(text) || path === 'package.json' || path.endsWith('.yml') || path.endsWith('/metadata.json') || path.endsWith('.generated.d.ts');
+  isPlaceholder(text) ||
+  path.endsWith('package.json') ||
+  text.includes('@generated by `rayfin connector add`') || path === 'package.json' || path.endsWith('.yml') || path.endsWith('/metadata.json') || path.endsWith('.generated.d.ts');
 
 // ---------------------------------------------------------------- the terminal
 /** Split a command line into words, keeping '…' and "…" together. */
@@ -376,27 +551,31 @@ export function runCommand(start, line, answer) {
     if (p.appDir) return fail(PG(`This playground holds one app, and ${p.appDir} already exists. Restart the playground to start over.`));
     if (f.template === undefined) {
       return fail(
-        PG('The real command now asks "How would you like to start?" (the default template, or a built-in one).'),
-        PG('The playground skips the question: add -- --template dataapp, for the Fabric analytics app template.'),
+        PG('The real command asks which template to start from; its default is "Use default template" (blankapp).'),
+        PG('The playground skips the question: add -- --template blankapp.'),
       );
     }
-    if (f.template !== 'dataapp') return fail(PG(`Only the dataapp template is simulated here (you asked for ${f.template}).`));
+    if (f.template !== 'blankapp') return fail(PG(`Only the default template, blankapp, is simulated here (you asked for ${f.template}).`));
     p.appDir = name;
     p.files = {
       ...TEMPLATE_PLACEHOLDERS,
-      'package.json': `${JSON.stringify({ ...TEMPLATE_PACKAGE, name }, null, 2)}\n`,
-      'rayfin/rayfin.yml': TEMPLATE_RAYFIN_YML.replace('id: data-app\nname: Data App\n', `id: ${name}\nname: ${name}\n`),
-      'rayfin/data/schema.ts': TEMPLATE_DATA_SCHEMA,
-      'src/vite-env.d.ts': TEMPLATE_VITE_ENV,
-      'src/lib/rayfin-client.ts': CLIENT_PLACEHOLDER,
+      'package.json': json({ name, ...ROOT_PACKAGE }),
+      'rayfin/rayfin.yml': TEMPLATE_RAYFIN_YML.replace('id: universal-app\nname: Universal App\n', `id: ${name}\nname: ${name}\n`),
+      [`${FE}/package.json`]: json(FRONTEND_PACKAGE),
+      [`${FE}/src/vite-env.d.ts`]: TEMPLATE_VITE_ENV,
+      [`${FE}/src/lib/rayfin-client.ts`]: CLIENT_STANDIN,
       [PAGE_FILE]: '',
+      'packages/data/package.json': json(DATA_PACKAGE),
+      'packages/data/src/index.ts': TEMPLATE_DATA_INDEX,
+      'packages/shared/package.json': json(SHARED_PACKAGE),
+      'packages/shared/src/index.ts': TEMPLATE_SHARED_INDEX,
     };
     return done(
       SIMULATED,
-      PG(`Created ${name}/ from the dataapp template.`),
-      PG('Written as the template has them: package.json, rayfin/rayfin.yml, rayfin/data/schema.ts and src/vite-env.d.ts.'),
-      PG(`package.json and rayfin.yml get the app's name, ${name}, as the real command does.`),
-      PG('src/App.tsx starts empty, and src/lib/rayfin-client.ts with a note: the lessons write both.'),
+      PG(`Created ${name}/ from the default template, blankapp (the Universal App): an npm workspace of three packages.`),
+      PG('Written as the template has them: the package.json files, rayfin/rayfin.yml and packages/frontend/src/vite-env.d.ts.'),
+      PG(`The root package.json and rayfin.yml get the app's name, ${name}, as the real command does.`),
+      PG('packages/frontend/src/App.tsx starts empty: the lessons write it. The template\'s own App.tsx shows a welcome view.'),
       PG('Most of the template\'s other files are shown locked, as placeholders that say what the real file does.'),
       PG('Creating it does not sign you in.'),
       PG(`Next: cd ${name}, then npm install.`),
@@ -407,14 +586,17 @@ export function runCommand(start, line, answer) {
   if (cmd === 'npm' && (w[1] === 'install' || w[1] === 'i')) {
     if (!p.appDir) return fail(...NO_PROJECT);
     if (!inApp()) return fail(PG(`No package.json here. Move into the project first: cd ${p.appDir}`));
-    const named = w.slice(2).filter((a) => !a.startsWith('-'));
+    const wIdx = w.findIndex((a) => a === '-w' || a === '--workspace');
+    const workspace = wIdx > 0 ? w[wIdx + 1] : undefined;
+    const named = w.slice(2).filter((a, i) => !a.startsWith('-') && i + 2 !== wIdx + 1);
     if (!named.length) {
-      for (const pkg of [...Object.keys(TEMPLATE_PACKAGE.dependencies), ...Object.keys(TEMPLATE_PACKAGE.devDependencies)]) {
-        if (!p.packages.includes(pkg)) p.packages.push(pkg);
-      }
-      return done(SIMULATED, PG('Installed the template\'s packages, React and the Rayfin client among them.'));
+      for (const pkg of TEMPLATE_INSTALL) if (!p.packages.includes(pkg)) p.packages.push(pkg);
+      return done(SIMULATED, PG('Installed the packages of all three workspace packages, React and the Rayfin client among them.'));
     }
-    const pkg = JSON.parse(p.files['package.json']);
+    if (workspace !== undefined && !WORKSPACES[workspace]) return fail(PG(`No workspace named ${workspace}. This app's are ${Object.keys(WORKSPACES).join(', ')}.`));
+    const pkgFile = workspace ? `${WORKSPACES[workspace]}/package.json` : 'package.json';
+    const pkg = JSON.parse(p.files[pkgFile]);
+    pkg.dependencies ??= {};
     const added = [];
     for (const spec of named) {
       const name = spec.replace(/(?<=.)@[^@/]+$/, '');
@@ -427,8 +609,16 @@ export function runCommand(start, line, answer) {
       added.push(`${name}@${version}`);
     }
     pkg.dependencies = Object.fromEntries(Object.entries(pkg.dependencies).sort(([a], [b]) => a.localeCompare(b)));
-    p.files['package.json'] = `${JSON.stringify(pkg, null, 2)}\n`;
-    return done(SIMULATED, ...added.map((a) => PG(`added ${a} to package.json`)));
+    p.files[pkgFile] = json(pkg);
+    return done(SIMULATED, ...added.map((a) => PG(`added ${a} to ${pkgFile}`)));
+  }
+
+  // npm run pack:add -- <pack>
+  if (cmd === 'npm' && w[1] === 'run' && w[2] === 'pack:add') {
+    if (!p.appDir) return fail(...NO_PROJECT);
+    if (!inApp()) return fail(PG(`Run it from the project folder. Move into it first: cd ${p.appDir}`));
+    const pack = w[3] === '--' ? w[4] : w[3];
+    return packAdd(p, pack, done, fail);
   }
 
   // npx rayfin …
@@ -692,6 +882,85 @@ function connectorInspect(p, f, done, fail) {
   );
 }
 
+// ---------------------------------------------------------------- capability packs (npm run pack:add -- <pack>)
+// From templates/universal-app/.agents/skills/<pack>/pack.json and scripts/scaffold.mjs (Rayfin CLI 2.0.0): the files each
+// pack copies, the rayfin.yml services it turns on (a new service block goes right under `services:`), the packages it
+// adds to packages/frontend/package.json ("match:@microsoft/rayfin-core" = core's range, ^2.0.0), and the pack it records
+// in the root package.json's `rayfinPacks`. The console lines are scaffold.mjs's own; it then runs npm install.
+const PACKS = {
+  connectors: {
+    description: 'Adds the frontend connector SDK and composable client wiring for existing Fabric sources; source declarations remain owned by `rayfin connector add`.',
+    dependencies: ['@microsoft/rayfin-connectors'],
+    // kit/connectors.ts (only when the app has none yet) and the client, replaced while it is the template's own.
+    copy: (p) => ({ ...(p.files[`${FE}/src/lib/connectors.ts`] === undefined ? { [`${FE}/src/lib/connectors.ts`]: CONNECTORS_KIT } : {}), [`${FE}/src/lib/rayfin-client.ts`]: CLIENT_STANDIN_CONNECTORS }),
+    next: ['app-design'],
+  },
+  analytics: {
+    description: 'Power BI / semantic-model analytics: the `fabric-semanticmodel` connector and the semantic-model query hook. Add the visuals pack alongside it to chart what the queries return.',
+    services: { connectors: true },
+    dependencies: ['@microsoft/rayfin-connectors', '@microsoft/rayfin-connector-fabric-semanticmodel'],
+    gitignore: ['.schema/', '.rayfin-schema-query-*/'],
+    // kit/hooks: the hook and its tests (its scripts are copied only behind a flag).
+    copy: () => ({
+      [`${FE}/src/hooks/use-semantic-model-query.ts`]: HOOK_STANDIN,
+      [`${FE}/src/hooks/use-semantic-model-query.spec.ts`]: `// Playground: the analytics pack's tests for its hook. No tests run here.\n`,
+    }),
+    next: ['analytics'],
+  },
+};
+
+function packAdd(p, pack, done, fail) {
+  const def = PACKS[pack];
+  if (!def) return fail(PG(`The playground simulates the packs the lessons use: ${Object.keys(PACKS).join(', ')} (you asked for ${pack ?? 'none'}).`));
+  const lines = [`> Scaffolding pack: ${pack}`, `  ${def.description}`];
+  for (const service of Object.keys(def.services ?? {})) {
+    const yml = p.files['rayfin/rayfin.yml'];
+    if (!new RegExp(`^  ${service}:\\n    enabled: true`, 'm').test(yml)) {
+      p.files['rayfin/rayfin.yml'] = yml.replace(/^services:\n/m, `services:\n  ${service}:\n    enabled: true\n`);
+    }
+    lines.push(`  - rayfin.yml: ${service}.enabled = true`);
+  }
+  const files = def.copy(p);
+  Object.assign(p.files, files);
+  lines.push(`  - copied ${Object.keys(files).length} file(s)`);
+  const fe = JSON.parse(p.files[`${FE}/package.json`]);
+  for (const dep of def.dependencies) fe.dependencies[dep] ??= '^2.0.0';
+  fe.dependencies = Object.fromEntries(Object.entries(fe.dependencies).sort(([a], [b]) => a.localeCompare(b)));
+  p.files[`${FE}/package.json`] = json(fe);
+  const root = JSON.parse(p.files['package.json']);
+  root.rayfinPacks = [...new Set([...(root.rayfinPacks ?? []), pack])].sort();
+  p.files['package.json'] = json(root);
+  for (const entry of def.gitignore ?? []) lines.push(`  - .gitignore: ${entry}`);
+  lines.push(PG(`added ${def.dependencies.join(', ')} to packages/frontend/package.json, and ${pack} to rayfinPacks in package.json.`));
+  lines.push('> Installing dependencies...');
+  for (const dep of def.dependencies) if (!p.packages.includes(dep)) p.packages.push(dep);
+  lines.push('[done] Pack ready. Next, read these skills as you build:', ...def.next.map((n) => `  -> .agents/skills/${n}/SKILL.md`));
+  return done(...lines);
+}
+
+/** packages/frontend/src/lib/connectors.ts as `connector add` regenerates it, for the connectors rayfin.yml declares. */
+function wireConnectors(p) {
+  const file = `${FE}/src/lib/connectors.ts`;
+  const current = p.files[file];
+  if (current === undefined) return [`⚠️  No src/lib/connectors.ts in this project — nothing was wired.`, PG('Add the connectors pack first: npm run pack:add -- connectors')];
+  // Wired: connectors whose schema.ts exports connectorConfig (an entity connector's placeholder doesn't, yet).
+  const names = connectorNames(p);
+  const wired = names.filter((n) => /^\s*export\s+const\s+connectorConfig\b/m.test(p.files[`rayfin/connectors/${n}/schema.ts`] ?? ''));
+  const lines = [];
+  const text = WIRING[wired.join(',')];
+  if (text === undefined) {
+    lines.push(PG(`The wiring for ${wired.join(', ')} is not simulated: the lessons wire contoso, then pareto, then lake.`));
+  } else if (text !== current) {
+    p.files[file] = text;
+    const runtimes = wired.filter((n) => connectorType(p, n) === 'fabric-semanticmodel').length;
+    lines.push(`🔌 Wired ${wired.length} connector(s) into ${file}${runtimes ? ` (${runtimes} with a client-side runtime)` : ''}`);
+  }
+  for (const n of names.filter((x) => !wired.includes(x))) {
+    lines.push(`⚠️  Connector "${n}" is not wired into ${file}: rayfin/connectors/${n}/schema.ts does not export \`connectorConfig\` yet.`, `   Fix the cause above, then retry; or update ${file} manually.`);
+  }
+  return lines;
+}
+
 // `npx rayfin connector add` (rayfin.ai: Adding a connector, Semantic models; Microsoft Learn: Connect Fabric Apps)
 function connectorAdd(p, f, done, fail) {
   if (!f.type) return fail(PG('Give --type: here, --type fabric-semanticmodel.'));
@@ -769,10 +1038,10 @@ function connectorAdd(p, f, done, fail) {
     ...naming,
     PG(`Added connector ${name} to rayfin/rayfin.yml.`),
     PG(`Wrote rayfin/connectors/${name}/schema.ts (generated: do not edit).`),
+    ...wireConnectors(p),
+    '',
     '📦 Install the packages this connector needs:',
     '   npm install @microsoft/rayfin-connector-fabric-semanticmodel@2.0.0 @microsoft/rayfin-connectors@2.0.0',
-    PG('The real CLI also reports whether it wired the connector into the app. This template has no generated'),
-    PG(`wiring file, so nothing is wired: we register it in the client ourselves (client.connectors.${name}).`),
   );
 }
 

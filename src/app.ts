@@ -14,6 +14,7 @@ import {
   FUNCTION_APP,
   FOLDED_AT_START,
   PAGE_FILE,
+  WORKSPACE_MODULES,
   SIMULATED_ENV,
   applyFileEdits,
   checkpoint,
@@ -1076,6 +1077,9 @@ ts.typescriptDefaults.setCompilerOptions({
   skipLibCheck: true,
   allowNonTsExtensions: true,
   lib: ['es2022', 'dom'],
+  // npm workspaces link @rayfin-app/* by name: map each to its package's src.
+  baseUrl: 'file:///',
+  paths: Object.fromEntries(Object.entries(WORKSPACE_MODULES).map(([name, file]) => [name, [file]])),
 });
 // The red lines come from the playground's own check (checkTypes, below), which asks the TypeScript
 // worker about every file after every change. Monaco's built-in check is off: it re-checks only the

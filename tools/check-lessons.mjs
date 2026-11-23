@@ -24,7 +24,7 @@ import ts from 'typescript';
 import { lessons } from '../src/lesson-list.mjs';
 import { chapters, modules, parts } from '../src/course.mjs';
 import { terms, help } from '../src/terms.mjs';
-import { emptyProject, doStep, numberRuns, stepFile, stepIsDone, PAGE_FILE } from '../src/project.mjs';
+import { emptyProject, doStep, numberRuns, stepFile, stepIsDone, PAGE_FILE, WORKSPACE_MODULES } from '../src/project.mjs';
 import { createConnectorsApi, rawPayload } from '../src/connectors-sim.mjs';
 import lakehouse from '../data/lakehouse.json' with { type: 'json' };
 import * as C from '../src/course-code.mjs';
@@ -213,7 +213,9 @@ function typeCheck(project) {
     if (key === vroot || key.startsWith(`${vroot}/`)) return [...files.keys()].some((f) => f.startsWith(`${key}/`));
     return originalDirExists ? originalDirExists(d) : true;
   };
-  const prog = ts.createProgram([...files.keys(), ...libs], options, host);
+  // npm workspaces link @rayfin-app/* by name: map each to its package's src.
+  const paths = Object.fromEntries(Object.entries(WORKSPACE_MODULES).map(([name, file]) => [name, [file]]));
+  const prog = ts.createProgram([...files.keys(), ...libs], { ...options, baseUrl: vroot, paths }, host);
   return ts.getPreEmitDiagnostics(prog).map((d) => {
     const where = d.file ? `${d.file.fileName.replace(`${vroot}/`, '')}:${d.file.getLineAndCharacterOfPosition(d.start).line + 1}` : '';
     return `${where}: ${ts.flattenDiagnosticMessageText(d.messageText, ' ')}`;
@@ -244,6 +246,7 @@ function loader(project, packages = {}) {
     cache.set(path, mod);
     const require = (spec) => {
       if (spec in packages) return packages[spec];
+      if (WORKSPACE_MODULES[spec]) return load(WORKSPACE_MODULES[spec]);
       // A query file imported as text (`./queries/x.dax?raw`), as Vite does.
       if (spec.startsWith('.') && spec.endsWith('?raw')) {
         const parts = path.split('/').slice(0, -1);
