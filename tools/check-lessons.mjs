@@ -217,10 +217,27 @@ function typeCheck(project) {
   // npm workspaces link @rayfin-app/* by name: map each to its package's src.
   const paths = Object.fromEntries(Object.entries(WORKSPACE_MODULES).map(([name, file]) => [name, [`${vroot}/${file}`]]));
   const prog = ts.createProgram([...files.keys(), ...libs], { ...options, paths }, host);
-  return ts.getPreEmitDiagnostics(prog).map((d) => {
+  const diagnostics = ts.getPreEmitDiagnostics(prog).map((d) => {
     const where = d.file ? `${d.file.fileName.replace(`${vroot}/`, '')}:${d.file.getLineAndCharacterOfPosition(d.start).line + 1}` : '';
     return `${where}: ${ts.flattenDiagnosticMessageText(d.messageText, ' ')}`;
   });
+  // React 19's types accept a promise as a JSX child (for server components), so TypeScript says nothing, but a browser
+  // page can't draw one (React error #482). Count each promise drawn between JSX tags as an error too.
+  const checker = prog.getTypeChecker();
+  for (const sf of prog.getSourceFiles()) {
+    if (!sf.fileName.startsWith(vroot) || !sf.fileName.endsWith('.tsx')) continue;
+    const visit = (n) => {
+      if (ts.isJsxExpression(n) && n.expression && (ts.isJsxElement(n.parent) || ts.isJsxFragment(n.parent))) {
+        const t = checker.getTypeAtLocation(n.expression);
+        if ((t.isUnion() ? t.types : [t]).some((x) => checker.getPropertyOfType(x, 'then'))) {
+          diagnostics.push(`${sf.fileName.replace(`${vroot}/`, '')}:${sf.getLineAndCharacterOfPosition(n.getStart()).line + 1}: playground check: a promise drawn in JSX (a page can't draw one; wait for it in an effect)`);
+        }
+      }
+      ts.forEachChild(n, visit);
+    };
+    visit(sf);
+  }
+  return diagnostics;
 }
 
 // ---------------------------------------------------------------- running project files

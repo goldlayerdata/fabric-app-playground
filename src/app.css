@@ -281,7 +281,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 .editor-body { position: relative; flex: 1; min-height: 0; display: flex; }
 
 /* the file list: the project's folders and files, as a tree */
-.tree { width: var(--tree-w, 150px); flex-shrink: 0; overflow: auto; scrollbar-width: thin; padding-bottom: 6px; }
+.tree { width: var(--tree-w, 210px); flex-shrink: 0; overflow: auto; scrollbar-width: thin; padding-bottom: 6px; }
 .no-tree .tree, .no-tree .split-tree { display: none; }
 /* the file list's right edge: drag to resize, double-click to reset (the width is remembered) */
 .split-tree { width: 5px; }

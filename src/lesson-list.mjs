@@ -44,7 +44,7 @@
 // Text formatting: inline `code`, **bold**, and [[term]] or [[shown text|term-id]] for a word in the
 // glossary (terms.mjs). Nothing else.
 import * as C from './course-code.mjs';
-import { DATA_ITEM_FILE, DATA_KIT_INDEX, FUNCTION_APP, FUNCTION_APP_TEMPLATE, PLACEHOLDER, SHARED_KIT_INDEX, sqlPlaceholder } from './project.mjs';
+import { CLAIMS_TYPES, DATA_ITEM_FILE, DATA_KIT_INDEX, FUNCTION_APP, FUNCTION_APP_TEMPLATE, PLACEHOLDER, SHARED_KIT_INDEX, sqlPlaceholder } from './project.mjs';
 
 const LEARN = 'https://learn.microsoft.com/fabric/apps';
 const learn = {
@@ -266,6 +266,8 @@ const SESSION_ANCHOR_IMPORT = "import TargetsPage from './TargetsPage';\n";
 const NAV_OPEN = '      <nav className="w-36 shrink-0 space-y-1 p-4">\n';
 const APP_PAGE_STATE = "  const [page, setPage] = useState<PageId>('overview');\n";
 const SESSION_ONCE_FN = C.SESSION_READ.slice(C.SESSION_READ.indexOf('\n// Who is signed in'));
+const APP_REACT = "import { useState, type ReactElement } from 'react';\n";
+const APP_REACT_EFFECT = "import { useEffect, useState, type ReactElement } from 'react';\n";
 const SESSION_CLIENT_IMPORT = C.SESSION_READ.slice(0, C.SESSION_READ.indexOf('\n// Who is signed in'));
 const TARGETS_STATE_END = '  const [editing, setEditing] = useState<{ id: string; amount: string } | undefined>(undefined);\n';
 
@@ -289,7 +291,7 @@ export const lessons = [
       {
         do: 'Look to the left of the code area: the **file list**.',
         point: 'files',
-        see: 'Empty for now. The project\'s files appear here, in their folders: most arrive with the template, and we add ours as we go. Click one to open it.',
+        see: 'Empty for now. The project\'s files appear here, in their folders: most arrive with the template, and we add ours as we go. Click one to open it; hover one for its full path. Drag the list\'s right edge to make it wider.',
       },
       {
         do: 'The code area is where we read and write those files.',
@@ -347,8 +349,8 @@ export const lessons = [
         do: 'In the **Terminal**, create the project:',
         run: 'npm create @microsoft/rayfin@latest contoso-app -- --template blankapp',
         point: 'terminal',
-        see: 'A `contoso-app` folder, and its files in the file list. 🔒 means read-only here. Most locked files are placeholders that say what the real file does; the `package.json` files and `rayfin.yml` are real. Three template files stay open for editing because we change them: `packages/frontend/src/App.tsx`, and the `index.ts` of `packages/data` and `packages/shared`.',
-        why: '`npm` fetches and runs JavaScript packages; `npm create` runs a project creator, here Rayfin\'s (`@latest`: its newest version). The lone `--` passes `--template blankapp` on to Rayfin\'s creator. Without it, the real command asks which template to use, and its default, **Use default template**, is this one. (In Windows PowerShell, some versions drop the lone `--`: Rayfin\'s docs say to use `npm.cmd` there.)',
+        see: 'A `contoso-app` folder, and its files in the file list. 🔒 means read-only here: most locked files are one-line placeholders that say what the real file does. Three stay open, because we change them: `App.tsx`, and the `index.ts` of `packages/data` and `packages/shared`.',
+        why: '`npm create` runs a project creator, here Rayfin\'s (`@latest`: its newest version). The lone `--` passes `--template blankapp` on to it. (In Windows PowerShell, some versions drop the lone `--`: Rayfin\'s docs say to use `npm.cmd` there.)',
       },
       {
         do: 'Move into the new folder:',
@@ -358,14 +360,14 @@ export const lessons = [
       {
         do: 'Look at the file list: the folders, in Power BI terms.',
         point: 'files',
-        see: '`packages` holds three packages, like the parts of a PBIP project. `packages/frontend` is the report people see: its `src` holds the pages, `components` the visuals, `hooks` the code that runs a query and waits for the answer, and `lib` the connections and other shared code. `packages/data` and `packages/shared` will hold the app\'s own tables, a small database the app owns. `rayfin` holds the app\'s settings, `rayfin.yml`, a bit like a PBIP\'s `definition.pbir`.',
-        why: 'Later chapters add two more: `packages/functions`, for code that runs on the server, and `packages/auth`, for generated sign-in types. Everything else is the template\'s, and we never touch it: the settings files at the top, `.agents` (instructions for coding agents), `scripts`, `packages/frontend/src/services` (sign-in) and `packages/frontend/src/test` (tests). Some folders are folded: click one to open it.',
+        see: '`packages` holds three packages, like the parts of a PBIP project: `frontend` is the report people see (in its `src`: the pages, `components` for visuals, `hooks`, `lib`), and `data` and `shared` will hold the app\'s own tables. `rayfin` holds the settings, `rayfin.yml`, a bit like a PBIP\'s `definition.pbir`.',
+        why: 'Later a pack adds a fourth package, `packages/functions`, for code that runs on the server, and the CLI writes generated sign-in types into a `packages/auth` folder (files, not a package). Everything else is the template\'s, and we never touch it: the settings at the top, `.agents`, `scripts`, `services` (sign-in) and `test`. Folded folders open with a click.',
       },
       {
         do: 'Install the packages the template lists:',
         run: 'npm install',
         see: 'Up to date: `npm create` already installed them, for all three packages. Run it again after changing a `package.json`, or after fetching someone else\'s changes.',
-        why: 'A package is code someone else wrote, such as React. The project is an npm workspace: one `npm install`, at the top, serves every package in it.',
+        why: 'A package is code someone else wrote, such as React. The project is an npm workspace: a folder of packages, nothing to do with a Fabric workspace. One `npm install`, at the top, serves every package in it. Each package has a name: `packages/frontend` is `@rayfin-app/frontend`, the name `-w` uses later.',
       },
       {
         do: 'Open `packages/frontend/package.json` in the file list.',
@@ -399,7 +401,7 @@ export const lessons = [
       'The `package.json` files list packages and scripts; `rayfin.yml` holds the app\'s settings. `npm run dev` starts the loop: edit, and see the page.',
     ],
     fabric: {
-      text: 'Microsoft Learn\'s Rayfin CLI page starts from this template too: `blankapp`, the Universal App, shown as **Use default template**. Followed Learn\'s data app page instead? It uses `--template dataapp`, with a flat layout: its `src/` is our `packages/frontend/src/`, and its `rayfin/data/` is our `packages/data/src/`. Most of the template\'s other files are in the file list as locked placeholders: its sign-in, its welcome page, tests and agent files.',
+      text: 'Without `--template`, the CLI asks which template to use, and its first answer, **✨ Use default template**, is this one. Microsoft Learn says `blankapp` resolves to the Universal App. Followed Learn\'s data app page instead? It uses `--template dataapp`, with a flat layout: its `src/` is our `packages/frontend/src/`, and its `rayfin/data/` is our `packages/data/src/`. Most of the template\'s other files are in the file list as locked placeholders: its sign-in, its welcome page, tests and agent files.',
       links: [learn.createCli, learn.projectStructure, learn.template],
     },
   },
@@ -416,8 +418,8 @@ export const lessons = [
         do: 'Add the connectors pack, which wires connectors into the app:',
         run: PACK_CONNECTORS,
         point: 'terminal',
-        see: '`> Scaffolding pack: connectors`, then `copied 2 file(s)`: an empty `packages/frontend/src/lib/connectors.ts`, and a new `rayfin-client.ts` that reads it.',
-        why: 'A pack adds one capability: its files, its packages, and the services it turns on in `rayfin.yml`. For a semantic model, the template\'s capability-router skill says: connectors, then analytics.',
+        see: '`> Scaffolding pack: connectors`, then `copied 2 file(s)`: `packages/frontend/src/lib/connectors.ts`, a header and empty maps, and a `rayfin-client.ts` that replaces the template\'s and reads it.',
+        why: 'A pack adds one capability: its files, its packages, and the services it turns on in `rayfin.yml`. For a semantic model, the template\'s capability-router [[skill]] says: connectors, then analytics.',
       },
       {
         do: 'Add the analytics pack, for semantic models:',
@@ -450,8 +452,8 @@ export const lessons = [
       {
         do: 'Install the versions it printed, into the frontend package: the analytics skill says to add `-w @rayfin-app/frontend`, never to install at the workspace root.',
         run: INSTALL_CONNECTOR,
-        see: 'Both packages pinned in `packages/frontend/package.json`.',
-        why: '`connector add` installs nothing itself: it prints the exact versions. The analytics pack had already added these two, so nothing new arrives.',
+        see: 'Both listed in `packages/frontend/package.json`, as `^2.0.0`.',
+        why: '`connector add` installs nothing itself: it prints the exact versions. The analytics pack had already listed these two; `^2.0.0` means 2.0.0 or a later 2.x, so the printed versions fit.',
       },
       {
         do: 'Test the connector from the terminal, with one DAX query (copy it rather than type it):',
@@ -492,7 +494,7 @@ export const lessons = [
         file: CONNECTORS,
         find: 'export type AppConnectorsSchema = {',
         see: 'One entry per connector, under its name in `rayfin.yml`: `contoso`, with the type from its `schema.ts`.',
-        why: '`type` declares a shape for TypeScript to check against; it never runs.',
+        why: '`type` declares a shape for TypeScript to check against; it never runs. The import above it, `../../../../rayfin/connectors/contoso/schema`, climbs four folders, from `packages/frontend/src/lib` to the project\'s top, then goes down into `rayfin`. `as contosoSchema` gives the type a local name, so each connector\'s schema has its own.',
       },
       {
         do: 'Look at the marked `connectorRuntimes`, and `connectorConfigs` just above it.',
@@ -523,7 +525,7 @@ export const lessons = [
       'The client comes from the template and the connectors pack: `await getRayfinClient()`, then `.connectors.contoso.executeQuery({ query })`.',
     ],
     fabric: {
-      text: 'This is Rayfin 2.0\'s way to register a semantic model connector: `connectorsService` with `fabricSemanticModel()` in its runtime map. In the default template the CLI writes that map for you (`src/lib/connectors.ts`), and the analytics skill says to keep it generated.',
+      text: 'This is Rayfin 2.0\'s way to register a semantic model connector: `connectorsService` with `fabricSemanticModel()` in its runtime map. In the default template the CLI writes that map for you (`packages/frontend/src/lib/connectors.ts`), and the analytics skill says to keep it generated.',
       links: [rayfin.clientSetup, rayfin.semanticModels],
     },
   },
@@ -730,7 +732,7 @@ export const lessons = [
     goal: 'replace typed-in numbers with the model\'s',
     builds: ['types'],
     pbi: 'Binding fields to visuals: each visual asks the model a [[query]] and draws the [[result]].',
-    idea: 'A data app sorts its files a bit like a report project: `components` holds the visuals, `queries/<page>` the DAX behind each visual, page by page, `hooks` the code that runs a query and waits for it, and `lib` the connection and other shared code. Pages stay in `src`. A query goes: its `.dax` file → its `.ts` file → a [[hook]] runs it → a conversion → the visual. We build that for the chart, then for the cards.',
+    idea: 'The template sorts its files a bit like a report project: `components` holds the visuals, `queries/<page>` the DAX behind each visual, page by page, `hooks` the code that runs a query and waits for it, and `lib` the connections and other shared code. Pages sit in `packages/frontend/src` itself. A query goes: its `.dax` file → its `.ts` file → a [[hook]] runs it → a conversion → the visual. We build that for the chart, then for the cards.',
     steps: [
       {
         do: 'Open the hook the analytics pack added, `packages/frontend/src/hooks/use-semantic-model-query.ts`, and look at the marked line.',
@@ -749,7 +751,7 @@ export const lessons = [
       }),
       newFile(COUNTRY_TS, 'Next to it, a small file that hands the query to the page: '),
       paste(COUNTRY_TS, C.COUNTRY_TS, 'Paste this into it:', {
-        why: '`?raw` means "the file\'s text, as a string": `revenueByStoreCountryDax` holds the DAX exactly as the file has it. The function returns what the hook takes: the `connection` that runs it, `contoso`, and the `query`. It is named after the file, as in the analytics skill. It only hands out the text for now, and the file still earns its place: the template has one per visual, and it is where a slicer\'s filter goes (in **State as a slicer**). The template\'s version returns an object, `{ connection, query, columnMetadata, vegaLiteSpec }`: the query and what its chart needs. Ours returns only the query text, with no `.json` chart spec and no `columnMetadata`, because our visuals are our own components (`BarList`, `KpiCard`), not the template\'s `VegaVisual` and `DataGrid`.',
+        why: '`?raw` means "the file\'s text, as a string": `revenueByStoreCountryDax` holds the DAX exactly as the file has it. The function returns what the hook takes: the `connection` that runs it, `contoso`, and the `query`. It is named after the file, as in the analytics skill. It only hands out the text for now, and the file still earns its place: the template has one per visual, and it is where a slicer\'s filter goes (in **State as a slicer**). The template\'s version returns an object, `{ connection, query, columnMetadata, vegaLiteSpec }`: the query and what its chart needs. Ours returns only `{ connection, query }`, with no `.json` chart spec and no `columnMetadata`, because our visuals are our own components (`BarList`, `KpiCard`), not the template\'s `VegaVisual` and `DataGrid`.',
       }),
       newFile(OVERVIEW_INDEX, 'The template lists each query folder\'s files in an `index.ts`, so that pages import every query from one place: '),
       paste(OVERVIEW_INDEX, C.OVERVIEW_INDEX_V1, 'Paste this line into it:', {
@@ -1224,7 +1226,7 @@ export const lessons = [
         file: HOOK,
         find: '}, [connection, query]);',
         see: '`[connection, query]`, marked in pink.',
-        why: 'The hook runs its query again whenever something in this [[dependency list|dependency-list]] changes. A new year means new query text, so it runs again.',
+        why: 'The hook runs its query again whenever something in this [[dependency list|dependency-list]] changes. A new year means new query text, so it runs again. (In the real kit the effect\'s list is `[execute]`, a `useCallback` over `[connection, query, canExecute]`: the same idea, one step removed.)',
       },
     ],
     summary: [
@@ -1284,8 +1286,13 @@ export const lessons = [
         ],
         done: { file: APP, absent: 'const loadTotals' },
         point: 'status',
-        see: 'Press **Run again**: a few queries, and the count stays put.',
-        why: 'The hook\'s list is `[connection, query]`: plain text, the same on every draw until the year changes.',
+        see: 'The loader, its effect and the extra imports are gone.',
+      },
+      {
+        do: 'Press **Run again**, above the preview.',
+        point: 'run',
+        see: 'A few queries, and the count stays put.',
+        why: 'The hook\'s list is `[connection, query]`: plain text, the same on every draw until the year changes. (In the real kit the effect\'s list is `[execute]`, a `useCallback` over `[connection, query, canExecute]`: the same idea, one step removed.)',
       },
       {
         do: 'Just read, no need to paste: in agent code you will also see this fix, which keeps the loader inside, wrapped in `useCallback`:',
@@ -1542,7 +1549,16 @@ export const lessons = [
         ],
         done: { file: AGENT, before: ['const runDax', 'export default function SalesOverview'] },
         point: 'status',
-        see: 'Press **Run again** and open **Agent page**: the count stays put.',
+        see: 'The `runDax` line sits just above `function useDax`.',
+      },
+      {
+        do: 'Press **Run again**, above the preview.',
+        point: 'run',
+        see: 'The page starts again on **Overview**.',
+      },
+      {
+        do: 'Open **Agent page**.',
+        see: 'The count stays put.',
       },
       {
         do: 'Check 2: are the numbers right? Compare the agent\'s **Revenue** card with its bars.',
@@ -1624,7 +1640,7 @@ export const lessons = [
       'None of these give a red line, so running the page and reading its code is the check.',
     ],
     fabric: {
-      text: 'Microsoft\'s guide to building these apps with GitHub Copilot has the same job: review what the agent changed, the connector settings and its DAX queries first. It also asks us to look at new packages and at data calls that skip the connector. The template (CLI 2.0.0) has a second data path of its own; Microsoft\'s walkthrough says to replace calls to it with the connector client, so treat it as a review finding.',
+      text: 'Microsoft\'s guide to building these apps with GitHub Copilot has the same job: review what the agent changed, the connector settings and its DAX queries first. It also asks us to look at new packages and at data calls that skip the connector. ',
       links: [learn.copilotReview],
     },
   },
@@ -1670,7 +1686,7 @@ export const lessons = [
     ],
     summary: [
       'We built an app with Rayfin\'s connector, in the order a real one is set up: the template, the connector, the client, the pages.',
-      'What changes on Fabric: real ids, real sign-in, live queries as the person using the app, and a deploy. In a real data app project, the connector goes into the template\'s own client.',
+      'What changes on Fabric: real ids, real sign-in, live queries as the person using the app, and a deploy. In a real project, `connector add` wires the connector into `connectors.ts` for you, as here.',
       'To start a real one, follow Rayfin\'s Quickstart and Microsoft\'s walkthrough.',
     ],
     fabric: {
@@ -1956,7 +1972,7 @@ export const lessons = [
       },
     ],
     summary: [
-      'One page can ask several models: the runner decides which one answers, and a query sent to the wrong model fails only when it runs.',
+      'One page can ask several models: each query\'s `connection` decides which one answers, and a query sent to the wrong model fails only when it runs.',
       'A measure with the same name in two models is the same only when its formula, data, refresh and roles are.',
       'Both semantic model connectors run as the signed-in person, each in its own model.',
     ],
@@ -2203,7 +2219,11 @@ export const lessons = [
         do: 'Another slip on purpose: in `packages/frontend/src/lib/lake.ts`, delete the marked `.select([\'storeKey\'])` line in `storeKeysIn`.',
         file: LAKE_TS,
         edits: [{ file: LAKE_TS, from: "    .select(['storeKey'])\n", to: '' }],
-        see: 'No red line. The page starts again on **Overview**: open **Order lines**, and it shows its error panel: **A read requires an explicit .select([...]).**',
+        see: 'No red line. The page starts again on **Overview**.',
+      },
+      {
+        do: 'Open **Order lines**.',
+        see: 'Its error panel: **A read requires an explicit .select([...]).**',
         why: 'A query chain must say which columns it wants (`SELECTION_REQUIRED`). The default list in `connectorConfig.entities` never applies to a chain.',
       },
       {
@@ -2220,7 +2240,7 @@ export const lessons = [
       },
     ],
     summary: [
-      'A lakehouse connector goes in `configs` only: no `runtime` entry.',
+      'A lakehouse connector goes in `AppConnectorsSchema` and `connectorConfigs` only: no `connectorRuntimes` entry.',
       'Read it with `select`, `where`, `orderBy`, `first` and `execute`: it returns rows, or throws. Without `select`, it throws.',
       'Dates arrive as `Date | string`: make a `Date` before using one.',
     ],
@@ -2253,11 +2273,22 @@ export const lessons = [
           { file: LINES, from: LINES_HOOK, to: LINES_HOOK + C.REVENUE_HOOK },
           { file: LINES, from: LINES_END, to: `      </section>\n${C.REVENUE_CARD}    </div>\n  );\n}\n` },
         ],
-        see: 'The page starts again on **Overview**. Open **Order lines**: **Revenue (from lines)**, 142.3K.',
+        see: 'The page starts again on **Overview**.',
       },
       {
-        do: 'Open **Overview**, pick **2023** on the slicer, and click **France** on the countries chart.',
-        point: 'preview',
+        do: 'Open **Order lines**.',
+        see: '**Revenue (from lines)**: 142.3K.',
+      },
+      {
+        do: 'Open **Overview**.',
+        see: 'The model\'s numbers, for every year.',
+      },
+      {
+        do: 'Pick **2023** on the slicer.',
+        see: 'The cards and the chart show 2023.',
+      },
+      {
+        do: 'Click **France** on the countries chart.',
         see: 'Its **Revenue** card: 369K. Far apart.',
         why: 'The lakehouse holds France\'s 2023 lines only, so this is the same slice. The model\'s `[Revenue]` is `SUMX ( sales, sales[Quantity] * sales[NetPrice] )`: the same formula the page used.',
       },
@@ -2272,7 +2303,11 @@ export const lessons = [
         code: C.REVENUE_PAGED.trimStart(),
         file: LAKE_TS,
         edits: [{ file: LAKE_TS, from: C.REVENUE_ONE_PAGE, to: C.REVENUE_PAGED }],
-        see: 'Open **Order lines** again: 369K, as on **Overview**. In the Log: three `lake.Sales` reads for the card, of 100, 100 and 83 rows.',
+        see: 'No red lines. The page starts again on **Overview**.',
+      },
+      {
+        do: 'Open **Order lines** again.',
+        see: '369K, as on **Overview**. In the Log: three `lake.Sales` reads for the card, of 100, 100 and 83 rows.',
         why: '`executePaginated()` returns a page with `hasNextPage` and `endCursor`; `after(endCursor)` asks for the next one, with the same `select`, `where` and a stable `orderBy`. Now the numbers match, because the page copies the model\'s formula: a second copy, which can drift without a warning.',
       },
       {
@@ -2406,7 +2441,7 @@ export const lessons = [
         do: 'Open `packages/frontend/package.json` and find the marked `@microsoft/rayfin-data`.',
         file: 'packages/frontend/package.json',
         find: '"@microsoft/rayfin-data"',
-        see: '`@microsoft/rayfin-data` and `@microsoft/rayfin-core` are already in `dependencies`.',
+        see: '`@microsoft/rayfin-data` is already in `dependencies`: the browser\'s client for the app\'s own database. (`@microsoft/rayfin-core`, with the decorators, is in `packages/data/package.json`.)',
         why: 'The template lists them, and `npm create` installed them. That is why the pack had nothing to install.',
       },
       {
@@ -2524,7 +2559,7 @@ export const lessons = [
         file: SHARED_SCHEMA,
         edits: [{ file: SHARED_SCHEMA, from: SHARED_KIT_INDEX, to: C.SHARED_SCHEMA }],
         see: 'No red lines.',
-        why: 'Two lists, kept in step: the record in the shared package (`UniversalAppSchema`, for the client\'s types; Rayfin\'s docs call theirs `AppSchema`) and the array `schema` in the data package. The shared package holds no decorated class, so the browser can use it: the data-modeling skill keeps the two apart this way. Every new entity goes in both. As in **Entities from the metadata**, the data package\'s own imports end in `.js`.',
+        why: 'Two lists, kept in step: the record in the shared package (`UniversalAppSchema`, for the client\'s types; Rayfin\'s docs call theirs `AppSchema`) and the array `schema` in the data package. The shared package holds no decorated class, so the browser can use it: the data-modeling skill keeps the two apart this way. Every new entity goes in both. And the `.js` in `./SalesTarget.js`: the data package is built into JavaScript and run as ES modules (`"type": "module"` in its `package.json`), which need the built file\'s full name, so its own imports end in `.js`, as the data-modeling skill writes them.',
       },
       {
         do: 'Apply the schema:',
@@ -2625,7 +2660,11 @@ export const lessons = [
           { from: "  lines: { title: 'Order lines', Component: LinesPage },\n", to: "  lines: { title: 'Order lines', Component: LinesPage },\n  targets: { title: 'Targets', Component: TargetsPage },\n" },
           { from: "import LinesPage from './LinesPage';\n", to: "import LinesPage from './LinesPage';\nimport TargetsPage from './TargetsPage';\n" },
         ],
-        see: 'Click **Targets** in the page list: "No targets for 2026 yet." The Log shows the read, and who it ran as.',
+        see: '**Targets** in the page list.',
+      },
+      {
+        do: 'Click **Targets**.',
+        see: '"No targets for 2026 yet." The Log shows the read, and who it ran as.',
       },
       {
         do: 'At the end of `packages/frontend/src/lib/targets.ts`, add the writes:',
@@ -2788,18 +2827,21 @@ export const lessons = [
         why: '`getSession()` says who is signed in right now. `isAuthenticated` is true only while the sign-in is still valid. `user` has an `id` and an `email`.',
       },
       {
-        do: 'Show it: **Do it for me** adds `Signed in as {signedInEmail()}` above the page list in `App.tsx`, with its import.',
+        do: 'Show it: **Do it for me** reads `signedInEmail()` once, after the page first draws, keeps the answer in [[state]], and shows it above the page list in `App.tsx`.',
         edits: [
+          { from: APP_REACT, to: APP_REACT_EFFECT },
           { from: SESSION_ANCHOR_IMPORT, to: SESSION_ANCHOR_IMPORT + "import { signedInEmail } from './lib/session';\n" },
+          { from: APP_PAGE_STATE, to: APP_PAGE_STATE + C.SESSION_ONCE_STATE },
           { from: NAV_OPEN, to: NAV_OPEN + C.SIGNED_IN_ONCE },
         ],
         see: '"Signed in as alice@contoso.example".',
+        why: '`signedInEmail()` is async: it hands back a promise, and React can\'t draw a promise. So the page asks in an effect, and draws the text it gets back. The empty list, `[]`, means: only after the first draw.',
       },
       {
         do: 'Switch to Bob.',
         point: 'signin',
         see: 'The page still says Alice.',
-        why: 'The page read the session once, when it drew, and didn\'t hear about the change. We need [[state]] that listens, as **State as a slicer** taught.',
+        why: 'The page read the session once, after its first draw, and didn\'t hear about the change. We need [[state]] that listens, as **State as a slicer** taught.',
       },
       newFile(USE_SESSION, 'Listening is a hook\'s job, so it gets a file in `packages/frontend/src/hooks`: ', {
         why: 'The template\'s own sign-in hooks are beside it, locked (`use-auth.tsx`, `auth.context.ts`): in a real project they run the Fabric sign-in. Ours only listens to Rayfin\'s session, which the playground simulates.',
@@ -2812,10 +2854,11 @@ export const lessons = [
         why: '`onSessionChange` calls us back at each sign-in, sign-out or refresh, and returns a function that stops listening. Returning it from `useEffect` stops it when the page goes away.',
       },
       {
-        do: 'Use it: **Do it for me** makes the page list use `useSession()`, and takes `signedInEmail` out of `packages/frontend/src/lib/session.ts`: nothing uses it any more, and only the client import stays there for now.',
+        do: 'Use it: **Do it for me** makes the page list use `useSession()` instead of the one-time read, and takes `signedInEmail` out of `packages/frontend/src/lib/session.ts`: nothing uses it any more, and only the client import stays there for now.',
         edits: [
+          { from: APP_REACT_EFFECT, to: APP_REACT },
           { from: "import { signedInEmail } from './lib/session';\n", to: "import { useSession } from './hooks/use-session';\n" },
-          { from: APP_PAGE_STATE, to: `${APP_PAGE_STATE}  const session = useSession();\n${C.SIGNED_IN_STATE}` },
+          { from: APP_PAGE_STATE + C.SESSION_ONCE_STATE, to: `${APP_PAGE_STATE}  const session = useSession();\n${C.SIGNED_IN_STATE}` },
           { from: C.SIGNED_IN_ONCE, to: C.SIGNED_IN_LIVE },
           { file: SESSION_TS, from: SESSION_ONCE_FN, to: '' },
         ],
@@ -3034,13 +3077,13 @@ export const lessons = [
         run: 'npm run pack:add -- functions',
         point: 'terminal',
         see: 'A new package, `packages/functions`, with `src/function_app.ts`; in `rayfin.yml`, Functions on, with their `path` and `auth` of type `application`.',
-        why: 'The claims provider is a function. The template\'s functions skill sets Functions up with this pack, and says not to run `rayfin functions init` in this template. Functions use the app identity for their connections.',
+        why: 'The claims provider is a function, and Functions use the app identity for their connections. The template\'s functions skill sets them up with this pack, and says not to run `rayfin functions init` here (it would write to `rayfin/functions`). Microsoft Learn and the CLI\'s own code disagree: they say `functions init` uses `services.functions.path`, or `packages/functions` in a workspace. We follow the template.',
       },
       {
         do: 'Turn dynamic claims on: **Do it for me** adds `dynamicClaims:` with `enabled: true` under `auth:` in `rayfin.yml`.',
         file: YML,
         edits: [{ file: YML, from: FABRIC_AUTH, to: FABRIC_AUTH + C.DYNAMIC_CLAIMS_YML }],
-        see: 'The two lines after the `fabric:` block, at the same depth as `fabric:`.',
+        see: 'The two lines after the `fabric:` block, at the same depth as `fabric:`. The page now says **Not signed in**, and **Overview** shows its error panel: sign-in waits for a claims function, and there is none yet. We write it next.',
         why: 'Rayfin\'s docs: `services.auth.dynamicClaims` is the only switch.',
       },
       {
@@ -3058,15 +3101,14 @@ export const lessons = [
           { file: FUNCTION_APP, from: C.CLAIMS_RETURN, to: C.CLAIMS_RETURN_SLIP },
           { file: FUNCTION_APP, from: C.CLAIMS_VALUE, to: C.CLAIMS_VALUE_SLIP },
         ],
-        see: 'No red line.',
+        see: 'No red line. Not signed in again: the claims function\'s answer now has a name the platform keeps for itself.',
       },
       {
-        do: 'Generate the claim types: start the dev loop again.',
+        do: 'Generate the claim types: start the dev loop again, now that the project has Functions.',
         run: 'npm run dev',
-        commandFails: true,
         point: 'terminal',
-        see: 'It stops: `Claim \'role\' is a reserved claim name and cannot be used as a custom claim.`',
-        why: '`role`, `sub`, `email`, `name` and a few more belong to the platform. `rayfin dev` generates the function and claim types when it starts, and checks the names; the backend checks every result at sign-in. (In a real project, stop the running loop first. While it runs, it regenerates the types as you edit the functions, the functions skill says.)',
+        see: 'A warning, and the loop keeps running: `Initial function type generation failed: Claim \'role\' is a reserved claim name and cannot be used as a custom claim.`',
+        why: '`role`, `sub`, `email`, `name` and a few more belong to the platform. `rayfin dev` starts the functions with the loop, generates their types and the claim types, and checks the names; the backend checks every result at sign-in. A failed first generation is only a warning. Keep the loop running, as the functions skill says: its watcher regenerates the types each time the functions change.',
       },
       {
         do: 'Undo it: **Do it for me** puts `salesRole` back.',
@@ -3077,11 +3119,11 @@ export const lessons = [
         see: '`salesRole` again.',
       },
       {
-        do: 'Start the dev loop again:',
-        run: 'npm run dev',
-        point: 'terminal',
-        see: 'No error, and a new file, `packages/auth/claims.generated.d.ts`: `claims.salesRole` and `claims.country` now exist for policies.',
-        why: 'Until it exists, `claims.salesRole` in a policy is a red line. The data package\'s TypeScript settings include `../auth/*.d.ts`, so the policies in `packages/data/src` see these claims.',
+        do: 'Look at the file list: the loop\'s watcher has run again.',
+        point: 'files',
+        file: CLAIMS_TYPES,
+        see: 'A new file, `packages/auth/claims.generated.d.ts`: `claims.salesRole` and `claims.country` now exist for policies.',
+        why: 'Putting `salesRole` back changed the functions, so the watcher generated the types again. Until this file exists, `claims.salesRole` in a policy is a red line. The data package\'s TypeScript settings include `../auth/*.d.ts`, so the policies in `packages/data/src` see these claims.',
       },
       {
         do: 'Switch to Dan.',
@@ -3097,12 +3139,12 @@ export const lessons = [
     ],
     summary: [
       'Business roles come from a `udf.authClaims` function at sign-in, turned on with `dynamicClaims` in `rayfin.yml`.',
-      'Claim names avoid the reserved ones, such as `role`; `npm run dev` generates their types.',
+      'Claim names avoid the reserved ones, such as `role`; the dev loop generates their types, and again as the functions change.',
       'It fails closed, and depends on Functions and your workspace\'s region.',
     ],
     fabric: {
       text: 'Look people up by `ctx.auth.userId` (stable) or a normalized `ctx.auth.email`, keep secrets out of the deny reason, and throw on any lookup failure rather than return a default.',
-      links: [rayfin.dynamicClaims, rayfin.claimRules, rayfin.regionLimit],
+      links: [rayfin.dynamicClaims, rayfin.claimRules, rayfin.regionLimit, learn.functionsLayout],
     },
   },
 
@@ -3184,7 +3226,17 @@ export const lessons = [
       {
         do: 'Apply it again:',
         run: DB_APPLY,
-        see: 'The director\'s rule is back. Bob sees both rows at the page\'s next read: switch to Alice and back to Bob.',
+        see: 'The director\'s rule is back. The page shows it at its next read.',
+      },
+      {
+        do: 'Switch to Alice.',
+        point: 'signin',
+        see: 'Alice sees Germany only.',
+      },
+      {
+        do: 'Switch back to Bob.',
+        point: 'signin',
+        see: 'Bob sees both rows again.',
       },
       {
         do: 'Hide **Add** from people who can\'t use it. At the end of `packages/frontend/src/lib/session.ts`, add:',

@@ -277,7 +277,7 @@ export const modules = [
         answer: 0,
         why: 'The conversions turned a failed result into zeros. Check `status` and show the error instead.',
         lesson: 'review',
-        step: 10,
+        step: 12,
       },
       {
         q: 'An agent\'s query defines its own margin formula, and the model already has `[Margin %]`. What do you do?',
@@ -285,7 +285,7 @@ export const modules = [
         answer: 1,
         why: 'One formula, in the model, shared by every report and app. A copy can drift without any error.',
         lesson: 'review',
-        step: 14,
+        step: 16,
       },
       {
         q: 'On Fabric, whose permissions does a semantic model query run with?',
@@ -391,7 +391,7 @@ export const modules = [
         answer: 2,
         why: '`execute()` returns one page, 100 rows by default. Page through with `executePaginated()`, or take totals from the model.',
         lesson: 'rows-or-measures',
-        step: 4,
+        step: 7,
       },
       {
         q: 'Who does a lakehouse query run as, by default?',
@@ -456,7 +456,7 @@ export const modules = [
         answer: 2,
         why: 'A result has only the fields it selects, and TypeScript knows it, so reading another one is a red line.',
         lesson: 'read-write',
-        step: 9,
+        step: 10,
       },
       {
         q: 'A field is marked `?`, with no `optional: true`. Is its database column nullable?',
@@ -537,7 +537,7 @@ export const modules = [
         answer: 0,
         why: 'The data API, not the page, decides. A hidden button is a hint; the policy on the server is the security.',
         lesson: 'country-targets',
-        step: 15,
+        step: 17,
       },
     ],
   },

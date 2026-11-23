@@ -12,6 +12,7 @@ import { DISCLAIMER_FOOTER, DISCLAIMER_SHORT, DISCLAIMER_TEXT, DISCLAIMER_TITLE,
 import {
   CLAIMS_TYPES,
   FUNCTION_APP,
+  watchFunctions,
   FOLDED_AT_START,
   PAGE_FILE,
   WORKSPACE_MODULES,
@@ -1225,6 +1226,8 @@ function syncModels() {
       models.set(path, model);
       model.onDidChangeContent(() => {
         project.files[path] = model!.getValue(monaco.editor.EndOfLinePreference.LF);
+        // The dev loop's watcher regenerates the claim types when the functions change.
+        if (path === FUNCTION_APP && watchFunctions(project)) setTimeout(() => replaceProject(project, 'The dev loop regenerated the claim types.', FUNCTION_APP));
         scheduleTypeCheck();
         saveProject();
         scheduleDataRender();

@@ -183,7 +183,7 @@ const V5_NOTE = <>Like the Bar chart handler, this one reads <code>p.name</code>
 const REST = 'the lines that bring in the packages, sending the query, the loading and error messages, the line that names the pick, and layout';
 const REST_STATIC = 'the lines that bring in the packages, sending the query, and the loading and error messages';
 const PKG_CHART = <>@microsoft/fabric-visuals 1.0.0 (VegaVisual), the version Rayfin 2.0's data-app template pins. The default template's visuals pack pins 1.3.0.</>;
-const PKG_GRID = <>@microsoft/fabric-datagrid 1.0.0 (DataGrid), the version Rayfin 2.0's data-app template pins.</>;
+const PKG_GRID = <>@microsoft/fabric-datagrid 1.0.0 (DataGrid), the version Rayfin 2.0's data-app template pins. The default template's visuals pack pins 1.3.0.</>;
 const clickJob = (what: string, excerpt: Excerpt): Job => ({
   pbi: 'Interactions',
   app: 'click handler',

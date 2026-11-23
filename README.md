@@ -220,4 +220,4 @@ When a step card opens, its spot in the code is marked in pink and its file open
 
 ## Licences
 
-MIT for this project (`LICENSE`). Bundled third-party code and fonts: `THIRD-PARTY-NOTICES.md` (the Visuals page adds Microsoft's Fabric visuals packages, MIT, and Vega and Vega-Lite, BSD-3-Clause, with their dependencies). The Rayfin type subsets (and the `@microsoft/fabric-user-data-functions` subset) and the data app template's files the terminal writes are from Microsoft's Rayfin 2.0 packages (MIT). Contoso data: SQLBI Contoso Data Generator V2, MIT.
+MIT for this project (`LICENSE`). Bundled third-party code and fonts: `THIRD-PARTY-NOTICES.md` (the Visuals page adds Microsoft's Fabric visuals packages, MIT, and Vega and Vega-Lite, BSD-3-Clause, with their dependencies). The Rayfin type subsets (and the `@microsoft/fabric-user-data-functions` subset) and the template's files the terminal writes are from Microsoft's Rayfin 2.0 packages (MIT). Contoso data: SQLBI Contoso Data Generator V2, MIT.

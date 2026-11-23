@@ -17,6 +17,7 @@ export const terms = [
   { id: 'hook', term: 'Hook', means: 'A `use…` function a page calls at its top: React\'s own, such as `useState` and `useEffect`, and ones built from them, such as the analytics pack\'s `useSemanticModelQuery`, which runs a query and keeps its result. They live in `packages/frontend/src/hooks`.', pbi: 'No direct match: the plumbing behind a visual loading its data.', lesson: 'first-query' },
   { id: 'dependency-list', term: 'Dependency list', means: 'The list at the end of `useEffect` (or of `useCallback`). When something in it changes, the effect runs again.', pbi: 'What makes a visual query again: its filters changing.', lesson: 'redraw-trap' },
   { id: 'lifting-state', term: 'Lifting state up', means: 'Keeping a selection in the component that holds all the visuals, and handing it down to them.', pbi: 'What makes cross-filtering work: the page, not one visual, holds the selection.', lesson: 'cross-filter' },
+  { id: 'skill', term: 'Skill', means: 'Instructions for coding agents, one folder each in `.agents/skills`: when to add a pack, which files to touch, what not to do. The template ships them, and the lessons quote them as sources.', pbi: 'No direct match: like a team\'s how-to page, written for the AI.', lesson: 'connector' },
   { id: 'connector', term: 'Connector', means: 'How a Fabric app reaches existing data in other Fabric items. Added with `npx rayfin connector add`; the page names it in a query\'s `connection`, or calls it through the client, as `client.connectors.contoso`.', pbi: 'A connection to a semantic model (or another Fabric item, such as a warehouse).', lesson: 'connector' },
   { id: 'runtime', term: 'runtime', means: 'The per-connector code that turns a semantic model\'s answer into a result the page can read: `fabricSemanticModel()`, listed in `connectorRuntimes` in `connectors.ts` under the connector\'s exact name. `connector add` writes it.', pbi: 'No direct match: Power BI reads a model\'s answer for its visuals without being told how.', lesson: 'second-client' },
   { id: 'metadata', term: 'metadata.json', means: 'The tables and columns `connector add` found in a SQL source (schema discovery): names, types, keys. Regenerated, never edited by hand.', pbi: "What the Navigator shows in Get data: a source's tables and columns.", lesson: 'lakehouse-connector' },
@@ -84,7 +85,7 @@ export const help = [
   },
   {
     symptom: '"No page yet" in the preview',
-    cause: '`src/App.tsx` is empty, or has no `export default function`.',
+    cause: '`packages/frontend/src/App.tsx` is empty, or has no `export default function`.',
     fix: 'Follow the lesson that writes it, or use **Reset** to go back to the lesson\'s start.',
   },
   {
@@ -94,8 +95,8 @@ export const help = [
   },
   {
     symptom: 'A semantic model page shows nothing: no numbers, no error, no red line',
-    cause: 'The connector has no `runtime` entry under its exact name, so `executeQuery` returns the raw payload, with no `status: \'success\'` or `\'error\'` to read (the Log says "raw payload, not decoded"). That silence holds only while the request itself succeeds: if it is refused (a 401 or 403, say), the client throws, and the page shows an error.',
-    fix: 'Add `fabricSemanticModel()` to `runtime` under the same name as in `configs`, such as `pareto: fabricSemanticModel()`.',
+    cause: 'The connector has no `connectorRuntimes` entry in `connectors.ts` under its exact name, so `executeQuery` returns the raw payload, with no `status: \'success\'` or `\'error\'` to read (the Log says "raw payload, not decoded"). That silence holds only while the request itself succeeds: if it is refused (a 401 or 403, say), the client throws, and the page shows an error.',
+    fix: 'Run `connector add` again to rewrite the wiring; or, in a `connectors.ts` you took over, add `fabricSemanticModel()` to `connectorRuntimes` under the same name as in `connectorConfigs`, such as `\'pareto\': fabricSemanticModel()`.',
   },
   {
     symptom: 'A red line, and "N type errors" under the editor',

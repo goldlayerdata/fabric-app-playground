@@ -270,7 +270,7 @@ export function toPercent(result: SemanticModelQueryResult): number {
   const at = result.table.columns.findIndex((c) => c.name === '[Margin %]');
   return Number(result.table.rows[0][at]);
 }`;
-// Added in Register the second model, and in Two models, one page.
+// Added in Use the second model, and in Two models, one page.
 export const HEADLINE_CONV = `
 
 export type Headline = { count: number; text: string };
@@ -1225,8 +1225,10 @@ export function useSession() {
 `;
 
 // The page list is narrow: a long email wraps onto a second line (wrap-anywhere) instead of being cut short.
+// Read once: signedInEmail() is async, so the page asks after its first draw and keeps the text in state.
+export const SESSION_ONCE_STATE = "  const [email, setEmail] = useState('');\n  useEffect(() => {\n    signedInEmail().then(setEmail);\n  }, []);\n";
 export const SIGNED_IN_ONCE =
-  '        <p className="px-3 pb-2 text-xs text-gray-500 wrap-anywhere">Signed in as {signedInEmail()}</p>\n';
+  '        <p className="px-3 pb-2 text-xs text-gray-500 wrap-anywhere">Signed in as {email}</p>\n';
 export const SIGNED_IN_STATE =
   "  const signedIn = session?.isAuthenticated && session.user ? `Signed in as ${session.user.email}` : 'Not signed in';\n";
 export const SIGNED_IN_LIVE = '        <p className="px-3 pb-2 text-xs text-gray-500 wrap-anywhere">{signedIn}</p>\n';
