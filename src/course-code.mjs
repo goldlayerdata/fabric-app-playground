@@ -50,7 +50,7 @@ export const rayfinClient = RayfinClient.create({
 export const TEST_PAGE = `import { useEffect, useState } from 'react';
 import { rayfinClient } from './lib/rayfin-client';
 
-// A first test: one query, one number. The next module replaces it with a real page.
+// A first test: one query, one number. The next lesson replaces it with a real page.
 export default function App() {
   const [text, setText] = useState('Asking the model…');
 

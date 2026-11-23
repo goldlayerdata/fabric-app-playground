@@ -276,7 +276,7 @@ export const lessons = [
       {
         do: 'Look to the left of the code area: the **file list**.',
         point: 'files',
-        see: 'Empty for now. Our project\'s files appear here, in their folders, as we create them; click one to open it.',
+        see: 'Empty for now. The project\'s files appear here, in their folders: most arrive with the template, and we add ours as we go. Click one to open it.',
       },
       {
         do: 'The code area is where we read and write those files.',
@@ -334,14 +334,19 @@ export const lessons = [
         do: 'In the **Terminal**, create the project:',
         run: 'npm create @microsoft/rayfin@latest contoso-app -- --template dataapp',
         point: 'terminal',
-        see: 'A `contoso-app` folder, and its files in the file list. Those marked 🔒 are the template\'s own, shown as placeholders: open one, and it says what the real file does.',
+        see: 'A `contoso-app` folder, and its files in the file list. 🔒 means read-only here. Most locked files are placeholders that say what the real file does; `package.json` and `rayfin.yml` are real. Two template files stay open for editing because we rewrite them: `src/lib/rayfin-client.ts` and `rayfin/data/schema.ts`.',
         why: '`npm` fetches and runs JavaScript packages; `npm create` runs a project creator, here Rayfin\'s (`@latest`: its newest version). The lone `--` passes `--template dataapp` on to Rayfin\'s creator. Without it, the real command asks which template to use. (In Windows PowerShell, some versions drop the lone `--`: Rayfin\'s docs say to use `npm.cmd` there.)',
       },
       {
         do: 'Move into the new folder:',
         run: 'cd contoso-app',
         see: 'The text before the cursor now ends in `contoso-app`: commands now run inside that folder, where the project\'s files are.',
-        why: 'The folders, in Power BI terms: `src` holds the pages. Inside it, `components` holds the visuals, `hooks` the code that runs a query and waits for it, and `lib` the connection and other shared code; `queries`, the DAX behind each visual, comes in **The first queries**. `rayfin` holds the app\'s settings (`rayfin.yml`) and, later, its own data. The template\'s own files are already in some of them, locked.',
+      },
+      {
+        do: 'Look at the file list: the folders, in Power BI terms.',
+        point: 'files',
+        see: '`src` holds the pages. In it, `components` holds the visuals, `hooks` the code that runs a query and waits for it, and `lib` the connection and other shared code. `queries`, the DAX behind each visual, comes in **The first queries**. `rayfin` holds the app\'s settings (`rayfin.yml`) and, later, its own data.',
+        why: 'Everything else is the template\'s, and we never touch it: the settings files at the top, `.agents` (instructions for coding agents), `.playwright` and `scripts` (browser checks), `src/services` (sign-in) and `src/test` (tests). Some folders are folded: click one to open it.',
       },
       {
         do: 'Install the packages the template lists:',
@@ -381,7 +386,7 @@ export const lessons = [
       '`package.json` lists packages and scripts; `rayfin.yml` holds the app\'s settings. `npm run dev` starts the loop: edit, and see the page.',
     ],
     fabric: {
-      text: 'Microsoft\'s walkthrough starts with a similar `npm create … --template dataapp` (it also passes `--workspace`), then adds the connector. The template\'s other files are in the file list as locked placeholders: its sign-in, a placeholder page, tests, agent files, and its own way to query a semantic model. These lessons use Rayfin\'s connector instead, as rayfin.ai documents it.',
+      text: 'Microsoft\'s walkthrough starts with a similar `npm create … --template dataapp` (it also passes `--workspace`), then adds the connector. Most of the template\'s other files are in the file list as locked placeholders: its sign-in, a placeholder page, tests, agent files, and its own way to query a semantic model. These lessons use Rayfin\'s connector instead, as rayfin.ai documents it.',
       links: [learn.template, rayfin.quickstart],
     },
   },
@@ -462,7 +467,7 @@ export const lessons = [
         code: C.CLIENT_IMPORTS,
         edits: [{ file: CLIENT, from: CLIENT_PLACEHOLDER, to: C.CLIENT_IMPORTS }],
         see: 'No red lines: every package it names is installed.',
-        why: '`import` brings in code from a package (`@microsoft/…`) or another project file. `{ … }` picks named parts; `../../` means two folders up; `as contosoConfig` gives `connectorConfig` a clearer name here.',
+        why: '`import` brings in code from a package (`@microsoft/…`) or another project file. `{ … }` picks named parts; `../../` means two folders up (from `src/lib` to the app folder); `as contosoConfig` gives `connectorConfig` a clearer name here.',
       },
       {
         do: 'Under the imports, add the list of connectors:',
@@ -592,7 +597,7 @@ export const lessons = [
         do: 'Click **+ New file**, at the top of the file list, and type `components/kpi-card.tsx` after the `src/` already there.',
         edits: [{ file: KPI, from: '', to: '' }],
         point: 'files',
-        see: 'A new folder, `src/components`, with an empty `kpi-card.tsx` in it, open in the editor.',
+        see: 'The template\'s `src/components` folder, with an empty `kpi-card.tsx` added to it, open in the editor.',
         why: 'The data app template keeps its visuals in `src/components` (its `AGENTS.md`: cards, charts, banners). One visual per file is our choice: each is easy to find.',
       },
       {
@@ -725,7 +730,8 @@ export const lessons = [
     idea: 'A data app sorts its files a bit like a report project: `components` holds the visuals, `queries/<page>` the DAX behind each visual, page by page, `hooks` the code that runs a query and waits for it, and `lib` the connection and other shared code. Pages stay in `src`. A query goes: its `.dax` file → its `.ts` file → a [[hook]] runs it → a conversion → the visual. We build that for the chart, then for the cards.',
     steps: [
       newFile(HOOK, 'First, the code that runs queries. It is a hook, and the template keeps hooks in a folder of their own: ', {
-        see: 'A new folder, `src/hooks`, with an empty `use-dax.ts` in it, open in the editor.',
+        see: 'The template\'s `src/hooks` folder, with an empty `use-dax.ts` added beside its locked hooks.',
+        why: 'One of those is the template\'s own query hook, `use-semantic-model-query.ts`, for its second data path. Microsoft\'s walkthrough says to use the connector client instead, so we write our own hook on it.',
       }),
       paste(HOOK, C.USE_DAX, 'Paste the code that runs queries into it:', {
         see: 'Nothing on the page changes yet.',
@@ -759,7 +765,7 @@ export const lessons = [
       paste(OVERVIEW_INDEX, C.OVERVIEW_INDEX_V1, 'Paste this line into it:', {
         why: '`export *` passes on everything the file exports, here `revenueByStoreCountry`. Each new query file gets a line like it.',
       }),
-      writeFile(QUERIES_INDEX, C.QUERIES_INDEX_V1, '**Do it for me** writes one more, `src/queries/index.ts`, which passes on the whole `overview` folder:', {
+      writeFile(QUERIES_INDEX, C.QUERIES_INDEX_V1, '**Do it for me** writes one more `index.ts`, `src/queries/index.ts`, which passes on the whole `overview` folder:', {
         why: 'So a page imports any query from `./queries`, whichever folder it is in.',
       }),
       newFile(CONV, 'The chart needs bars, not rows. The code that turns one into the other is shared by the pages, so it goes in `src/lib`: '),
@@ -771,7 +777,7 @@ export const lessons = [
         code: FIRST_IMPORTS.trimEnd(),
         edits: [{ file: APP, from: COMP_IMPORT, to: COMP_IMPORT + FIRST_IMPORTS }],
         see: 'Nothing on the page yet.',
-        why: 'TypeScript never reads the DAX itself: to it, the query is only text.',
+        why: '`./queries` names a folder: an import that names a folder reads that folder\'s `index.ts`. TypeScript never reads the DAX itself: to it, the query is only text.',
       },
       {
         do: 'Run the query: add these lines on new lines under the marked `export default function App() {`.',
@@ -804,7 +810,7 @@ export const lessons = [
       },
       newFile(TOTALS_DAX, 'Now the cards. Their query gets a file too: '),
       paste(TOTALS_DAX, C.TOTALS_DAX, 'Paste the totals query into it:', { why: 'One row with three measures: one for each card.' }),
-      writeFile(TOTALS_TS, C.TOTALS_TS, '**Do it for me** writes its small `.ts` file, `src/queries/overview/sales-totals.ts`, like the countries one, and lists it in the folder\'s `index.ts`:', {}, [
+      writeFile(TOTALS_TS, C.TOTALS_TS, '**Do it for me** writes its small `.ts` file, `src/queries/overview/sales-totals.ts`, like the countries one, and lists it in the folder\'s `index.ts`:', { see: '`src/queries/overview/index.ts` gains `export * from \'./sales-totals\';`.' }, [
         { file: OVERVIEW_INDEX, from: reExport('revenue-by-store-country'), to: reExport('revenue-by-store-country') + reExport('sales-totals') },
       ]),
       {
@@ -916,7 +922,7 @@ export const lessons = [
       paste(MARGIN_DAX, C.MARGIN_IN_QUERY_DAX, 'Paste this query into it. It has the formula written in, as an agent often writes it:', {
         why: '`DEFINE MEASURE` adds a measure for this one query. The model never stores it, and no report can see it.',
       }),
-      writeFile(MARGIN_TS, C.MARGIN_TS, '**Do it for me** writes its small `.ts` file, `src/queries/overview/margin-pct.ts`, like the others, and lists it in the folder\'s `index.ts`:', {}, [
+      writeFile(MARGIN_TS, C.MARGIN_TS, '**Do it for me** writes its small `.ts` file, `src/queries/overview/margin-pct.ts`, like the others, and lists it in the folder\'s `index.ts`:', { see: '`src/queries/overview/index.ts` gains `export * from \'./margin-pct\';`.' }, [
         { file: OVERVIEW_INDEX, from: reExport('sales-totals'), to: reExport('sales-totals') + reExport('margin-pct') },
       ]),
       {
@@ -1451,9 +1457,10 @@ export const lessons = [
           { file: YEARS_INDEX, from: '', to: reExport('revenue-by-year') },
           { file: QUERIES_INDEX, from: reExport('overview'), to: reExport('overview') + reExport('years') },
         ],
+        file: QUERIES_INDEX,
         point: 'files',
         errors: 1,
-        see: 'The red line stays.',
+        see: '`src/queries/index.ts` now passes on `overview` and `years`; the new `src/queries/years/index.ts` passes on `revenue-by-year`. The red line stays.',
       },
       {
         do: 'Load the query: in `src/App.tsx`, add `revenueByYear` to the marked query import.',
@@ -1801,8 +1808,9 @@ export const lessons = [
           { file: CATEGORIES_INDEX, from: '', to: reExport('pareto-headline') },
           { file: QUERIES_INDEX, from: reExport('years'), to: reExport('years') + reExport('categories') },
         ],
+        file: QUERIES_INDEX,
         point: 'files',
-        see: 'No red lines.',
+        see: '`src/queries/index.ts` now passes on three folders; the new `src/queries/categories/index.ts` passes on `pareto-headline`. No red lines.',
       },
       {
         do: 'At the end of `src/lib/conversions.ts`, add the headline\'s conversion:',
@@ -2856,7 +2864,9 @@ export const lessons = [
         see: 'The page still says Alice.',
         why: 'The page read the session once, when it drew, and didn\'t hear about the change. We need [[state]] that listens, as **State as a slicer** taught.',
       },
-      newFile(USE_SESSION, 'Listening is a hook\'s job, so it gets a file in `src/hooks`: '),
+      newFile(USE_SESSION, 'Listening is a hook\'s job, so it gets a file in `src/hooks`: ', {
+        why: 'The template\'s own sign-in hooks are beside it, locked (`use-auth.tsx`, `auth.context.ts`): in a real project they run the Fabric sign-in. Ours only listens to Rayfin\'s session, which the playground simulates.',
+      }),
       {
         do: 'Paste the hook into it:',
         code: C.USE_SESSION,

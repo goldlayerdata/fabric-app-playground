@@ -23,6 +23,7 @@ import {
   emptyProject,
   functionsEnabled,
   isGenerated,
+  isPlaceholder,
   numberRuns,
   runCommand,
   stepFile,
@@ -1344,6 +1345,8 @@ function renderFiles() {
   if (listed) {
     for (const p of paths) {
       if (listed.has(p)) continue;
+      // The template's placeholders arrive in bulk: they don't open their folders or get the "new" dot.
+      if (isPlaceholder(project.files[p])) continue;
       newFiles.add(p);
       unfold(p);
     }

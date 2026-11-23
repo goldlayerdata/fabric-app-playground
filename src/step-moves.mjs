@@ -7,6 +7,7 @@
 export const STEPS_FROM = 'c99672a';
 export const STEPS_VERSION = '4';
 export const stepMoves = {
+  'create': [0, 1, 2, 4, 5, 6, 7, 8, 9],
   'first-query': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 19, 20, 21, 22, 23, 24, 25, 27, 28],
   'measure-or-query': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17],
   'failure': [0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15],
