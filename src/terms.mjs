@@ -27,7 +27,7 @@ export const terms = [
   { id: 'schema-apply', term: 'Schema apply', means: '`npx rayfin up db apply`: creates or changes the tables (and permissions) to match the entities. It stops before potentially destructive changes unless `--force` is given.', pbi: 'Publishing a model change: nothing changes in the service until it is published.', lesson: 'register-apply' },
   { id: 'claim', term: 'Claim', means: "A fact carried in a person's sign-in token: `sub` (their id), `email`, `role`, and any the app adds. Policies compare claims with row fields.", pbi: 'What `USERPRINCIPALNAME()` returns in an RLS rule, and more.', lesson: 'signed-in-as' },
   { id: 'policy', term: 'Policy', means: 'A test on each row in a permission rule, such as `claims.sub.eq(item.owner_id)`. The data API runs it for every request, per action.', pbi: "An RLS role's DAX filter, except it can apply to writes too.", lesson: 'my-rows' },
-  { id: 'function', term: 'Function', means: 'Server-side TypeScript in `rayfin/functions/`, run by Fabric\'s function host. Its connections run as the app identity, the owner of the Fabric app item.', pbi: 'Like a user data function in a translytical task flow.', lesson: 'business-roles' },
+  { id: 'function', term: 'Function', means: 'Server-side TypeScript in `packages/functions/`, run by Fabric\'s function host. Its connections run as the app identity, the owner of the Fabric app item.', pbi: 'Like a user data function in a translytical task flow.', lesson: 'business-roles' },
   { id: 'dynamic-claim', term: 'Dynamic claim', means: 'A claim the app adds at sign-in, from a `udf.authClaims` function, such as `salesRole`. Turned on with `dynamicClaims` in `rayfin.yml`; it depends on Functions and the workspace\'s region.', pbi: 'A security table for dynamic RLS, read once at sign-in.', lesson: 'business-roles' },
 ];
 
@@ -45,7 +45,7 @@ export const help = [
   {
     symptom: '"Sign-in refused" when switching people',
     cause: 'The claims function denied the sign-in (or threw, or returned claims that break the rules).',
-    fix: 'Read the reason; check `rayfin/functions/src/function_app.ts`.',
+    fix: 'Read the reason; check `packages/functions/src/function_app.ts`.',
   },
   {
     symptom: '`db apply` stops: "potentially destructive"',

@@ -38,6 +38,7 @@ import {
   effectiveRules,
   emptyDb,
   entityFiles,
+  exportedNames,
   inAppSchema,
   handleRequest,
   sqlType,
@@ -2333,7 +2334,7 @@ function renderAbout() {
     ),
     p(
       h('b', {}, 'The app\'s own data and sign-in. '),
-      'The app\'s database is simulated in this browser: `npx rayfin up db apply` reads every exported entity class in packages/data/src/, as the real CLI collects them (with a small parser of the decorators), compares them with what it applied last, and stops before the changes Rayfin\'s docs call potentially destructive; its output is the playground\'s wording. Each request from the page is checked against the entity\'s permission rules (`policy` with `.eq`, `.neq`, `.and`, `.or`; `include` and `exclude`) for the claims of the person on the Signed in as switch, here in the browser: on Fabric, the data API (Data API builder) checks them on the server. The people, ids and emails are made up; on Fabric, people sign in with Microsoft Entra ID and nobody switches. When rayfin.yml turns dynamic claims on, your claims function runs in the page\'s sandbox at each switch; on Fabric, the deployed function runs at sign-in and refresh, if the backend has dynamic claims for your workspace\'s region. Refusals and errors without documented wording start with Playground:. The Data tab shows every row, ignoring permissions: no real app has that view. The real thing: ',
+      'The app\'s database is simulated in this browser: `npx rayfin up db apply` reads the entity classes packages/data/src/index.ts exports, as the real CLI collects them from the data package (with a small parser of the decorators), compares them with what it applied last, and stops before the changes Rayfin\'s docs call potentially destructive; its output is the playground\'s wording. Each request from the page is checked against the entity\'s permission rules (`policy` with `.eq`, `.neq`, `.and`, `.or`; `include` and `exclude`) for the claims of the person on the Signed in as switch, here in the browser: on Fabric, the data API (Data API builder) checks them on the server. The people, ids and emails are made up; on Fabric, people sign in with Microsoft Entra ID and nobody switches. When rayfin.yml turns dynamic claims on, your claims function runs in the page\'s sandbox at each switch; on Fabric, the deployed function runs at sign-in and refresh, if the backend has dynamic claims for your workspace\'s region. Refusals and errors without documented wording start with Playground:. The Data tab shows every row, ignoring permissions: no real app has that view. The real thing: ',
       a('https://rayfin.ai/docs/data', 'Data'),
       ', ',
       a('https://rayfin.ai/docs/data/permissions', 'Permissions'),
@@ -2590,13 +2591,17 @@ function renderData() {
     ),
   );
   const names = [...new Set([...files.map((f) => f.name), ...Object.keys(db.tables)])];
-  if (!names.length) parts.push(h('p', {}, rich('No tables yet. Entities in `packages/data/src/` become tables once applied.')));
+  if (!names.length) parts.push(h('p', {}, rich('No tables yet. Entities that `packages/data/src/index.ts` exports become tables once applied.')));
+  const exported = exportedNames(project);
   const unlimited = unlimitedText(db);
   for (const name of names) {
     const e = files.find((x) => x.name === name);
     const table = db.tables[name] as AppTable | undefined;
     const typed = inAppSchema(project, name) ? '' : ' · not in UniversalAppSchema yet, so the client has no typed entity for it';
-    const state = !table ? `not applied yet${e ? typed : ''}` : !e ? 'applied; no longer declared' : `applied${typed}`;
+    const skipped = !!e && !exported.has(name);
+    const state = skipped
+      ? 'not exported from packages/data/src/index.ts, so db apply skips it'
+      : !table ? `not applied yet${e ? typed : ''}` : !e ? 'applied; no longer declared' : `applied${typed}`;
     const section = h('section', { class: 'data-entity' }, h('h3', {}, name, h('span', { class: 'muted' }, ` · ${state}`)));
     // Columns, from the decorators, marked where they differ from the applied table.
     if (e) {

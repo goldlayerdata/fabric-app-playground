@@ -2,8 +2,8 @@
 // (the function), dist/Auth.d.ts (Auth, AuthOptions) and dist/types.d.ts (OpaqueSession, User,
 // TokenResponse), with comments shortened. A subset: the Auth class is declared as an interface of
 // the members a page uses here (the session, its changes, the claims, refresh and sign-out), and
-// AuthOptions is reduced to `storage`. In the data app template, Fabric sign-in itself comes
-// from the companion package @microsoft/rayfin-auth-provider-fabric.
+// AuthOptions is reduced to `storage`. In the template, Fabric sign-in itself comes from the
+// companion package @microsoft/rayfin-auth-provider-fabric.
 declare module '@microsoft/rayfin-auth' {
   import type { ClientAuthFactory } from '@microsoft/rayfin-lib';
   import type { ClientClaims } from '@microsoft/rayfin-core';

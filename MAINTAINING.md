@@ -98,9 +98,10 @@ visuals page: all checks passed
 | The template's files written at `npm create` (the Universal App): verbatim ones, the editable data and shared index files, the locked stand-ins for the client and the pack's query hook, and the locked placeholders (`TEMPLATE_PLACEHOLDERS`, one or two lines each, starting `Playground:`; JSON ones as `{ "_playground": … }`) | `src/project.mjs` |
 | The app's own database, permissions, claims | `src/app-data.mjs` |
 | How connector names resolve | `src/connectors-sim.mjs` |
-| The packs (`npm run pack:add -- connectors`, `-- analytics`) and what they copy | `src/project.mjs`, `PACKS` |
+| The packs (`npm run pack:add -- connectors`, `analytics`, `data-modeling`, `functions`) and what they write | `src/project.mjs`, `PACKS` |
 | The wiring `connector add` writes into `connectors.ts` | `src/wiring-fixtures.mjs`, written by `node tools/wiring/write-fixtures.mjs` (needs the reference install, see 2.12) |
 | The workspace's package names and where they point | `src/workspace.mjs` |
+| Pack files shown verbatim (the data-modeling starter, the functions package) | `src/pack-kits.mjs`, written by `node tools/wiring/write-pack-kits.mjs` (2.12) |
 | The queries the models can answer | `tools/make-catalog.mjs`, which writes `data/catalog.json` |
 | The saved answers | `data/snapshots.json`, written by `tools/snapshot.ps1` |
 | The lakehouse rows (Chapter 3) | `data/lakehouse.json` (edited by hand: there is no generator) |
@@ -396,6 +397,8 @@ Remake it after a Rayfin upgrade, or when a lesson adds a connector set that isn
    ```
 
 4. Commit `tools/wiring/` and `src/wiring-fixtures.mjs` together.
+
+The pack files the lessons show verbatim (`src/pack-kits.mjs`: the data-modeling starter and index files, the functions package's `function_app.ts` and `package.json`) are remade the same way: `node tools/wiring/write-pack-kits.mjs`, then `npm run check`.
 
 ## 3. Troubleshooting
 

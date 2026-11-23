@@ -663,7 +663,7 @@ function runApp(project) {
 
   // Roles the business knows: run the project's own claims function, as the preview does at each switch.
   const final = after['country-targets'];
-  const fnText = final.files['rayfin/functions/src/function_app.ts'];
+  const fnText = final.files['packages/functions/src/function_app.ts'];
   const runClaims = async (email) => {
     const js = ts.transpileModule(fnText, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
     let handler;

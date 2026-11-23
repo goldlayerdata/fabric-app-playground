@@ -3,8 +3,9 @@
 //
 // What is simulated, and how (rayfin.ai: Data, Permissions, Schema changes; Microsoft Learn: Define data
 // models, Define data permissions):
-// - Entities are every exported @entity() class in packages/data/src/*.ts, as the Rayfin CLI collects them (it doesn't
-//   need the `schema` array). The real CLI compiles them and reads their metadata; here a small parser reads the source.
+// - Entities are the @entity() classes packages/data/src/index.ts exports, by name or in an exported array such as
+//   `schema`, as the Rayfin CLI collects them from the data package's exports. The real CLI builds the package and
+//   reads their metadata; here a small parser reads the source.
 // - `db apply` compares the declared entities with the tables it applied last time. It blocks the changes
 //   Rayfin's docs call potentially destructive (dropping a column or table, narrowing or changing a type)
 //   unless `--force` is given. The real CLI's output wording is not documented: the terminal prints
@@ -297,12 +298,22 @@ export function entityFiles(project) {
 
 /**
  * The entities `db apply` applies. Like the Rayfin CLI 2.0.0 (rayfin-tools-common, services/data/node/dab-config.js:
- * findCompiledDataFiles, collectEntities), every exported @entity() class in packages/data/src/ counts, whether or not
- * packages/data/src/index.ts lists it: the `schema` array and the type (the template's `UniversalAppSchema`, in packages/shared; `AppSchema` in Rayfin's
- * docs) are the lists Rayfin's docs ask for.
+ * resolvePackageExports, collectEntities): the data package's package.json exports dist/index.js, so the CLI runs its build
+ * and collects the entities that index exports, by name or inside an exported array (`schema`). An entity file that
+ * index.ts doesn't export isn't applied. The type (`UniversalAppSchema`, in packages/shared) is the second list Rayfin's
+ * docs ask for: the client's types.
  */
+export function exportedNames(project) {
+  const text = stripComments(project.files[SCHEMA_FILE] ?? '');
+  const names = new Set();
+  for (const m of text.matchAll(/export\s*\{([^}]*)\}/g)) for (const n of m[1].split(',')) if (n.trim()) names.add(n.trim().split(/\s+as\s+/).pop());
+  for (const m of text.matchAll(/export\s+(?:const|let)\s+\w+\s*=\s*\[([^\]]*)\]/g)) for (const n of m[1].split(',')) if (n.trim()) names.add(n.trim());
+  for (const m of text.matchAll(/export\s+class\s+(\w+)/g)) names.add(m[1]);
+  return names;
+}
 export function declared(project) {
-  const entities = entityFiles(project);
+  const names = exportedNames(project);
+  const entities = entityFiles(project).filter((e) => names.has(e.name));
   return { entities, problems: entities.flatMap((e) => e.problems) };
 }
 
@@ -680,7 +691,7 @@ export function claimNameProblems(names) {
 }
 
 /**
- * The claims function's declared return type, read from rayfin/functions/src/function_app.ts:
+ * The claims function's declared return type, read from packages/functions/src/function_app.ts:
  * `udf.authClaims(async (ctx: AuthClaimsContext): Promise<{ salesRole: string; country: string }> => …)`.
  * Returns { found, claims: [{ name, type }], problems }.
  */
@@ -709,7 +720,7 @@ export function claimsContract(text) {
   return { found: true, claims, problems };
 }
 
-/** The file `npx rayfin functions init` generates for the claims: the Rayfin CLI 2.0.0's renderDts, verbatim. */
+/** The file `rayfin dev` generates for the claims (packages/auth): the Rayfin CLI 2.0.0's renderDts, verbatim. */
 export function claimsTypesFile(claims) {
   return [
     '/**',

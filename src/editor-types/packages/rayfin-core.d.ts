@@ -53,7 +53,7 @@ declare module '@microsoft/rayfin-core' {
 
   /**
    * Augmentation target for an app's custom auth claims. The generated
-   * `rayfin/auth/claims.generated.d.ts` merges the `udf.authClaims` return type into it.
+   * `packages/auth/claims.generated.d.ts` merges the `udf.authClaims` return type into it.
    * Empty by default: an app with no claims function sees only the base claims.
    */
   export interface RayfinCustomClaims {}
@@ -227,7 +227,7 @@ declare module '@microsoft/rayfin-core' {
 }
 
 // dist/experimental/index.d.ts: the claims types again, from the package's experimental entry. The generated
-// rayfin/auth/claims.generated.d.ts augments this module; it merges into the same RayfinCustomClaims.
+// packages/auth/claims.generated.d.ts augments this module; it merges into the same RayfinCustomClaims.
 declare module '@microsoft/rayfin-core/experimental/index' {
   export type { RayfinBaseClaims, RayfinCustomClaims, AllClaims, ClientClaims, ClaimsDsl } from '@microsoft/rayfin-core';
   export { ClaimRef } from '@microsoft/rayfin-core';

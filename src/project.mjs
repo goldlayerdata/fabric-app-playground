@@ -9,6 +9,7 @@
 import lakehouse from '../data/lakehouse.json' with { type: 'json' };
 import { claimsContract, claimsTypesFile, dataService, emptyDb, planApply, unlimitedText } from './app-data.mjs';
 import { CONNECTORS_KIT, WIRING } from './wiring-fixtures.mjs';
+import { DATA_KIT_INDEX, DATA_KIT_ITEM, FUNCTIONS_KIT_APP, FUNCTIONS_KIT_PACKAGE, SHARED_KIT_INDEX } from './pack-kits.mjs';
 import { WORKSPACE_MODULES } from './workspace.mjs';
 
 export { WORKSPACE_MODULES };
@@ -225,6 +226,12 @@ export async function getRayfinClient(): Promise<AppClient> {
   return client;
 }
 `;
+// The same, as the functions pack replaces it (connectors/kit/rayfin-client.with-functions.ts, chosen because the
+// connectors pack is applied): it also adds a functions service. No lesson calls a function from the page, so the
+// stand-in names it in a comment instead of importing its types.
+export const CLIENT_STANDIN_FUNCTIONS = CLIENT_STANDIN_CONNECTORS
+  .replace('a stand-in for the client the connectors pack installs, shortened', 'a stand-in for the client the connectors and functions packs install, shortened')
+  .replace('    services: {\n', '    services: {\n      // Playground: the functions pack also adds functions: functionsService<AppFunctionsSchema>() here (not shown).\n');
 // The analytics pack's hook (kit/hooks/use-semantic-model-query.ts), as a working stand-in (locked).
 export const HOOK_STANDIN = `// Playground: a stand-in for the analytics pack's use-semantic-model-query.ts, shortened: the same inputs and outputs.
 // The real hook also keeps only the newest answer when queries overlap, and has refetch().
@@ -415,7 +422,7 @@ const CONNECTOR_PACKAGES = [
   '@microsoft/rayfin-connectors',
   '@microsoft/rayfin-connector-fabric-graphql',
 ];
-/** Installed by `npx rayfin functions init`, in the functions package (rayfin/functions/). */
+/** The functions package's own dependency (packages/functions/package.json), installed with the workspace. */
 const FUNCTIONS_PACKAGE = '@microsoft/fabric-user-data-functions';
 /** Everything `npm install` installs at the workspace root: every package's dependencies. */
 const TEMPLATE_INSTALL = [
@@ -512,7 +519,8 @@ export function runCommand(start, line, answer) {
       '  npx rayfin connector inspect --name <name> --entity <schema.table> --rows <n>',
       '  npx rayfin up connector apply --name <name>',
       '  npx rayfin connector list          npx rayfin connector invoke <name> executeQuery --input \'{"query":"…"}\'',
-      '  npx rayfin up db apply [--force]          npx rayfin up status          npx rayfin functions init',
+      '  npx rayfin up db apply [--force]          npx rayfin up status',
+      '  npm run pack:add -- connectors | analytics | data-modeling | functions',
       '  npm run dev          npx rayfin up          ls          clear',
       ...(p.appDir ? [] : [PG('There is no project yet: the first one, `npm create …`, makes it, in the lesson "Create the project".')]),
     );
@@ -682,9 +690,12 @@ function runDev(p, done) {
   if (!p.packages.includes('@microsoft/rayfin-client')) {
     return { project: p, lines: [PG('Run `npm install` first: the dev server needs the template\'s packages.')], ok: false };
   }
+  const claims = generateClaimTypes(p);
+  if (claims.error) return { project: p, lines: [SIMULATED, ...claims.error], ok: false };
   p.dev = true;
   return done(
     SIMULATED,
+    ...claims.lines,
     PG('A real `rayfin dev` provisions (or reuses) the app\'s Fabric backend, writes RAYFIN_PUBLIC_* values to'),
     PG('rayfin/.env and VITE_* values to the frontend\'s .env.local, and serves the page on http://localhost:5173. It keeps'),
     PG('running, so real projects open a second terminal for the next commands.'),
@@ -810,7 +821,8 @@ function sqlAnalyticsAdd(p, f, done, fail) {
   if (name !== name.toLowerCase()) lines.push(`Using normalized connector name "${name.toLowerCase()}" (from "${name}").`);
   name = name.toLowerCase();
   const exists = connectorNames(p).includes(name);
-  if (exists && !f.yes) return fail(`Connector "${name}" already exists.`, '   Re-run with --yes to overwrite the existing connector.');
+  // Rayfin CLI 2.0.0 (connector-add.js): an existing connector is overwritten after a yes to its question, or with --yes.
+  if (exists && !f.yes) lines.push(`Connector "${name}" already exists.`, PG('The real CLI asks "Overwrite?" here (default No). The playground answers Yes, as the step says.'));
 
   // Schema discovery resolves a lakehouse to its SQL analytics endpoint and writes that id back.
   const entry = [
@@ -847,7 +859,7 @@ function sqlAnalyticsAdd(p, f, done, fail) {
     `✅ Discovered ${tables} tables across ${metadata.schemas.length} schemas`,
     PG(`Wrote ${dir}/metadata.json. A lakehouse's id resolves to its SQL analytics endpoint, so rayfin.yml now holds the endpoint's id.`),
     PG('The real CLI also adds its connector skill for agents. It writes no entity files: they are generated from metadata.json.'),
-    PG(`This template has no generated wiring file, so nothing is wired: we register it in the client ourselves (client.connectors.${name}).`),
+    ...wireConnectors(p),
     '',
     '📦 Install the packages this connector needs:',
     '   npm install @microsoft/rayfin-connector-fabric-graphql@2.0.0 @microsoft/rayfin-connectors@2.0.0',
@@ -886,22 +898,26 @@ function connectorInspect(p, f, done, fail) {
 }
 
 // ---------------------------------------------------------------- capability packs (npm run pack:add -- <pack>)
-// From templates/universal-app/.agents/skills/<pack>/pack.json and scripts/scaffold.mjs (Rayfin CLI 2.0.0): the files each
-// pack copies, the rayfin.yml services it turns on (a new service block goes right under `services:`), the packages it
-// adds to packages/frontend/package.json ("match:@microsoft/rayfin-core" = core's range, ^2.0.0), and the pack it records
-// in the root package.json's `rayfinPacks`. The console lines are scaffold.mjs's own; it then runs npm install.
+// From templates/universal-app/.agents/skills/<pack>/pack.json and scripts/scaffold.mjs (Rayfin CLI 2.0.0): the rayfin.yml
+// service settings each pack writes (writeServiceProperty: a new service block goes right under `services:`, a new
+// property at the end of its block, strings quoted), the root scripts it adds or composes, the packages it pins in its
+// package.json ("match:@microsoft/rayfin-core" is the app's own core range, ^2.0.0), the files it copies (a seed file only
+// over the template's own version), and the pack it records in the root package.json's `rayfinPacks`. The console
+// lines are scaffold.mjs's own, in its order; it then runs npm install, unless the pack declares no packages.
 const PACKS = {
   connectors: {
     description: 'Adds the frontend connector SDK and composable client wiring for existing Fabric sources; source declarations remain owned by `rayfin connector add`.',
-    dependencies: ['@microsoft/rayfin-connectors'],
+    packageJson: `${FE}/package.json`,
+    dependencies: { '@microsoft/rayfin-connectors': '^2.0.0' },
     // kit/connectors.ts (only when the app has none yet) and the client, replaced while it is the template's own.
     copy: (p) => ({ ...(p.files[`${FE}/src/lib/connectors.ts`] === undefined ? { [`${FE}/src/lib/connectors.ts`]: CONNECTORS_KIT } : {}), [`${FE}/src/lib/rayfin-client.ts`]: CLIENT_STANDIN_CONNECTORS }),
     next: ['app-design'],
   },
   analytics: {
     description: 'Power BI / semantic-model analytics: the `fabric-semanticmodel` connector and the semantic-model query hook. Add the visuals pack alongside it to chart what the queries return.',
-    services: { connectors: true },
-    dependencies: ['@microsoft/rayfin-connectors', '@microsoft/rayfin-connector-fabric-semanticmodel'],
+    services: [['connectors', 'enabled', true]],
+    packageJson: `${FE}/package.json`,
+    dependencies: { '@microsoft/rayfin-connectors': '^2.0.0', '@microsoft/rayfin-connector-fabric-semanticmodel': '^2.0.0' },
     gitignore: ['.schema/', '.rayfin-schema-query-*/'],
     // kit/hooks: the hook and its tests (its scripts are copied only behind a flag).
     copy: () => ({
@@ -910,34 +926,118 @@ const PACKS = {
     }),
     next: ['analytics'],
   },
+  'data-modeling': {
+    description: 'Rayfin data service: turns the database on and plants a starter entity with owner-scoped access, so an agent edits a working schema instead of inventing one.',
+    services: [['data', 'enabled', true], ['data', 'dialect', 'mssql']],
+    // kit/data/Item.ts, and the two index files, planted over the template's own (seedReplaceIfPristine).
+    copy: (p) => ({
+      ...(p.files[DATA_ITEM_FILE] === undefined ? { [DATA_ITEM_FILE]: DATA_KIT_ITEM } : {}),
+      ...(p.files['packages/data/src/index.ts'] === TEMPLATE_DATA_INDEX ? { 'packages/data/src/index.ts': DATA_KIT_INDEX } : {}),
+      ...(p.files['packages/shared/src/index.ts'] === TEMPLATE_SHARED_INDEX ? { 'packages/shared/src/index.ts': SHARED_KIT_INDEX } : {}),
+    }),
+    next: ['crud-ui', 'app-design'],
+  },
+  functions: {
+    description: 'Trusted server-side workflows through typed Rayfin user-defined functions, including external APIs, custom model endpoints, and Fabric data-agent calls.',
+    services: [['functions', 'enabled', true], ['functions', 'path', 'packages/functions'], ['functions', 'buildCommand', 'npm run build'], ['functions', 'auth', { type: 'application' }]],
+    packageJson: `${FE}/package.json`,
+    dependencies: { '@microsoft/rayfin-functions': '^2.0.0', '@rayfin-app/functions': '*' },
+    // The function package's own dependency, installed with the workspace.
+    installs: [FUNCTIONS_PACKAGE],
+    scripts: { 'functions:build': 'npm run -w @rayfin-app/functions build', 'validate:functions': 'npm run -w @rayfin-app/shared build && node scripts/validate-functions.mjs' },
+    // scriptStages, composed with the template's scripts as scaffold.mjs composes them (worked out on the template).
+    composed: {
+      build: 'npm run -w @rayfin-app/shared build && node scripts/validate-functions.mjs && npm run -w @rayfin-app/functions build && npm run -w @rayfin-app/data build && npm run -w @rayfin-app/frontend build',
+      'build:fabric': 'npm run -w @rayfin-app/shared build && node scripts/validate-functions.mjs && npm run -w @rayfin-app/functions build && npm run -w @rayfin-app/data build && npm run -w @rayfin-app/frontend build:fabric',
+      typecheck: 'npm run -w @rayfin-app/shared build && node scripts/validate-functions.mjs && npm run -w @rayfin-app/functions build && tsc -b',
+    },
+    // kit/functions (the package), the client with functions (while it is a pack's own), and the check script.
+    // kit/vite-env.d.ts is the template's own text, so it is not copied again.
+    copy: (p) => ({
+      'packages/functions/host.json': PG_JSON('the function host settings (host.json).'),
+      'packages/functions/local.settings.json': PG_JSON('settings for running the functions locally.'),
+      'packages/functions/package.json': FUNCTIONS_KIT_PACKAGE,
+      [FUNCTION_APP]: FUNCTIONS_KIT_APP,
+      'packages/functions/src/types.ts': `// Playground: generated from function_app.ts by npm run dev: each function's input and output types (AppFunctionsSchema), for the client. Never edited by hand.\n`,
+      'packages/functions/tsconfig.json': PG_JSON('TypeScript settings for the functions package.'),
+      ...([CLIENT_STANDIN, CLIENT_STANDIN_CONNECTORS].includes(p.files[`${FE}/src/lib/rayfin-client.ts`]) ? { [`${FE}/src/lib/rayfin-client.ts`]: CLIENT_STANDIN_FUNCTIONS } : {}),
+      'scripts/validate-functions.mjs': `// Playground: the functions pack's check that every udf.func() in function_app.ts is in the generated AppFunctionsSchema (npm run validate:functions).\n`,
+    }),
+    next: ['functions-capability', 'external-api-workflows', 'fabric-data-agent', 'app-design', 'app-validation'],
+  },
 };
+
+/** One service setting in rayfin.yml, as scaffold.mjs's writeServiceProperty writes it. */
+function writeServiceProperty(yml, service, property, value) {
+  const rendered = property === 'auth' && service === 'functions'
+    ? ['    auth:', '      type: "application"']
+    : [`    ${property}: ${typeof value === 'string' ? JSON.stringify(value) : String(value)}`];
+  const lines = yml.replace(/\n$/, '').split('\n');
+  const servicesIdx = lines.findIndex((l) => /^services:/.test(l));
+  let end = lines.findIndex((l, i) => i > servicesIdx && /^\S/.test(l));
+  if (end < 0) end = lines.length;
+  const svcIdx = lines.findIndex((l, i) => i > servicesIdx && i < end && l === `  ${service}:`);
+  if (svcIdx < 0) {
+    lines.splice(servicesIdx + 1, 0, `  ${service}:`, ...rendered);
+    return `${lines.join('\n')}\n`;
+  }
+  let blockEnd = svcIdx + 1;
+  while (blockEnd < end && /^ {4}/.test(lines[blockEnd])) blockEnd++;
+  const at = lines.findIndex((l, i) => i > svcIdx && i < blockEnd && l.startsWith(`    ${property}:`));
+  if (at >= 0) {
+    let n = 1;
+    while (at + n < blockEnd && /^ {6}/.test(lines[at + n])) n++;
+    lines.splice(at, n, ...rendered);
+  } else lines.splice(blockEnd, 0, ...rendered);
+  return `${lines.join('\n')}\n`;
+}
 
 function packAdd(p, pack, done, fail) {
   const def = PACKS[pack];
   if (!def) return fail(PG(`The playground simulates the packs the lessons use: ${Object.keys(PACKS).join(', ')} (you asked for ${pack ?? 'none'}).`));
-  const lines = [`> Scaffolding pack: ${pack}`, `  ${def.description}`];
-  for (const service of Object.keys(def.services ?? {})) {
-    const yml = p.files['rayfin/rayfin.yml'];
-    if (!new RegExp(`^  ${service}:\\n    enabled: true`, 'm').test(yml)) {
-      p.files['rayfin/rayfin.yml'] = yml.replace(/^services:\n/m, `services:\n  ${service}:\n    enabled: true\n`);
-    }
-    lines.push(`  - rayfin.yml: ${service}.enabled = true`);
+  const lines = ['', `> Scaffolding pack: ${pack}`, `  ${def.description}`];
+  for (const [service, property, value] of def.services ?? []) {
+    p.files['rayfin/rayfin.yml'] = writeServiceProperty(p.files['rayfin/rayfin.yml'], service, property, value);
+    lines.push(`  - rayfin.yml: ${service}.${property} = ${typeof value === 'object' ? JSON.stringify(value) : String(value)}`);
   }
+  for (const entry of def.gitignore ?? []) lines.push(`  - .gitignore: ${entry}`);
+  const root = JSON.parse(p.files['package.json']);
+  for (const [name, cmd] of Object.entries(def.scripts ?? {})) {
+    if (root.scripts[name] === cmd) continue;
+    root.scripts[name] = cmd;
+    lines.push(`  - package.json script: ${name}`);
+  }
+  for (const [name, cmd] of Object.entries(def.composed ?? {})) {
+    if (root.scripts[name] === cmd) continue;
+    root.rayfinScriptBases ??= {};
+    root.rayfinScriptBases[name] ??= root.scripts[name].split(' && ').filter((stage) => !cmd.split(' && ').slice(0, 3).includes(stage)).join(' && ');
+    root.scripts[name] = cmd;
+    lines.push(`  - package.json composed script: ${name}`);
+  }
+  let depCount = 0;
+  const depFile = def.packageJson ?? 'package.json';
+  const deps = Object.entries(def.dependencies ?? {});
+  if (deps.length) {
+    const pkg = depFile === 'package.json' ? root : JSON.parse(p.files[depFile]);
+    for (const [dep, version] of deps) {
+      if (pkg.dependencies[dep] !== version) depCount++;
+      pkg.dependencies[dep] = version;
+    }
+    pkg.dependencies = Object.fromEntries(Object.entries(pkg.dependencies).sort(([a], [b]) => a.localeCompare(b)));
+    if (depFile !== 'package.json') p.files[depFile] = json(pkg);
+  }
+  lines.push(`  - ${depFile}: ${depCount} dependency change(s)`);
+  root.rayfinPacks = [...new Set([...(root.rayfinPacks ?? []), pack])].sort();
+  p.files['package.json'] = json(root);
   const files = def.copy(p);
   Object.assign(p.files, files);
   lines.push(`  - copied ${Object.keys(files).length} file(s)`);
-  const fe = JSON.parse(p.files[`${FE}/package.json`]);
-  for (const dep of def.dependencies) fe.dependencies[dep] ??= '^2.0.0';
-  fe.dependencies = Object.fromEntries(Object.entries(fe.dependencies).sort(([a], [b]) => a.localeCompare(b)));
-  p.files[`${FE}/package.json`] = json(fe);
-  const root = JSON.parse(p.files['package.json']);
-  root.rayfinPacks = [...new Set([...(root.rayfinPacks ?? []), pack])].sort();
-  p.files['package.json'] = json(root);
-  for (const entry of def.gitignore ?? []) lines.push(`  - .gitignore: ${entry}`);
-  lines.push(PG(`added ${def.dependencies.join(', ')} to packages/frontend/package.json, and ${pack} to rayfinPacks in package.json.`));
-  lines.push('> Installing dependencies...');
-  for (const dep of def.dependencies) if (!p.packages.includes(dep)) p.packages.push(dep);
-  lines.push('[done] Pack ready. Next, read these skills as you build:', ...def.next.map((n) => `  -> .agents/skills/${n}/SKILL.md`));
+  if (!deps.length) lines.push('', '(pack declares no dependencies - skipping install)');
+  else {
+    lines.push('', '> Installing dependencies...');
+    for (const dep of [...deps.map(([d]) => d).filter((d) => !d.startsWith('@rayfin-app/')), ...(def.installs ?? [])]) if (!p.packages.includes(dep)) p.packages.push(dep);
+  }
+  lines.push('', '[done] Pack ready. Next, read these skills as you build:', ...def.next.map((n) => `  -> .agents/skills/${n}/SKILL.md`));
   return done(...lines);
 }
 
@@ -1174,26 +1274,15 @@ function upStatus(p, done, fail) {
   );
 }
 
-/** The scaffold's function file: @microsoft/rayfin-cli 2.0.0 assets/functions/function_app.ts.template, verbatim. */
-export const FUNCTION_APP_TEMPLATE = [
-  "import { UserDataFunctions } from '@microsoft/fabric-user-data-functions';",
-  '',
-  'const udf = new UserDataFunctions();',
-  '',
-  '/**',
-  ' * A simple greeting function.',
-  ' *',
-  ' * The input/output types for this function are autogenerated in ./types.ts so that',
-  ' * RayfinClient can invoke it with full type-safety from your frontend app.',
-  ' */',
-  "udf.func('helloWorld', (firstName: string, lastName: string): string => {",
-  '  console.log(`helloWorld invoked for ${firstName} ${lastName}`);',
-  '  return `Hello ${firstName} ${lastName}!`;',
-  '}, []);',
-  '',
-].join('\n');
-export const FUNCTION_APP = 'rayfin/functions/src/function_app.ts';
-export const CLAIMS_TYPES = 'rayfin/auth/claims.generated.d.ts';
+/** The functions pack's function file (functions-capability/kit/functions/src/function_app.ts), verbatim. */
+export const FUNCTION_APP_TEMPLATE = FUNCTIONS_KIT_APP;
+export const FUNCTION_APP = 'packages/functions/src/function_app.ts';
+/** Where the claim types go: beside the functions package, in packages/auth (rayfin-tools-common dynamicClaimsAuthDir:
+ * the functions folder's ../auth), which packages/data/tsconfig.json includes (../auth/*.d.ts). */
+export const CLAIMS_TYPES = 'packages/auth/claims.generated.d.ts';
+/** The data-modeling pack's starter entity. */
+export const DATA_ITEM_FILE = 'packages/data/src/Item.ts';
+export { DATA_KIT_INDEX, DATA_KIT_ITEM, SHARED_KIT_INDEX };
 
 /** Are dynamic claims declared, and on, in rayfin.yml? (rayfin.ai: Dynamic auth claims, enable) */
 export function dynamicClaims(p) {
@@ -1204,49 +1293,33 @@ export function dynamicClaims(p) {
 /** Are Functions on in rayfin.yml? */
 export const functionsEnabled = (p) => /^ {2}functions:\n {4}enabled: true\s*$/m.test(p.files['rayfin/rayfin.yml'] ?? '');
 
-// `npx rayfin functions init` (rayfin.ai: CLI reference, functions init; Dynamic auth claims, generate the claim
-// types). The lines that aren't `Playground:` lines are the Rayfin CLI 2.0.0's own (commands/functions/functions-init.js).
+// `npx rayfin functions init`: the template's functions skill says not to run it in this workspace template (it writes
+// to the legacy rayfin/functions, not services.functions.path). The playground doesn't run it.
 function functionsInit(p, f, done, fail) {
-  const lines = [SIMULATED];
-  if (p.files[FUNCTION_APP] === undefined || f.force === true) {
-    lines.push('⚡ Scaffolding Rayfin functions project...', '');
-    p.files[FUNCTION_APP] = FUNCTION_APP_TEMPLATE;
-    const block = '  functions:\n    enabled: true\n    buildCommand: npm run build\n    auth:\n      type: application\n';
-    const yml = p.files['rayfin/rayfin.yml'];
-    const re = /^ {2}functions:\n(?: {4}.*\n?)*/m;
-    p.files['rayfin/rayfin.yml'] = re.test(yml) ? yml.replace(re, block) : `${yml.trimEnd()}\n${block}`;
-    if (!p.packages.includes(FUNCTIONS_PACKAGE)) p.packages.push(FUNCTIONS_PACKAGE);
-    lines.push(
-      '✅ Functions project scaffolded successfully!',
-      '📁 Directory: rayfin/functions',
-      PG(`Shown here: ${FUNCTION_APP}. The real scaffold also writes package.json, tsconfig.json, host.json,`),
-      PG('local.settings.json, src/types.ts and src/secrets.generated.ts.'),
-    );
-  } else {
-    lines.push('ℹ️  rayfin/functions/ already exists — skipping scaffold to preserve your code.', '   Pass --force to overwrite the scaffold with the template defaults.');
+  return fail(
+    PG('Not run here. The template\'s functions skill says not to run `rayfin functions init` in this template: it would'),
+    PG('write a second functions project under rayfin/functions. Add Functions with `npm run pack:add -- functions`, and'),
+    PG('let `npm run dev` generate the types.'),
+  );
+}
+
+/**
+ * The type generation `rayfin dev` runs at start for the functions package (rayfin-cli utils/functions-types-generator.js):
+ * with dynamic claims on, the claim types (utils/auth-claims-generator.js), or the generator's error, which stops it.
+ */
+function generateClaimTypes(p) {
+  if (!functionsEnabled(p) || p.files[FUNCTION_APP] === undefined) return { lines: [] };
+  if (!dynamicClaims(p).enabled && p.files[CLAIMS_TYPES] === undefined) return { lines: [] };
+  const contract = claimsContract(p.files[FUNCTION_APP]);
+  if (contract.found && contract.problems.length) {
+    return { error: [PG(`rayfin dev stops while it generates the function types, with the generator's error: ${contract.problems[0]}`), PG('Nothing was generated.')] };
   }
-  lines.push('', '📦 Installing dependencies...', '✅ Dependencies installed.', '', '📝 Generating types.ts...');
-  // Claim types: generated only when rayfin.yml declares services.auth.dynamicClaims.
-  if (dynamicClaims(p).declared) {
-    const contract = claimsContract(p.files[FUNCTION_APP]);
-    if (contract.found && contract.problems.length) {
-      // The CLI stops at the first broken rule (utils/auth-claims-generator.js), and functions init reports it.
-      return fail(
-        ...lines,
-        `❌ Error scaffolding functions project: AuthClaimsValidationError: ${contract.problems[0]}`,
-        PG('The real output goes on with the error\'s stack trace. Nothing was generated.'),
-      );
-    }
-    if (contract.found) {
-      p.files[CLAIMS_TYPES] = claimsTypesFile(contract.claims);
-      lines.push(PG(`Wrote ${CLAIMS_TYPES}, and rayfin/auth/claims.contract.json and rayfin/functions/claims.contract.json (not shown).`));
-    } else if (p.files[CLAIMS_TYPES] !== undefined) {
-      delete p.files[CLAIMS_TYPES];
-      lines.push(PG(`No udf.authClaims function: removed ${CLAIMS_TYPES} and the contracts.`));
-    }
+  if (contract.found && dynamicClaims(p).enabled) {
+    p.files[CLAIMS_TYPES] = claimsTypesFile(contract.claims);
+    return { lines: [PG(`Generated the function types (packages/functions/src/types.ts) and the claim types, ${CLAIMS_TYPES} (and the claims contracts, not shown).`)] };
   }
-  lines.push('✅ types.ts generated.', PG('The real command then builds the functions project and installs agent files: not shown.'), '', '🎉 Functions project is ready!');
-  return done(...lines);
+  delete p.files[CLAIMS_TYPES];
+  return { lines: [PG(`No claims function: removed ${CLAIMS_TYPES} and the claims contracts.`)] };
 }
 
 // ---------------------------------------------------------------- steps
