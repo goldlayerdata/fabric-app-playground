@@ -144,17 +144,91 @@ export function useDax(runDax: RunDax, query: string) {
 }
 `;
 
-export const COUNTRY_QUERY = `
-// ------------------------------------------------------------ the queries
-// The DAX uses the model's own measures, such as [Revenue], as a report visual does.
-export const salesByCountryQuery = \`
-EVALUATE
+// ---------------------------------------------------------------- the query files (src/queries)
+// Each is a whole DAX query, as DAX query view in Power BI Desktop runs it. The playground answers a query
+// from the saved results by its text (ignoring spacing and letter case), so these texts are the ones
+// tools/make-catalog.mjs saved. No comments in them, except the /* filters */ marker, which the code replaces.
+export const COUNTRY_DAX = `EVALUATE
 SUMMARIZECOLUMNS (
     'store'[CountryName],
     "Revenue", [Revenue]
 )
 ORDER BY [Revenue] DESC
-\`;
+`;
+
+export const TOTALS_DAX = `EVALUATE
+ROW (
+    "Revenue", [Revenue],
+    "Orders", [# Orders],
+    "Customers", [# Customers]
+)
+`;
+
+// Measure or query: first with its formula written in, then the model's own measure.
+export const MARGIN_IN_QUERY_DAX = `DEFINE
+    MEASURE '_Measures'[App Margin %] =
+        DIVIDE (
+            SUMX ( sales, sales[Quantity] * ( sales[NetPrice] - sales[UnitCost] ) ),
+            SUMX ( sales, sales[Quantity] * sales[NetPrice] )
+        )
+EVALUATE
+ROW ( "Margin %", [App Margin %] )
+`;
+
+export const MARGIN_FROM_MODEL_DAX = `EVALUATE
+ROW ( "Margin %", [Margin %] )
+`;
+
+export const CATEGORY_DAX = `EVALUATE
+SUMMARIZECOLUMNS (
+    'product'[CategoryName],
+    /* filters */ "Revenue", [Revenue]
+)
+ORDER BY [Revenue] DESC
+`;
+
+export const YEARS_DAX = `EVALUATE
+SUMMARIZECOLUMNS (
+    'date'[Year],
+    "Revenue", [Revenue],
+    "Orders", [# Orders]
+)
+ORDER BY 'date'[Year]
+`;
+
+// The second model's queries (Two semantic models).
+export const PARETO_HEADLINE_DAX = `EVALUATE
+ROW (
+    "Categories to 80%", [# Categories to 80%],
+    "Headline", [Cutoff Headline]
+)
+`;
+
+export const PARETO_BY_CATEGORY_DAX = `EVALUATE
+SUMMARIZECOLUMNS (
+    'product'[CategoryName],
+    /* filters */ "Revenue", [Revenue], "Share %", [Revenue Share %], "Cumulative %", [Revenue Cumulative %]
+)
+ORDER BY [Revenue] DESC
+`;
+
+export const REVENUE_CARD_DAX = `EVALUATE
+ROW ( "Revenue", [Revenue] )
+`;
+
+// The imports that load them into src/data.ts and src/pareto.ts, as text (Vite's ?raw).
+export const IMPORT_COUNTRY = "import revenueByStoreCountryDax from './queries/revenue-by-store-country.dax?raw';";
+export const IMPORT_TOTALS = "import salesTotalsDax from './queries/sales-totals.dax?raw';";
+export const IMPORT_MARGIN = "import marginPctDax from './queries/margin-pct.dax?raw';";
+export const IMPORT_CATEGORY = "import revenueByCategoryDax from './queries/revenue-by-category.dax?raw';";
+export const IMPORT_YEARS = "import revenueByYearDax from './queries/revenue-by-year.dax?raw';";
+export const IMPORT_PARETO_HEADLINE = "import paretoHeadlineDax from './queries/pareto-headline.dax?raw';";
+export const IMPORT_PARETO_MORE = "import paretoByCategoryDax from './queries/pareto-by-category.dax?raw';\nimport revenueCardDax from './queries/revenue-card.dax?raw';";
+
+export const COUNTRY_QUERY = `
+// ------------------------------------------------------------ the queries
+// Each query's DAX is a .dax file in src/queries, imported at the top of this file as text.
+export const salesByCountryQuery = revenueByStoreCountryDax;
 
 // ------------------------------------------------------------ reading results
 export type Bar = { label: string; value: number };
@@ -214,14 +288,7 @@ export function BarList({ rows, selected, onSelect }: BarListProps) {
 
 export const TOTALS = `
 
-export const totalsQuery = \`
-EVALUATE
-ROW (
-    "Revenue", [Revenue],
-    "Orders", [# Orders],
-    "Customers", [# Customers]
-)
-\`;
+export const totalsQuery = salesTotalsDax;
 
 export type Totals = { revenue: number; orders: number; customers: number };
 
@@ -235,41 +302,14 @@ export function toTotals(result: SemanticModelQueryResult): Totals {
 
 export const MARGIN_IN_QUERY = `
 
-// Margin %, with its formula written into the query (DEFINE MEASURE).
-export const marginQuery = \`
-DEFINE
-    MEASURE '_Measures'[App Margin %] =
-        DIVIDE (
-            SUMX ( sales, sales[Quantity] * ( sales[NetPrice] - sales[UnitCost] ) ),
-            SUMX ( sales, sales[Quantity] * sales[NetPrice] )
-        )
-EVALUATE
-ROW ( "Margin %", [App Margin %] )
-\`;
+// The Margin % card's query: src/queries/margin-pct.dax.
+export const marginQuery = marginPctDax;
 
 export function toPercent(result: SemanticModelQueryResult): number {
   if (result.status !== 'success' || result.table.rows.length === 0) return 0;
   const at = result.table.columns.findIndex((c) => c.name === '[Margin %]');
   return Number(result.table.rows[0][at]);
 }`;
-
-export const MARGIN_IN_QUERY_TEXT = `// Margin %, with its formula written into the query (DEFINE MEASURE).
-export const marginQuery = \`
-DEFINE
-    MEASURE '_Measures'[App Margin %] =
-        DIVIDE (
-            SUMX ( sales, sales[Quantity] * ( sales[NetPrice] - sales[UnitCost] ) ),
-            SUMX ( sales, sales[Quantity] * sales[NetPrice] )
-        )
-EVALUATE
-ROW ( "Margin %", [App Margin %] )
-\`;`;
-
-export const MARGIN_FROM_MODEL_TEXT = `// Margin %: the model's own measure. The formula lives in the model.
-export const marginQuery = \`
-EVALUATE
-ROW ( "Margin %", [Margin %] )
-\`;`;
 
 export const ERROR_PANEL = `
 // What a visual shows when its query fails: the model's own message.
@@ -317,45 +357,28 @@ function filters(year?: number): string[] {
   if (year !== undefined) list.push(\`TREATAS ( { \${year} }, 'date'[Year] )\`);
   return list;
 }
+
+// Puts the filters where a query file has its /* filters */ marker. DAX reads /* … */ as a comment,
+// so the file still runs as it is, in DAX query view for example.
+function withFilters(dax: string, list: string[]): string {
+  return dax.replace('/* filters */ ', list.map((f) => \`\${f}, \`).join(''));
+}
 `;
 
-export const TOTALS_QUERY_CONST = `export const totalsQuery = \`
-EVALUATE
-ROW (
-    "Revenue", [Revenue],
-    "Orders", [# Orders],
-    "Customers", [# Customers]
-)
-\`;`;
+export const TOTALS_QUERY_CONST = 'export const totalsQuery = salesTotalsDax;';
 
-export const TOTALS_QUERY_FN = `// With a year picked, the same ROW, inside CALCULATETABLE with the filter.
+export const TOTALS_QUERY_FN = `// No year: the file's query as it is. A year: its ROW, inside CALCULATETABLE with the filter.
 export function totalsQuery(year?: number) {
-  const row = \`ROW (
-    "Revenue", [Revenue],
-    "Orders", [# Orders],
-    "Customers", [# Customers]
-)\`;
   const f = filters(year);
-  if (f.length === 0) return \`EVALUATE \${row}\`;
+  if (f.length === 0) return salesTotalsDax;
+  const row = salesTotalsDax.replace('EVALUATE', '').trim();
   return \`EVALUATE CALCULATETABLE ( \${row}, \${f.join(', ')} )\`;
 }`;
 
-export const COUNTRY_QUERY_CONST = `export const salesByCountryQuery = \`
-EVALUATE
-SUMMARIZECOLUMNS (
-    'store'[CountryName],
-    "Revenue", [Revenue]
-)
-ORDER BY [Revenue] DESC
-\`;`;
+export const COUNTRY_QUERY_CONST = 'export const salesByCountryQuery = revenueByStoreCountryDax;';
 
 export const COUNTRY_QUERY_FN = `export function salesByCountryQuery(year?: number) {
-  return \`EVALUATE
-SUMMARIZECOLUMNS (
-    'store'[CountryName],
-    \${[...filters(year), '"Revenue", [Revenue]'].join(', ')}
-)
-ORDER BY [Revenue] DESC\`;
+  return withFilters(revenueByStoreCountryDax, filters(year));
 }`;
 
 export const FILTERS_YEAR_FN = `function filters(year?: number): string[] {
@@ -374,25 +397,12 @@ export const FILTERS_BOTH_FN = `function filters(year?: number, country?: string
 export const CATEGORY_QUERY_FN = `
 
 export function salesByCategoryQuery(year?: number, country?: string) {
-  return \`EVALUATE
-SUMMARIZECOLUMNS (
-    'product'[CategoryName],
-    \${[...filters(year, country), '"Revenue", [Revenue]'].join(', ')}
-)
-ORDER BY [Revenue] DESC\`;
+  return withFilters(revenueByCategoryDax, filters(year, country));
 }`;
 
 export const YEARS_QUERY = `
 
-export const salesByYearQuery = \`
-EVALUATE
-SUMMARIZECOLUMNS (
-    'date'[Year],
-    "Revenue", [Revenue],
-    "Orders", [# Orders]
-)
-ORDER BY 'date'[Year]
-\`;`;
+export const salesByYearQuery = revenueByYearDax;`;
 
 export const REPORT = `
 // ------------------------------------------------------------ the report
@@ -640,20 +650,18 @@ ROW ( "Margin %", [App Margin %] )
 // src/pareto.ts, first version: its runner and the model's own headline (Register the second model).
 export const PARETO_V1 = `import type { SemanticModelQueryResult } from '@microsoft/rayfin-connector-fabric-semanticmodel';
 import { rayfinClient } from './services/rayfinClient';
-import { filters, type RunDax } from './data';
+import { filters, withFilters, type RunDax } from './data';
+import paretoHeadlineDax from './queries/pareto-headline.dax?raw';
 
 // Runs a DAX query against the second model. Made once, here, like runDax: only the connector differs.
 export const runPareto: RunDax = (query) => rayfinClient.connectors.pareto.executeQuery({ query });
 
 // ------------------------------------------------------------ the queries
-// The model's own count and sentence, for a headline card.
+// The model's own count and sentence, for a headline card. A year: its ROW, inside CALCULATETABLE.
 export function headlineQuery(year?: number) {
-  const row = \`ROW (
-    "Categories to 80%", [# Categories to 80%],
-    "Headline", [Cutoff Headline]
-)\`;
   const f = filters(year);
-  if (f.length === 0) return \`EVALUATE \${row}\`;
+  if (f.length === 0) return paretoHeadlineDax;
+  const row = paretoHeadlineDax.replace('EVALUATE', '').trim();
   return \`EVALUATE CALCULATETABLE ( \${row}, \${f.join(', ')} )\`;
 }
 
@@ -703,19 +711,14 @@ export const PARETO_MORE = `
 // ------------------------------------------------------------ the page's other queries
 // Categories, largest first, with the model's share and running share (its Pareto measures).
 export function paretoQuery(year?: number) {
-  return \`EVALUATE
-SUMMARIZECOLUMNS (
-    'product'[CategoryName],
-    \${[...filters(year), '"Revenue", [Revenue]', '"Share %", [Revenue Share %]', '"Cumulative %", [Revenue Cumulative %]'].join(', ')}
-)
-ORDER BY [Revenue] DESC\`;
+  return withFilters(paretoByCategoryDax, filters(year));
 }
 
 // One measure by name. Sent to both models, to compare their [Revenue].
 export function revenueQuery(year?: number) {
-  const row = 'ROW ( "Revenue", [Revenue] )';
   const f = filters(year);
-  if (f.length === 0) return \`EVALUATE \${row}\`;
+  if (f.length === 0) return revenueCardDax;
+  const row = revenueCardDax.replace('EVALUATE', '').trim();
   return \`EVALUATE CALCULATETABLE ( \${row}, \${f.join(', ')} )\`;
 }
 

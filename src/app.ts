@@ -1516,7 +1516,7 @@ function newFile() {
   const path = window.prompt('New file, relative to the app folder (for example src/components.tsx):', 'src/');
   if (!path) return;
   const clean = path.trim().replace(/^\.?\//, '');
-  if (!/^[\w./-]+\.(tsx?|css|json)$/.test(clean) || clean.includes('..')) {
+  if (!/^[\w./-]+\.(tsx?|css|json|dax)$/.test(clean) || clean.includes('..')) {
     flash('Use a path like src/components.tsx.');
     return;
   }
@@ -1718,6 +1718,8 @@ async function compileOnce(paths: string[]): Promise<Record<string, string>> {
     if (!js) throw new Error(`${p} could not be compiled.`);
     out[p] = js.text;
   }
+  // A query file is imported as text (`./queries/x.dax?raw`), so it goes to the preview as it is.
+  for (const p of Object.keys(project.files)) if (p.endsWith('.dax')) out[`${p}?raw`] = project.files[p];
   return out;
 }
 

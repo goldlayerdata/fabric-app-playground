@@ -243,6 +243,17 @@ function loader(project, packages = {}) {
     cache.set(path, mod);
     const require = (spec) => {
       if (spec in packages) return packages[spec];
+      // A query file imported as text (`./queries/x.dax?raw`), as Vite does.
+      if (spec.startsWith('.') && spec.endsWith('?raw')) {
+        const parts = path.split('/').slice(0, -1);
+        for (const part of spec.slice(0, -4).split('/')) {
+          if (part === '..') parts.pop();
+          else if (part !== '.') parts.push(part);
+        }
+        const text = project.files[parts.join('/')];
+        if (text === undefined) throw new Error(`${path} imports ${spec}, which isn't in the project`);
+        return { __esModule: true, default: text };
+      }
       const file = spec.startsWith('.') ? resolve(path, spec) : undefined;
       return file ? load(file) : {};
     };
@@ -253,7 +264,8 @@ function loader(project, packages = {}) {
 }
 
 // ---------------------------------------------------------------- the queries a project can send
-const QUERY_STRING = /`([^`]*\bEVALUATE\b[^`]*)`/g;
+// A query written into code: a string that starts with EVALUATE or DEFINE.
+const QUERY_STRING = /`(\s*(?:EVALUATE|DEFINE)\b[^`]*)`/g;
 // A runner: `const runDax: RunDax = (query) => rayfinClient.connectors.contoso.executeQuery({ query })`.
 const RUNNER = /const (\w+)(?::\s*RunDax)?\s*=\s*\(query(?::\s*string)?\)\s*=>\s*rayfinClient\.connectors\.(\w+)\.executeQuery/g;
 
@@ -277,6 +289,20 @@ function queriesOf(project) {
   }
   for (const [path, text] of code) {
     for (const m of text.matchAll(QUERY_STRING)) if (!m[1].includes('${')) found.push({ connector: ownConnector[path] ?? 'contoso', query: m[1], from: path });
+  }
+  // Query files (.dax), sent as they are by the file that imports them. One with a `/* filters */` marker
+  // is only ever sent through its query function, with the marker replaced (found below).
+  for (const [path, text] of code) {
+    for (const m of text.matchAll(/^import \w+ from '(\.[^']+\.dax)\?raw';$/gm)) {
+      const parts = path.split('/').slice(0, -1);
+      for (const part of m[1].split('/')) {
+        if (part === '..') parts.pop();
+        else if (part !== '.') parts.push(part);
+      }
+      const dax = parts.join('/');
+      const query = project.files[dax];
+      if (query?.trim() && !query.includes('/* filters */')) found.push({ connector: ownConnector[path] ?? 'contoso', query, from: dax });
+    }
   }
   // Query functions (exported, named …Query): run the file and call them with every choice. One that
   // no page sends yet goes to its own file's runner.

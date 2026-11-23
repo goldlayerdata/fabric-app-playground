@@ -208,12 +208,12 @@ export const modules = [
         step: 1,
       },
       {
-        q: 'A measure name is mistyped in a DAX string. What reports it?',
+        q: 'A measure name is mistyped in a `.dax` query file. What reports it?',
         options: ['TypeScript, with a red line as we type', 'The model, when the query runs: its error is in the Log', 'Nothing: the model skips unknown measures'],
         answer: 1,
         why: 'To TypeScript, the DAX is just text. Only the model knows its measures, and our page showed 0% until it checked `status`.',
         lesson: 'measure-or-query',
-        step: 11,
+        step: 14,
       },
       {
         q: 'The network is down, and the page checks `status`. What does the page show?',
@@ -237,7 +237,7 @@ export const modules = [
         answer: 2,
         why: 'Apart from the first draw, only a change in its list `[runDax, query]` runs it again. A redraw alone doesn\'t, unless it makes a new `runDax`.',
         lesson: 'slicer',
-        step: 13,
+        step: 14,
       },
       {
         q: '`runDax` is made inside the page component. What happens?',
@@ -253,7 +253,7 @@ export const modules = [
         answer: 1,
         why: 'Lifting state up: the chart only reports the click; the page keeps the selection and hands it to the queries that use it.',
         lesson: 'cross-filter',
-        step: 8,
+        step: 11,
       },
       {
         q: 'A new page id is added to `PageId`, but not to `PAGES`. What happens?',
@@ -318,7 +318,7 @@ export const modules = [
         answer: 2,
         why: 'Without its runtime, `executeQuery` returns the raw payload, with no `status: \'success\'` or `\'error\'` to read, and TypeScript doesn\'t check `runtime`.',
         lesson: 'second-client',
-        step: 8,
+        step: 10,
       },
       {
         q: 'The Pareto query is sent with `runDax` instead of `runPareto`. What reports it?',
@@ -326,7 +326,7 @@ export const modules = [
         answer: 0,
         why: 'Both runners have the same type and the DAX is text, so only the model can see that it lacks those measures.',
         lesson: 'two-models-page',
-        step: 7,
+        step: 10,
       },
       {
         q: 'Two models both have `[Revenue]`, and the numbers match today. When is it the same measure?',
@@ -334,7 +334,7 @@ export const modules = [
         answer: 1,
         why: 'Same name isn\'t proof of same meaning, and matching numbers can be luck. Check the definitions where the models are built.',
         lesson: 'two-models-page',
-        step: 13,
+        step: 16,
       },
     ],
   },

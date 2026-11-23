@@ -89,6 +89,7 @@ visuals page: all checks passed
 | --- | --- |
 | A lesson's text, steps, summary, Fabric note | `src/lesson-list.mjs` (its header comment documents every field) |
 | Long code that steps paste | `src/course-code.mjs` |
+| The DAX in the lessons' query files (`src/queries/*.dax` in the learner's project) | `src/course-code.mjs`, the `*_DAX` constants; the file paths are at the top of `src/lesson-list.mjs` |
 | Which module a lesson is in, lesson order, knowledge checks | `src/course.mjs`, `modules` |
 | Chapters (live or "coming soon") | `src/course.mjs`, `chapters` |
 | Parts (groups of chapters) | `src/course.mjs`, `parts` |
@@ -243,7 +244,7 @@ Answers come from two Contoso models in the public gold-layer-examples repositor
 1. **Add the query.** In `tools/make-catalog.mjs`, add an entry to `contosoQueries` or `twoModelQueries`, with `id`, `group`, `title` and the query text.
    - For the second model, add `connector: 'pareto'`.
    - A query that should fail on purpose gets `expectError: true`.
-   - For a lesson, its code must build the same text; spacing and letter case are ignored.
+   - For a lesson, the text its code sends must be the same; spacing and letter case are ignored. A lesson's query lives in a `.dax` file in the learner's project, and its code either sends the file as it is, fills in the file's `/* filters */` marker (`withFilters`), or wraps the file's `ROW` in `CALCULATETABLE`. Keep comments out of these files: a comment would become part of the text.
    - For the Visuals page, the text must be the `.dax` file's text exactly (2.8).
 2. Run `npm run catalog`.
 3. **Open both models and find their ports.** Open each `.pbip` in its own Power BI Desktop window. Each window runs its own local Analysis Services on its own port. To list them:

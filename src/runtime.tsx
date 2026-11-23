@@ -408,6 +408,11 @@ function link(run: RunMessage): (id: string) => Record<string, unknown> {
       else if (p !== '.') parts.push(p);
     }
     const base = parts.join('/');
+    // A file imported as text, as Vite does with `?raw`: the editor sends it as it is, under `<path>?raw`.
+    if (base.endsWith('?raw')) {
+      if (run.files[base] !== undefined) return base;
+      throw simulated(`Cannot find "${spec}", imported from ${from}.`);
+    }
     const noJs = base.replace(/\.js$/, '');
     for (const b of [base, noJs]) for (const ext of ['', '.tsx', '.ts', '/index.tsx', '/index.ts']) if (run.files[b + ext] !== undefined) return b + ext;
     throw simulated(`Cannot find "${spec}", imported from ${from}.`);
@@ -423,6 +428,11 @@ function link(run: RunMessage): (id: string) => Record<string, unknown> {
         throw simulated(`Cannot load "${id}": it isn't installed in this project yet. Run the npm install from the lesson.`);
       }
       return packages[id] as Record<string, unknown>;
+    }
+    if (id.endsWith('?raw')) {
+      const text = { __esModule: true, default: run.files[id] };
+      cache.set(id, text);
+      return text;
     }
     const exportsObj: Record<string, unknown> = {};
     cache.set(id, exportsObj);
