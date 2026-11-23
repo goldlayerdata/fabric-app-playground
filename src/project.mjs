@@ -282,7 +282,7 @@ export function runCommand(start, line, answer) {
     if (p.cwd) return fail(PG('Create the app from your starting folder: run `cd ..` first.'));
     if (!name) return fail(PG('Give the app a folder name: npm create @microsoft/rayfin@latest <app-name> -- --template dataapp'));
     if (!/^[a-z0-9][a-z0-9._-]*$/.test(name)) return fail(PG('Use a lower-case folder name, such as contoso-app.'));
-    if (p.appDir) return fail(PG(`This playground holds one app, and ${p.appDir} already exists. Reset the course to start over.`));
+    if (p.appDir) return fail(PG(`This playground holds one app, and ${p.appDir} already exists. Restart the playground to start over.`));
     if (f.template === undefined) {
       return fail(
         PG('The real command now asks "How would you like to start?" (the default template, or a built-in one).'),
@@ -322,7 +322,7 @@ export function runCommand(start, line, answer) {
     const added = [];
     for (const spec of named) {
       const name = spec.replace(/(?<=.)@[^@/]+$/, '');
-      if (!KNOWN_PACKAGES.has(name)) return fail(PG(`${name} is not simulated here. The course needs only the packages it names.`));
+      if (!KNOWN_PACKAGES.has(name)) return fail(PG(`${name} is not simulated here. The lessons need only the packages they name.`));
       // npm saves with its default ^ prefix unless --save-exact.
       const asked = spec.slice(name.length + 1) || '2.0.0';
       const version = /^[\d]/.test(asked) && !w.includes('--save-exact') ? `^${asked}` : asked;

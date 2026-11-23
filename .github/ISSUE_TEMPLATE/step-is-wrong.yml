@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thank you. The course is our reading of the public docs, so a report with a source helps most.
+        Thank you. The playground is our reading of the public docs, so a report with a source helps most.
         Please don't include private details: names, emails, company names or real ids.
   - type: input
     id: where

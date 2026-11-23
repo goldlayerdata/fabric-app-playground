@@ -16,7 +16,7 @@ The Gold Layer page playground is unofficial and not affiliated with Microsoft. 
 | Figtree font (`@fontsource/figtree`) | 5.3.0 | SIL Open Font License 1.1 | The Figtree Project Authors |
 | IBM Plex Mono font (`@fontsource/ibm-plex-mono`) | 5.3.0 | SIL Open Font License 1.1 | IBM Corp. |
 
-**The Visuals page** (`visuals/`) also bundles the following. The course page does not.
+**The Visuals page** (`visuals/`) also bundles the following. The lessons page does not.
 
 | Component | Version | Licence | Copyright |
 | --- | --- | --- | --- |

@@ -41,7 +41,7 @@ export function topBar(page, slot = '') {
         </a>
       </div>
       <nav class="top-tabs" aria-label="The playground's pages">
-        ${tab('course', 'Course', 'Build a Fabric app, one step at a time')}
+        ${tab('course', 'Playground', 'Build a Fabric app, one step at a time')}
         ${tab('visuals', 'Visuals', 'Each Power BI visual beside the same visual in a Fabric app')}
       </nav>
       <div class="top-slot">${slot.trim()}</div>

@@ -199,7 +199,7 @@ export const lessons = [
     goal: 'find your way around the playground before we start',
     builds: [],
     pbi: 'Think of Power BI Desktop: the report canvas, the files behind it, and Performance analyzer listing the query each visual sends. Here we build a [[Fabric app|fabric-app]] instead, and everything is code.',
-    idea: 'A Fabric app is a web app that runs in Fabric and queries Fabric data, such as a semantic model. AI agents often write its code. In this course we write one ourselves, from an empty folder, so we can read, fix and trust what an agent writes. First, where everything is.',
+    idea: 'A Fabric app is a web app that runs in Fabric and queries Fabric data, such as a semantic model. AI agents often write its code. In this playground we write one ourselves, from an empty folder, so we can read, fix and trust what an agent writes. First, where everything is.',
     steps: [
       {
         do: 'In the **Terminal** tab, under the page, type this and press Enter:',
@@ -295,7 +295,7 @@ export const lessons = [
         file: YML,
         find: 'staticHosting:',
         see: 'The app\'s settings, as `name: value` lines; indented lines belong to the line above. `auth` turns on Fabric sign-in; `staticHosting` says which built folder Fabric hosts, and how to build it.',
-        why: 'Read-only here, to keep the course on track. In a real project you can edit it; `connector add` writes its connector part for you.',
+        why: 'Read-only here, to keep the lessons on track. In a real project you can edit it; `connector add` writes its connector part for you.',
       },
       {
         do: 'Sign in to Fabric:',
@@ -315,7 +315,7 @@ export const lessons = [
       '`package.json` lists packages and scripts; `rayfin.yml` holds the app\'s settings. `npm run dev` starts the loop: edit, and see the page.',
     ],
     fabric: {
-      text: 'Microsoft\'s walkthrough starts with a similar `npm create … --template dataapp` (it also passes `--workspace`), then adds the connector. The real template comes with more than we show: its own client, Fabric sign-in, a placeholder page, and its own way to query a semantic model. This course uses Rayfin\'s connector instead, as rayfin.ai documents it.',
+      text: 'Microsoft\'s walkthrough starts with a similar `npm create … --template dataapp` (it also passes `--workspace`), then adds the connector. The real template comes with more than we show: its own client, Fabric sign-in, a placeholder page, and its own way to query a semantic model. These lessons use Rayfin\'s connector instead, as rayfin.ai documents it.',
       links: [learn.template, rayfin.quickstart],
     },
   },
@@ -1891,7 +1891,7 @@ export const lessons = [
         file: LAKE_METADATA,
         find: '"tableName": "sales"',
         see: 'One schema, `dbo`, with two tables, `sales` and `store`. Each column has a `dataType` and `isNullable`. There is no `primaryKeyColumns` and no `foreignKeys`.',
-        why: 'This is what discovery found: the [[metadata]]. Lakehouse endpoints commonly declare no keys and no relationships. The file is regenerated, never edited: to refresh it, run `connector add` again. (Playground: this one was made for the course, in the documented shape, not captured from a real lakehouse.)',
+        why: 'This is what discovery found: the [[metadata]]. Lakehouse endpoints commonly declare no keys and no relationships. The file is regenerated, never edited: to refresh it, run `connector add` again. (Playground: this one was made for the playground, in the documented shape, not captured from a real lakehouse.)',
       },
       {
         do: 'Open `rayfin/connectors/lake/schema.ts`.',
@@ -2285,7 +2285,7 @@ export const lessons = [
         file: YML,
         edits: [{ file: YML, from: DATA_OFF, to: DATA_ON }],
         see: 'The two lines under `data:`.',
-        why: 'Microsoft Learn: when you configure Data by hand for Fabric, set `enabled: true` and `dialect: mssql`. Without the dialect, Rayfin stops with "Dialect is required when Data module is enabled". In a real project you type this yourself: the playground keeps `rayfin.yml` read-only to keep the course on track.',
+        why: 'Microsoft Learn: when you configure Data by hand for Fabric, set `enabled: true` and `dialect: mssql`. Without the dialect, Rayfin stops with "Dialect is required when Data module is enabled". In a real project you type this yourself: the playground keeps `rayfin.yml` read-only to keep the lessons on track.',
       },
       {
         do: 'Open `package.json` and find the marked `@microsoft/rayfin-data`.',

@@ -104,7 +104,7 @@ function CourseLink({ id }: { id: string }) {
   if (!c) return null;
   return (
     <p className="course-link">
-      <a href={`../#${c.lesson}/0`}>Build one yourself in the course →</a>{' '}
+      <a href={`../#${c.lesson}/0`}>Build one yourself in the playground →</a>{' '}
       <span className="muted small">{c.title}: {c.what}.</span>
     </p>
   );
@@ -156,8 +156,8 @@ function Landing() {
       <h1>Visuals</h1>
       <p className="lead">
         In Power BI you drop fields on a visual. In a Fabric app you write it. Each page shows the same visual both ways, so you
-        can see what it takes before you build one. The course then teaches you to build them, one step at a time:{' '}
-        <a href="../">open the course →</a>
+        can see what it takes before you build one. The lessons then teach you to build them, one step at a time:{' '}
+        <a href="../">open the playground →</a>
       </p>
       <Disclaimer text={DISCLAIMER_SHORT} small />
       {groups.map((g) => (
@@ -577,7 +577,7 @@ function Notes() {
       <section className="card">
         <h2>Sources</h2>
         <ul className="small">
-          <li>Numbers: {answerBookInfo.source}, {answerBookInfo.takenAt}. The course uses the same saved answers (<code>data/snapshots.json</code>). Answers not captured as one query are built from saved ones and marked "derived".</li>
+          <li>Numbers: {answerBookInfo.source}, {answerBookInfo.takenAt}. The lessons use the same saved answers (<code>data/snapshots.json</code>). Answers not captured as one query are built from saved ones and marked "derived".</li>
           <li>Code style: Rayfin 2.0's data-app template (<code>AGENTS.md</code>, <code>src/lib/to-data-table.ts</code>, <code>src/hooks/use-semantic-model-query.ts</code>) and its visuals skill with <code>references/</code>.</li>
           <li>Package claims: the installed files under <code>node_modules/@microsoft/</code>, cited by line. 5.4.0: the npm tarballs' type definitions.</li>
           <li>Power BI claims: Microsoft Learn pages cited in each "Why?".</li>

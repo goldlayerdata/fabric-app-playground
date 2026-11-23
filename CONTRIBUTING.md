@@ -35,7 +35,7 @@ Welcome. Your tool reads the rules in [AGENTS.md](AGENTS.md); Claude Code reads 
 
 These are the same rules the maintainers follow (MAINTAINING.md, section 4).
 
-- **Source every claim.** Anything the course says about Fabric, Power BI or Rayfin must come from one of these, linked in your pull request or issue:
+- **Source every claim.** Anything the playground says about Fabric, Power BI or Rayfin must come from one of these, linked in your pull request or issue:
   - Microsoft Learn;
   - rayfin.ai;
   - the Rayfin packages' own docs and code;

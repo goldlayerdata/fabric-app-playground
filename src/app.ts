@@ -472,7 +472,7 @@ function renderPanel() {
 /** The "your project isn't at this lesson's start" banner. */
 function mismatchBanner() {
   if (mismatch !== lesson) return null;
-  const use = h('button', { type: 'button' }, "Use the course's version");
+  const use = h('button', { type: 'button' }, "Use the playground's version");
   use.addEventListener('click', () => {
     mismatch = undefined;
     replaceProject(checkpointOf(lesson), `Switched to the start of ${num(lesson)} ${lesson.title}.`);
@@ -487,7 +487,7 @@ function mismatchBanner() {
   return h(
     'div',
     { class: 'banner' },
-    h('p', {}, 'Your project is not where this lesson starts (you may have skipped ahead, or written something differently). The steps expect the course\'s version.'),
+    h('p', {}, 'Your project is not where this lesson starts (you may have skipped ahead, or written something differently). The steps expect the playground\'s version.'),
     h('div', { class: 'actions' }, use, keep),
   );
 }
@@ -663,7 +663,7 @@ function renderCheck() {
     const first = nextModule && byId.get(nextModule.lessons[0])!;
     next = first
       ? h('a', { class: 'next', href: `#${first.id}` }, `Next: ${num(first)} ${first.title} →`)
-      : h('span', { class: 'muted' }, 'That was the whole course.');
+      : h('span', { class: 'muted' }, 'That was the last lesson.');
   } else {
     next = h('button', { type: 'button', class: 'next' }, position === qs.length - 1 ? 'Result →' : 'Next question →');
     next.addEventListener('click', () => goTo(position + 1));
@@ -734,7 +734,7 @@ function renderCourse() {
   const startOver = h(
     'button',
     { type: 'button', class: 'link-btn', title: 'Empties the project and clears progress and quiz answers. Undo is offered.' },
-    'Restart the whole course',
+    'Restart the playground',
   );
   startOver.addEventListener('click', () => {
     closeCourse();
@@ -2305,7 +2305,7 @@ function renderAbout() {
     ),
     p(
       h('b', {}, 'Nothing here talks to Fabric or Power BI. '),
-      'The terminal simulates the Rayfin 2.0 commands the course uses; what they write (rayfin.yml, the connector\'s schema file, package.json) follows the Rayfin docs and the data app template as installed by the Rayfin CLI 2.0.0, and lines we could not check against the real output start with Playground:. ',
+      'The terminal simulates the Rayfin 2.0 commands the lessons use; what they write (rayfin.yml, the connector\'s schema file, package.json) follows the Rayfin docs and the data app template as installed by the Rayfin CLI 2.0.0, and lines we could not check against the real output start with Playground:. ',
       'The Rayfin packages are simulated too: the editor checks your code against their real 2.0 signatures (a subset, MIT), and in the page, executeQuery matches the query text against saved results and returns them in the connector\'s result shape. Sign-in is skipped. Request ids starting with "simulated-" are made up. The real thing: ',
       a('https://learn.microsoft.com/fabric/apps/connectors', 'Connect Fabric Apps to Fabric data'),
       ' on Microsoft Learn, and ',
@@ -2333,8 +2333,8 @@ function renderAbout() {
       ' on Microsoft Learn.',
     ),
     p(
-      h('b', {}, 'The course. '),
-      'Its structure follows the way Microsoft Learn builds training (modules of short units, a knowledge check at the end of a module, summaries) and the way the Rayfin docs teach (numbered steps, then what to read next). Only the structure is borrowed.',
+      h('b', {}, 'The lessons. '),
+      'Their structure follows the way Microsoft Learn builds training (modules of short units, a knowledge check at the end of a module, summaries) and the way the Rayfin docs teach (numbered steps, then what to read next). Only the structure is borrowed.',
     ),
     p(
       h('b', {}, 'Data. '),
@@ -2348,11 +2348,11 @@ function renderAbout() {
       h('b', {}, 'Versions. '),
       'Mirrors Rayfin 2.0. React 19.3.1 and its types. The editor\'s checking uses TypeScript ',
       monaco.typescript.typescriptVersion,
-      ' (built into Monaco 0.57.0); the whole course is also checked with TypeScript 6.0.3. (The data app template itself pins TypeScript ~5.7.) Tailwind CSS 4.3.4, in-browser build.',
+      ' (built into Monaco 0.57.0); every lesson\'s code is also checked with TypeScript 6.0.3. (The data app template itself pins TypeScript ~5.7.) Tailwind CSS 4.3.4, in-browser build.',
     ),
     p(
       h('b', {}, 'Your project and progress '),
-      'are kept in this browser only. Reset takes a lesson back to its start; the course drawer can start the project over. Both offer Undo.',
+      'are kept in this browser only. Reset takes a lesson back to its start; the lessons drawer can start the project over. Both offer Undo.',
     ),
   );
 }
@@ -2809,12 +2809,12 @@ function restartCourse() {
   const normal = document.getElementById('mode-normal') as HTMLInputElement | null;
   if (normal) normal.checked = true;
   setPopped(null);
-  replaceProject(emptyProject() as Project, 'The course is back at its very start.');
+  replaceProject(emptyProject() as Project, 'The playground is back at its very start.');
   check = undefined;
   lesson = order[0];
   mismatch = undefined;
   goTo(0);
-  showUndo('The course is back at its very start: empty project, no progress.', () => {
+  showUndo('The playground is back at its very start: empty project, no progress.', () => {
     clearTimeout(saveTimer);
     for (const k of courseKeys()) localStorage.removeItem(k);
     for (const [k, v] of backup) if (v !== null) localStorage.setItem(k, v);
@@ -2891,7 +2891,7 @@ function showSplash() {
       ? `${state === 'new' ? 'Start' : 'Continue'}: ${picked.title} →`
       : started
         ? `Continue: ${check ? `Check your knowledge, ${check.title}` : `${num(lesson)} ${lesson.title}`} →`
-        : 'Start the course →';
+        : 'Start building →';
   };
   const navLink = (c: Chapter) => {
     const state = chapterState(c);
@@ -2962,7 +2962,7 @@ $('splash-restart').addEventListener('click', () => {
   restartCourse();
   hideSplash();
 });
-// The bar's brand and Course tab are links to this page (src/topbar.mjs); here they show the start screen.
+// The bar's brand and Playground tab are links to this page (src/topbar.mjs); here they show the start screen.
 for (const id of ['brand', 'tab-course']) {
   $(id).addEventListener('click', (e) => {
     e.preventDefault();

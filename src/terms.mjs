@@ -75,7 +75,7 @@ export const help = [
   },
   {
     symptom: '"Playground: Not simulated here" in the terminal',
-    cause: 'The terminal simulates only the commands this course uses.',
+    cause: 'The terminal simulates only the commands these lessons use.',
     fix: 'Type `help` for the list, or use **Do it for me** on the step.',
   },
   {

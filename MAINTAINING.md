@@ -23,7 +23,7 @@ npm run check
 
 | Page | Address | Starts at |
 | --- | --- | --- |
-| **Course**: the lessons, editor, terminal, preview | `/` | `src/index.html`, `src/app.ts` |
+| **Playground**: the lessons, editor, terminal, preview | `/` | `src/index.html`, `src/app.ts` |
 | **Visuals**: each Power BI visual beside the same visual in a Fabric app | `/visuals/` | `src/visuals/index.html`, `src/visuals/shell/main.tsx` |
 
 - **Shared top bar:** both pages use one top bar, with its markup in `src/topbar.mjs` and its styles in `src/top.css`.
@@ -42,9 +42,9 @@ npm run check
 
 ### What `npm run check` proves
 
-It runs two scripts in order and writes nothing. They are joined with `&&`, so if the course check fails, the Visuals check doesn't run.
+It runs two scripts in order and writes nothing. They are joined with `&&`, so if the lessons check fails, the Visuals check doesn't run.
 
-**`tools/check-lessons.mjs`: the course**
+**`tools/check-lessons.mjs`: the lessons**
 
 - **Structure:** every lesson is in exactly one module; chapters hold the modules in order; parts hold the chapters in order; live chapters come before coming ones.
 - **Text rules:**
@@ -53,7 +53,7 @@ It runs two scripts in order and writes nothing. They are joined with `&&`, so i
   - "In a real Fabric app" links go only to learn.microsoft.com or rayfin.ai;
   - a step with several edits says **Do it for me** makes them;
   - quiz answers name a real lesson and step.
-- **The whole course, built from an empty folder** the way **Do it for me** would build it:
+- **Every lesson, built from an empty folder** the way **Do it for me** would build it:
   - after every step, the project is type-checked (TypeScript 6.0.3, strict), and the number of errors must equal the step's `errors`;
   - every DAX query the project can send must have a saved answer from the model its connector names.
 - **Controls:** behaviour a type check can't see. That covers connector names, permissions and claims, and the numbers shown in "Two models, one page" and "Rows or measures". It also checks that the lakehouse rows add up to the model's `[Revenue]`.
@@ -63,7 +63,7 @@ It runs two scripts in order and writes nothing. They are joined with `&&`, so i
 
 - every `.dax` file sends exactly the text of a saved answer, including the slicer's query for every set of years;
 - every data number quoted in the page text (such as `$60,466,772` or `55.9%`) appears in a saved answer;
-- `src/visuals/pages.mjs` and the page definitions agree, and its course links name real lessons;
+- `src/visuals/pages.mjs` and the page definitions agree, and its lesson links name real lessons;
 - the page's code type-checks.
 
 **A pass ends with:**
@@ -103,7 +103,7 @@ visuals page: all checks passed
 | Rayfin types the editor and the checker know | `src/editor-types/packages/*.d.ts`, plus the lists in `tools/build.mjs` (`editorLibsPlugin`) and `tools/check-lessons.mjs` (`PACKAGE_TYPES`) |
 | Versions named in the About tab | `src/app.ts`, `renderAbout` |
 | The top bar | `src/topbar.mjs` (markup), `src/top.css` (styles) |
-| Visuals page list and order, links to the course | `src/visuals/pages.mjs` |
+| Visuals page list and order, links to the lessons | `src/visuals/pages.mjs` |
 | A visual page's text | `src/visuals/shell/visuals.tsx` (Bar chart, Slicer, Key influencers), `src/visuals/shell/visuals-gallery.tsx` (the others) |
 | The app code a visual page runs | `src/visuals/app/` (components, `.dax`, `.json` specs, `.ts` query files) |
 | Which saved answer a `.dax` file uses | `tools/visuals-answers.mjs`; answers captured for Visuals only go in `data/visuals-extra-answers.json` |
@@ -184,7 +184,7 @@ Known limits:
    ```
 
    Link objects (`learn.*`, `rayfin.*`) are defined at the top of the file. Long pasted code goes in `src/course-code.mjs`.
-2. Put its `id` in a module's `lessons` list in `src/course.mjs`. The order in that list is the course order.
+2. Put its `id` in a module's `lessons` list in `src/course.mjs`. The order in that list is the lesson order.
 3. If the module's knowledge check should ask about it, add a question: 2 to 4 options of similar length, `answer` (0-based), `why`, `lesson` and `step` (1-based).
 4. If it sends new queries, add them first (2.7).
 5. Run `npm run check`. Later lessons start from this lesson's end, so their `edits` may need updating.
@@ -204,7 +204,7 @@ Chapters live in `chapters` in `src/course.mjs`. Each chapter has:
 **Add a coming chapter:** add it with `coming: ['First lesson title', …]`, then add its id to a part (2.5).
 
 **Take a chapter live:**
-1. Write its lessons (2.3) and its modules: add module objects to `modules` in course order, after the last live chapter's modules.
+1. Write its lessons (2.3) and its modules: add module objects to `modules` in lesson order, after the last live chapter's modules.
 2. In the chapter, replace `coming: […]` with `modules: ['module-id', …]`.
 3. Mind the order. The checker enforces two rules:
    - **Live chapters come before every coming chapter.** Taking one live that isn't next means moving it up the list. That changes its number, which is fine, because lesson text never uses numbers.
@@ -217,7 +217,7 @@ Chapters live in `chapters` in `src/course.mjs`. Each chapter has:
 Add an entry to `parts` in `src/course.mjs`, with these fields:
 - `id`, `title` and `goal`;
 - `level`, for example "Going further";
-- `chapters`: chapter ids, in course order.
+- `chapters`: chapter ids, in lesson order.
 
 Every chapter must be in exactly one part, and the parts in order must list the chapters in the same order as `chapters`. Run `npm run check`.
 
@@ -243,7 +243,7 @@ Answers come from two Contoso models in the public gold-layer-examples repositor
 1. **Add the query.** In `tools/make-catalog.mjs`, add an entry to `contosoQueries` or `twoModelQueries`, with `id`, `group`, `title` and the query text.
    - For the second model, add `connector: 'pareto'`.
    - A query that should fail on purpose gets `expectError: true`.
-   - For the course, the lesson's code must build the same text; spacing and letter case are ignored.
+   - For a lesson, its code must build the same text; spacing and letter case are ignored.
    - For the Visuals page, the text must be the `.dax` file's text exactly (2.8).
 2. Run `npm run catalog`.
 3. **Open both models and find their ports.** Open each `.pbip` in its own Power BI Desktop window. Each window runs its own local Analysis Services on its own port. To list them:
@@ -288,7 +288,7 @@ Answers come from two Contoso models in the public gold-layer-examples repositor
 5. **The running app:** add the component to `APPS` in `src/visuals/shell/main.tsx`. A visual with no drop-in equivalent uses `noEquiv` in its definition instead.
 6. **The sketch:** add a glyph under the same id in `GLYPHS` in `src/visuals/shell/sketches.tsx`.
 7. **No layout shift:** open the page with `npm run dev`, wait for the chart, read the height of `.app-surface` in the browser's developer tools at a desktop width, and add `your-id: <px>` to `SURFACE_H` in `main.tsx`.
-8. **Optionally, a link to the course:** add it to `COURSE_LINKS` in `pages.mjs`. A lesson step can link to it with `visual: 'your-id'`.
+8. **Optionally, a link to a lesson:** add it to `COURSE_LINKS` in `pages.mjs`. A lesson step can link to it with `visual: 'your-id'`.
 9. Run `npm run check`, then look at `http://127.0.0.1:5180/visuals/#/your-id`.
 
 **How its numbers are checked:** `npm run check` and `npm run build` both stop if a `.dax` file's text differs from its saved answer. The check also fails if a dollar amount or percentage in the page text isn't in any saved answer. Numbers inside `<code>…</code>` are not checked, because they hold formats, not data.
@@ -317,7 +317,7 @@ Then:
    - `THIRD-PARTY-NOTICES.md`.
 
 **The notices:**
-- The first table lists what the course bundles.
+- The first table lists what the lessons page bundles.
 - The Visuals table follows esbuild's output. After `npm run build`, the `other:` line lists packages in the Visuals bundle that have no named group, and each needs a row.
 - `dist/visuals/assets/main.js.LEGAL.txt` collects the licence comments.
 
@@ -388,7 +388,7 @@ Each failure is one line starting with `FAIL`. Lesson messages start with the le
 | `<id> step N: expected X type error(s), got Y`, followed by the errors | An edit changed the code, or a package's types changed, so the red-line count differs from the step's `errors`. | Read the printed errors. Fix the edit, or set `errors` to the new count if the red line is intended. |
 | `<id> step N: an expected error is in no file of the project: …` | An expected red line is in a type file, which the learner can't open. | Change the step so the error is in the learner's code. |
 | `<id> step N: names <file>, which isn't in the project at this step` | The step's `file`, or its first edit's file, doesn't exist yet. | Create it in an earlier step (`from: ''`), or fix the path. |
-| `<id> step N: "Show me" text not found in <file>: …` | `find` doesn't match the file as it is at that step. The match is case-sensitive. | Copy the text from the file as the course builds it. |
+| `<id> step N: "Show me" text not found in <file>: …` | `find` doesn't match the file as it is at that step. The match is case-sensitive. | Copy the text from the file as the lessons build it. |
 | `<id> step N: <file>: text not found: …`, `… does not exist`, `… is not empty` | An edit's `from` no longer matches, often because an earlier step changed the same lines. Or a `from: ''` edit hit a file that already has content. | Update `from` to the current text. To write a new file, the file must be new or empty. |
 | `<id> step N: looks done before it is applied` / `not detected as done after applying it` | The done tick can't tell before from after, for example because `to` is already in the file. | Make `to` unique, or add `done: { file, before: [a, b] }` or `done: { file, absent }`. |
 | `<id> step N: query not in the catalog for <connector> (…)` | The project can send a query with no saved answer. Query functions are called with every year and country. | Add it to `tools/make-catalog.mjs` and retake the snapshots (2.7), or make the code build an existing query's text. |
@@ -441,11 +441,11 @@ Each failure is one line starting with `FAIL`. Lesson messages start with the le
 | A red line says a Rayfin module can't be found | The package's type file isn't mapped in `editorLibsPlugin` in `tools/build.mjs`. | Add it there, and to `PACKAGE_TYPES` in `tools/check-lessons.mjs`. |
 | The pink mark, selections or red lines sit left of the text | Monaco measured the code font before the web font arrived. | `remeasureFonts` in `src/app.ts` handles this. If you change the editor font or size, update its `document.fonts.load("13.5px 'IBM Plex Mono'")` line to match. |
 | The mark is on the wrong line, or missing | The step's `find`, or its first edit's `from`, matches earlier in the file, or the step's file isn't the one open (`markFind` in `src/app.ts`). | Make `find` unique in that file. |
-| A learner lands on the wrong step after steps were split | `src/step-moves.mjs` wasn't regenerated, or `STEPS_VERSION` wasn't raised. Old links such as `#client/3` are never moved. | Do 2.2, step 5, and ship. The learner can pick the step in the course drawer; finished lessons are kept. |
-| A learner is offered "the course's version" of a lesson | Their project doesn't match the lesson's start, usually because the lesson's edits changed. | By design. Accepting it offers Undo. |
+| A learner lands on the wrong step after steps were split | `src/step-moves.mjs` wasn't regenerated, or `STEPS_VERSION` wasn't raised. Old links such as `#client/3` are never moved. | Do 2.2, step 5, and ship. The learner can pick the step in the lessons drawer; finished lessons are kept. |
+| A learner is offered "the playground's version" of a lesson | Their project doesn't match the lesson's start, usually because the lesson's edits changed. | By design. Accepting it offers Undo. |
 | The Visuals page says **no saved answer**, or a visual shows "No saved answer for this query text." | The query the component sent doesn't match any answer exactly. It's likely built in code instead of read from its `.dax` file, or the connection isn't `contoso`. | Run `npm run check`, and make the component send its `.dax` text (`?raw` import). See `answerQuery` in `src/visuals/sim/answer-book.ts`. |
 | A Visuals page jumps when the chart arrives | No reserved height, or the chart grew. | Measure `.app-surface` and set `SURFACE_H` in `src/visuals/shell/main.tsx` (2.8, step 7). |
-| The top bar looks different on one page | One of these: a rule in `app.css` or `shell.css` overrides the shared `top.css`; the dev server wasn't restarted after editing the bar; or it's the course's slot, which is hidden on the start screen by design (`body.on-splash .top-slot`). | Inspect the bar in developer tools, find the overriding rule, and move shared styles to `top.css`. Restart `npm run dev`. |
+| The top bar looks different on one page | One of these: a rule in `app.css` or `shell.css` overrides the shared `top.css`; the dev server wasn't restarted after editing the bar; or it's the lessons page's slot, which is hidden on the start screen by design (`body.on-splash .top-slot`). | Inspect the bar in developer tools, find the overriding rule, and move shared styles to `top.css`. Restart `npm run dev`. |
 | The Visuals page is blank | A page id in `pages.mjs` has no definition (`no page for …` in the console). | Run `npm run check`. |
 
 ---
@@ -476,7 +476,7 @@ Each failure is one line starting with `FAIL`. Lesson messages start with the le
 - [ ] Knowledge-check `step` numbers still point at the steps that teach them.
 - [ ] New or changed claims are fact-checked, and unchecked CLI output starts with `Playground:`.
 - [ ] `npm run build`, then `npm run preview`. Click through every changed lesson with **Do it for me** in a private window, and look at any changed Visuals pages.
-- [ ] `README.md`, the About tab, `THIRD-PARTY-NOTICES.md` and the Visuals Notes page match the versions and the course.
+- [ ] `README.md`, the About tab, `THIRD-PARTY-NOTICES.md` and the Visuals Notes page match the versions and the lessons.
 - [ ] Nothing private. Run these and review the hits:
 
   ```powershell

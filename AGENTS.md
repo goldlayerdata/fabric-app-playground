@@ -4,11 +4,11 @@ These instructions are for any AI coding tool working in this repository (Claude
 
 ## What this is
 
-The Gold Layer Fabric app playground is a browser course in which Power BI developers who know DAX, but have never written TypeScript, build a Fabric app (Rayfin 2.0, TypeScript, React) one step at a time. It has two pages:
-- the course (`src/index.html`, `src/app.ts`);
+The Gold Layer Fabric app playground is a set of browser lessons in which Power BI developers who know DAX, but have never written TypeScript, build a Fabric app (Rayfin 2.0, TypeScript, React) one step at a time. It has two pages:
+- the lessons page (`src/index.html`, `src/app.ts`);
 - the Visuals page (`src/visuals/`).
 
-Nothing talks to Fabric or Power BI: the course is simulated, and every number comes from answers saved from a Contoso model (`data/`).
+Nothing talks to Fabric or Power BI: the playground is simulated, and every number comes from answers saved from a Contoso model (`data/`).
 
 It is unofficial. It is our interpretation of public documentation, not a guarantee (`src/disclaimer.mjs`).
 
@@ -18,7 +18,7 @@ Learners trust every sentence. An invented fact or a made-up command output is t
 
 ```bash
 npm ci             # install (exact versions)
-npm run check      # the course built from an empty folder, step by step, plus the Visuals checks; must pass
+npm run check      # every lesson built from an empty folder, step by step, plus the Visuals checks; must pass
 npm run build      # the static site in dist/
 npm run dev        # http://127.0.0.1:5180/ and /visuals/
 npm run preview    # serves dist/ at http://127.0.0.1:5181/
