@@ -225,7 +225,8 @@ ROW ( "Revenue", [Revenue] )
 `;
 
 // Each .dax file has a small .ts file of the same name, as in the template (its AGENTS.md): a function named after
-// the file, in camelCase, that hands out the query text. The template's also return the chart spec.
+// the file, in camelCase, that hands out the query text. The template's return an object, { connection, query,
+// columnMetadata, vegaLiteSpec }; ours return only the query text.
 export const COUNTRY_TS = `import revenueByStoreCountryDax from './revenue-by-store-country.dax?raw';
 
 // The countries chart's query, from its .dax file.
@@ -383,7 +384,8 @@ export function toRevenue(result: SemanticModelQueryResult): number {
   return Number(result.table.rows[0][at]);
 }`;
 
-// ---------------------------------------------------------------- src/components/: one visual per file
+// ---------------------------------------------------------------- src/components/: one visual per file (our choice;
+// the template's AGENTS.md says only that components/ holds cards, charts and banners)
 export const BAR_LIST_FILE = `import type { Bar } from '../lib/conversions';
 
 type BarListProps = {
@@ -881,6 +883,7 @@ export type LakeSchema = GraphQLBackedConnector<
 `;
 
 // ---------------------------------------------------------------- rows on a page
+// src/hooks/use-load.ts
 export const LAKE_HOOK = `import { useEffect, useState } from 'react';
 
 export type Loaded<T> =
@@ -905,9 +908,8 @@ export function useLoad<T>(load: () => Promise<T>, key: string): Loaded<T> {
 }
 `;
 
-export const LAKE_QUERIES = `
-// ------------------------------------------------------------ lakehouse queries
-import { rayfinClient } from './rayfin-client';
+// src/lib/lake.ts: the lakehouse reads, plain functions the pages run through useLoad.
+export const LAKE_QUERIES = `import { rayfinClient } from './rayfin-client';
 
 export async function storeKeysIn(country: string) {
   const stores = await rayfinClient.connectors.lake.Store
@@ -931,7 +933,8 @@ export const LINES_DATE = "{new Date(line.orderDate).toLocaleDateString('en-US',
 export const LINES_DATE_SLIP = "{line.orderDate.toLocaleDateString('en-US', { timeZone: 'UTC' })}";
 
 export const LINES_PAGE = `import { ErrorPanel } from './components/error-panel';
-import { latestLines, storeKeysIn, useLoad } from './lib/lake';
+import { useLoad } from './hooks/use-load';
+import { latestLines, storeKeysIn } from './lib/lake';
 
 // The order lines behind a country's number: the latest 20, newest first.
 export default function LinesPage() {
@@ -1090,7 +1093,7 @@ const TARGETS_HEAD = `      <header className="col-span-12 row-span-1 flex items
 export const TARGETS_PAGE = `import { useState } from 'react';
 import { ErrorPanel } from './components/error-panel';
 import { YearSlicer } from './components/year-slicer';
-import { useLoad } from './lib/lake';
+import { useLoad } from './hooks/use-load';
 import { loadTargets } from './lib/targets';
 
 // Sales targets, one row per country and year, from the app's own database.
@@ -1139,7 +1142,7 @@ export const TARGETS_ADD_BUTTON = `          <button type="button" className="ro
 export const TARGETS_PAGE_EDIT = `import { Fragment, useState } from 'react';
 import { ErrorPanel } from './components/error-panel';
 import { YearSlicer } from './components/year-slicer';
-import { useLoad } from './lib/lake';
+import { useLoad } from './hooks/use-load';
 import { addTarget, changeTarget, loadTargets } from './lib/targets';
 
 // Sales targets, one row per country and year, from the app's own database.
@@ -1243,8 +1246,7 @@ export const NOTE_FIELD_SLIP = '  @text({ max: 500 }) note?: string;\n';
 
 // ================================================================== Chapter 5: Who is using it
 // ---------------------------------------------------------------- signed in as
-export const SESSION_READ = `import { useEffect, useState } from 'react';
-import { rayfinClient } from './rayfin-client';
+export const SESSION_READ = `import { rayfinClient } from './rayfin-client';
 
 // Who is signed in, read once.
 export function signedInEmail(): string {
@@ -1253,7 +1255,10 @@ export function signedInEmail(): string {
 }
 `;
 
-export const USE_SESSION = `
+// src/hooks/use-session.ts
+export const USE_SESSION = `import { useEffect, useState } from 'react';
+import { rayfinClient } from '../lib/rayfin-client';
+
 // The session as state: the page draws again at each sign-in, sign-out or refresh.
 export function useSession() {
   const [session, setSession] = useState(() => rayfinClient.auth.getSession());

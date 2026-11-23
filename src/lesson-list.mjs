@@ -110,7 +110,7 @@ const rayfin = {
 const APP = 'src/App.tsx';
 const AGENT = 'src/SalesOverview.tsx';
 // The project's folders follow the data app template (its AGENTS.md, "Project Structure"): components/ for
-// visuals, hooks/ for React hooks, lib/ for the client and helpers, queries/<page>/ for the DAX.
+// visuals, hooks/ for React hooks, lib/ for the client and other shared code, queries/<page>/ for the DAX.
 const CLIENT = 'src/lib/rayfin-client.ts';
 const HOOK = 'src/hooks/use-dax.ts';
 const CONV = 'src/lib/conversions.ts';
@@ -119,6 +119,8 @@ const KPI = 'src/components/kpi-card.tsx';
 const BAR = 'src/components/bar-list.tsx';
 const ERR = 'src/components/error-panel.tsx';
 const SLICER = 'src/components/year-slicer.tsx';
+const USE_LOAD = 'src/hooks/use-load.ts';
+const USE_SESSION = 'src/hooks/use-session.ts';
 // Each query: a .dax file and a .ts file of the same name, in a folder per page.
 const COUNTRY_DAX = 'src/queries/overview/revenue-by-store-country.dax';
 const COUNTRY_TS = 'src/queries/overview/revenue-by-store-country.ts';
@@ -144,6 +146,8 @@ const newFile = (file, lead, extra = {}) => ({
   see: `An empty \`${file}\`, open in the editor.`,
   ...extra,
 });
+// A step where Do it for me writes a whole new file: for a query's .ts file that only hands out its .dax text.
+const writeFile = (file, text, doText, extra = {}) => ({ do: doText, code: text, copy: false, edits: [{ file, from: '', to: text }], point: 'files', see: 'Nothing on the page yet.', ...extra });
 // A step that pastes a whole file into the empty file the step before made.
 const paste = (file, text, doText, extra = {}) => ({ do: doText, code: text, edits: [{ file, from: '', to: text }], see: 'Nothing on the page yet.', ...extra });
 const YML = 'rayfin/rayfin.yml';
@@ -240,6 +244,7 @@ const SESSION_ANCHOR_IMPORT = "import TargetsPage from './TargetsPage';\n";
 const NAV_OPEN = '      <nav className="w-36 shrink-0 space-y-1 p-4">\n';
 const APP_PAGE_STATE = "  const [page, setPage] = useState<PageId>('overview');\n";
 const SESSION_ONCE_FN = C.SESSION_READ.slice(C.SESSION_READ.indexOf('\n// Who is signed in'));
+const SESSION_CLIENT_IMPORT = C.SESSION_READ.slice(0, C.SESSION_READ.indexOf('\n// Who is signed in'));
 const TARGETS_STATE_END = '  const [editing, setEditing] = useState<{ id: string; amount: string } | undefined>(undefined);\n';
 
 export const lessons = [
@@ -439,7 +444,7 @@ export const lessons = [
         edits: [{ file: CLIENT, from: '', to: '' }],
         point: 'files',
         see: 'A new, empty `src/lib/rayfin-client.ts`, open in the editor. The `lib` folder is made with it.',
-        why: 'The data app template keeps its client in this file, in `src/lib`, next to its other helpers. In a real project the file already exists, with the template\'s own sign-in, and you add the connector to it. The playground starts without it, so we write a small one.',
+        why: 'The data app template keeps its client in this file, in `src/lib`, with its other shared code. In a real project the file already exists: it builds the client the template\'s sign-in uses (the sign-in itself is in `src/services`), and you add the connector to it. The playground starts without it, so we write a small one.',
       },
       {
         do: 'Paste these imports into it:',
@@ -499,7 +504,7 @@ export const lessons = [
       '`executeQuery({ query })` sends DAX through the connector.',
     ],
     fabric: {
-      text: 'This is Rayfin 2.0\'s way to register a semantic model connector: `connectorsService` with `fabricSemanticModel()` in its `runtime` map. In a real data app project, this file already exists: add the connector to the template\'s client in it instead of making a second one; that client is fetched with `await getRayfinClient()`. As of November 2026, Microsoft Learn\'s pages still show the 1.x client (`ConnectorsRayfinClient`), so an agent following them may write that; the 2.0 version is on rayfin.ai.',
+      text: 'This is Rayfin 2.0\'s way to register a semantic model connector: `connectorsService` with `fabricSemanticModel()` in its `runtime` map. In a real data app project, this file already exists and builds the client the template\'s sign-in uses: add the connector to that client instead of making a second one; that client is fetched with `await getRayfinClient()`. As of November 2026, Microsoft Learn\'s pages still show the 1.x client (`ConnectorsRayfinClient`), so an agent following them may write that; the 2.0 version is on rayfin.ai.',
       links: [rayfin.clientSetup, rayfin.semanticModels],
     },
   },
@@ -577,7 +582,7 @@ export const lessons = [
         edits: [{ file: KPI, from: '', to: '' }],
         point: 'files',
         see: 'A new folder, `src/components`, with an empty `kpi-card.tsx` in it, open in the editor.',
-        why: 'The data app template keeps its visuals in `src/components`, one per file.',
+        why: 'The data app template keeps its visuals in `src/components` (its `AGENTS.md`: cards, charts, banners). One visual per file is our choice: each is easy to find.',
       },
       {
         do: 'Paste the card component into it:',
@@ -706,7 +711,7 @@ export const lessons = [
     goal: 'replace typed-in numbers with the model\'s',
     builds: ['types'],
     pbi: 'Binding fields to visuals: each visual asks the model a [[query]] and draws the [[result]].',
-    idea: 'Each query gets two files, as in the data app template: a `.dax` file with the DAX, and a small `.ts` file that hands it to the page. A [[hook]] runs the queries, and conversions turn their results into what the visuals draw. Then the chart and the cards use them.',
+    idea: 'A data app sorts its files a bit like a report project: `components` holds the visuals, `queries/<page>` the DAX behind each visual, page by page, `hooks` the code that runs a query and waits for it, and `lib` the connection and other shared code. Pages stay in `src`. A query goes: its `.dax` file → its `.ts` file → a [[hook]] runs it → a conversion → the visual. We build that for the chart, then for the cards.',
     steps: [
       newFile(HOOK, 'First, the code that runs queries. It is a hook, and the template keeps hooks in a folder of their own: ', {
         see: 'A new folder, `src/hooks`, with an empty `use-dax.ts` in it, open in the editor.',
@@ -730,21 +735,21 @@ export const lessons = [
       },
       newFile(COUNTRY_DAX, 'Now the first query. It gets a file of its own: ', {
         see: 'New folders, `src/queries/overview`, with an empty `revenue-by-store-country.dax` in them, open in the editor.',
-        why: 'Microsoft\'s data app template asks the same of coding agents, in its `AGENTS.md`: every DAX query in a `.dax` file of its own, under `src/queries`, in a folder per page, named after the visual it feeds. This one feeds the countries chart on the Overview page.',
+        why: 'Microsoft\'s data app template asks the same of coding agents, in its `AGENTS.md`: every DAX query in a `.dax` file of its own, under `src/queries`, named after the visual it feeds, with a folder per page (or topic) once there are several. More pages are coming, so we start with `overview`.',
       }),
       paste(COUNTRY_DAX, C.COUNTRY_DAX, 'Paste the query into it:', {
         why: 'Only DAX, nothing else: on the same model, it runs as it is in DAX query view in Power BI Desktop. It names the model\'s own measure, `[Revenue]`, as a report visual does.',
       }),
       newFile(COUNTRY_TS, 'Next to it, a small file that hands the query to the page: '),
       paste(COUNTRY_TS, C.COUNTRY_TS, 'Paste this into it:', {
-        why: '`?raw` means "the file\'s text, as a string": `revenueByStoreCountryDax` holds the DAX exactly as the file has it. The function is named after the file, as in the template; in **State as a slicer** it learns to add the year. The template\'s version also returns the chart\'s spec, and each folder re-exports its files through an `index.ts`; we import each file directly.',
+        why: '`?raw` means "the file\'s text, as a string": `revenueByStoreCountryDax` holds the DAX exactly as the file has it. The function is named after the file, as in the template. It only hands out the text for now, and the file still earns its place: the template has one per visual, and it is where a slicer\'s filter goes (in **State as a slicer**). The template\'s version returns an object, `{ connection, query, columnMetadata, vegaLiteSpec }`: the query and what its chart needs. Ours returns only the query text. The template also re-exports each folder through an `index.ts`; we import each file directly.',
       }),
-      newFile(CONV, 'The chart needs bars, not rows. The code that turns one into the other is a helper, so it goes in `src/lib`: '),
+      newFile(CONV, 'The chart needs bars, not rows. The code that turns one into the other is shared by the pages, so it goes in `src/lib`: '),
       paste(CONV, C.CONVERSIONS_V1, 'Paste the first conversion into it:', {
         why: '`.map` makes one bar for each row. `toBars` reads `row[0]` as the label and `row[1]` as the value: positions, counted from 0. Keep that in mind.',
       }),
       {
-        do: 'The page needs the hook, the conversion and the query. In `src/App.tsx`, add these imports under the marked `KpiCard` one:',
+        do: 'The page needs the hook, the conversion and the query. In `src/App.tsx`, add these imports under the last import, the marked `KpiCard` one:',
         code: FIRST_IMPORTS.trimEnd(),
         edits: [{ file: APP, from: COMP_IMPORT, to: COMP_IMPORT + FIRST_IMPORTS }],
         see: 'Nothing on the page yet.',
@@ -762,9 +767,9 @@ export const lessons = [
         why: '`import type` brings in only a type, here the shape of one bar.',
       }),
       {
-        do: 'Load the chart into the page: in `src/App.tsx`, add this import on a new line above the marked `KpiCard` one.',
+        do: 'Load the chart into the page: in `src/App.tsx`, add this import on a new line under the last import (marked).',
         code: IMP_BAR.trim(),
-        edits: [{ file: APP, from: COMP_IMPORT, to: IMP_BAR + COMP_IMPORT }],
+        edits: [{ file: APP, from: IMP_Q_COUNTRY, to: IMP_Q_COUNTRY + IMP_BAR }],
         see: 'Nothing changes yet.',
       },
       {
@@ -781,8 +786,7 @@ export const lessons = [
       },
       newFile(TOTALS_DAX, 'Now the cards. Their query gets a file too: '),
       paste(TOTALS_DAX, C.TOTALS_DAX, 'Paste the totals query into it:', { why: 'One row with three measures: one for each card.' }),
-      newFile(TOTALS_TS, 'And its small `.ts` file: '),
-      paste(TOTALS_TS, C.TOTALS_TS, 'Paste this into it:'),
+      writeFile(TOTALS_TS, C.TOTALS_TS, '**Do it for me** writes its small `.ts` file, `src/queries/overview/sales-totals.ts`, like the countries one:'),
       {
         do: 'At the end of `src/lib/conversions.ts`, add the cards\' conversion:',
         code: C.TOTALS_CONV.trimStart(),
@@ -796,9 +800,9 @@ export const lessons = [
         see: 'Nothing changes yet.',
       },
       {
-        do: 'Then add the query\'s import on a new line under the marked one:',
+        do: 'Then add the query\'s import on a new line under the last import (marked):',
         code: IMP_Q_TOTALS.trim(),
-        edits: [{ from: IMP_Q_COUNTRY, to: IMP_Q_COUNTRY + IMP_Q_TOTALS }],
+        edits: [{ from: IMP_BAR, to: IMP_BAR + IMP_Q_TOTALS }],
         see: 'Nothing changes yet.',
       },
       {
@@ -824,7 +828,7 @@ export const lessons = [
       'The queries name the model\'s measures, such as `[Revenue]` and `[# Orders]`, as a report visual does.',
     ],
     fabric: {
-      text: 'The real connector returns this same result shape: `columns`, each with a name and a data type, and `rows` as lists of values in column order. The `.dax` files follow the data app template. Its scaffold includes instructions for coding agents, and those (its `AGENTS.md`) keep all DAX in `.dax` files under `src/queries`, imported as text with `?raw`, and put visuals in `src/components`, hooks in `src/hooks` and helpers in `src/lib`, as here.',
+      text: 'The real connector returns this same result shape: `columns`, each with a name and a data type, and `rows` as lists of values in column order. The `.dax` files follow the data app template. Its scaffold includes instructions for coding agents, and those (its `AGENTS.md`) keep all DAX in `.dax` files under `src/queries`, imported as text with `?raw`, and put visuals in `src/components`, hooks in `src/hooks` and shared code in `src/lib`, as here.',
       links: [rayfin.semanticModels, learn.templateAgent],
     },
   },
@@ -893,8 +897,7 @@ export const lessons = [
       paste(MARGIN_DAX, C.MARGIN_IN_QUERY_DAX, 'Paste this query into it. It has the formula written in, as an agent often writes it:', {
         why: '`DEFINE MEASURE` adds a measure for this one query. The model never stores it, and no report can see it.',
       }),
-      newFile(MARGIN_TS, 'And its small `.ts` file: '),
-      paste(MARGIN_TS, C.MARGIN_TS, 'Paste this into it:'),
+      writeFile(MARGIN_TS, C.MARGIN_TS, '**Do it for me** writes its small `.ts` file, `src/queries/overview/margin-pct.ts`, like the others:'),
       {
         do: 'At the end of `src/lib/conversions.ts`, add the card\'s conversion:',
         code: C.PERCENT_CONV.trimStart(),
@@ -925,7 +928,7 @@ export const lessons = [
         see: 'Nothing changes yet.',
       },
       {
-        do: 'Then add the query\'s import on a new line under the marked one:',
+        do: 'Then add the query\'s import on a new line under the last import (marked):',
         code: IMP_Q_MARGIN.trim(),
         edits: [{ from: IMP_Q_TOTALS, to: IMP_Q_TOTALS + IMP_Q_MARGIN }],
         see: 'Nothing changes yet.',
@@ -1016,9 +1019,9 @@ export const lessons = [
       newFile(ERR, 'The page needs an error panel: a visual for a failed query, so it gets a file in `src/components` too: ', { queryFails: true }),
       paste(ERR, C.ERROR_PANEL_FILE, 'Paste the error panel into it:', { queryFails: true, see: 'Nothing changes yet.' }),
       {
-        do: 'Load it into the page: in `src/App.tsx`, add this import on a new line under the marked `BarList` one.',
+        do: 'Load it into the page: in `src/App.tsx`, add this import on a new line under the last import (marked).',
         code: IMP_ERR.trim(),
-        edits: [{ from: IMP_BAR, to: IMP_BAR + IMP_ERR }],
+        edits: [{ from: IMP_Q_MARGIN, to: IMP_Q_MARGIN + IMP_ERR }],
         queryFails: true,
         see: 'Nothing changes yet.',
       },
@@ -1110,13 +1113,13 @@ export const lessons = [
       {
         do: 'In `src/App.tsx`, add this line at the very top, above the marked line:',
         code: "import { useState } from 'react';",
-        edits: [{ from: IMP_BAR, to: `import { useState } from 'react';\n${IMP_BAR}` }],
+        edits: [{ from: COMP_IMPORT, to: `import { useState } from 'react';\n${COMP_IMPORT}` }],
         see: 'Nothing changes yet.',
       },
       {
-        do: 'Load the slicer: add this import on a new line under the marked `KpiCard` one.',
+        do: 'Load the slicer: add this import on a new line under the last import (marked).',
         code: IMP_SLICER.trim(),
-        edits: [{ from: COMP_IMPORT, to: COMP_IMPORT + IMP_SLICER }],
+        edits: [{ from: IMP_ERR, to: IMP_ERR + IMP_SLICER }],
         see: 'Nothing changes yet.',
       },
       {
@@ -1137,9 +1140,9 @@ export const lessons = [
         ],
         see: 'The slicer, on the right of the title. Clicks move the highlight, but nothing uses the year yet.',
       },
-      newFile(FILTERS, 'The filters are helpers, so they get a file in `src/lib`: '),
+      newFile(FILTERS, 'The filters are shared code too, so they get a file in `src/lib`: '),
       {
-        do: 'Paste the two filter helpers into it:',
+        do: 'Paste the two filter functions into it:',
         code: C.FILTERS_FILE,
         edits: [{ file: FILTERS, from: '', to: C.FILTERS_FILE }],
         see: 'Nothing changes yet.',
@@ -1308,9 +1311,9 @@ export const lessons = [
         why: 'It takes the year and the country from the start: both go where the `.dax` file has `/* filters */`.',
       }),
       {
-        do: 'Load it into the page: in `src/App.tsx`, add this import on a new line under the marked one.',
+        do: 'Load it into the page: in `src/App.tsx`, add this import on a new line under the last import (marked).',
         code: IMP_Q_CATEGORY.trim(),
-        edits: [{ from: IMP_Q_MARGIN, to: IMP_Q_MARGIN + IMP_Q_CATEGORY }],
+        edits: [{ from: IMP_SLICER, to: IMP_SLICER + IMP_Q_CATEGORY }],
         see: 'Nothing changes yet.',
       },
       {
@@ -1409,17 +1412,22 @@ export const lessons = [
       newFile(YEARS_DAX, 'The page needs a query. A new page gets its own folder in `src/queries`: ', {
         errors: 1,
         see: 'A new folder, `src/queries/years`, with an empty `revenue-by-year.dax` in it. The red line stays.',
-        why: 'The template groups query files by page: `overview` for the first page, `years` for this one.',
+        why: 'The template\'s `AGENTS.md` groups query files by page (or topic): `overview` for the first page, `years` for this one.',
       }),
       paste(YEARS_DAX, C.YEARS_DAX, 'Paste its query:', { errors: 1, see: 'The red line stays.' }),
-      newFile(YEARS_TS, 'And its small `.ts` file: ', { errors: 1, see: `An empty \`${YEARS_TS}\`. The red line stays.` }),
-      paste(YEARS_TS, C.YEARS_TS, 'Paste this into it:', { errors: 1, see: 'The red line stays.' }),
+      writeFile(YEARS_TS, C.YEARS_TS, '**Do it for me** writes its small `.ts` file, `src/queries/years/revenue-by-year.ts`:', { errors: 1, see: 'The red line stays.' }),
       {
-        do: 'Write the page, above the marked `the report` line in `src/App.tsx`. **Do it for me** also adds the import of `revenueByYear`.',
+        do: 'Load the query: in `src/App.tsx`, add this import on a new line under the last import (marked).',
+        code: IMP_Q_YEARS.trim(),
+        edits: [{ from: IMP_Q_CATEGORY, to: IMP_Q_CATEGORY + IMP_Q_YEARS }],
+        errors: 1,
+        see: 'The red line stays.',
+      },
+      {
+        do: 'Write the page, above the marked `the report` line in `src/App.tsx`.',
         code: C.YEARS_PAGE.trim(),
         edits: [
           { from: '// ------------------------------------------------------------ the report\n', to: `${C.YEARS_PAGE}// ------------------------------------------------------------ the report\n` },
-          { from: IMP_Q_CATEGORY, to: IMP_Q_CATEGORY + IMP_Q_YEARS },
         ],
         errors: 1,
         see: 'The red line stays: `PAGES` has no entry for it yet.',
@@ -1460,7 +1468,7 @@ export const lessons = [
         do: 'Let the agent add its file: **Do it for me**.',
         edits: [{ file: AGENT, from: '', to: C.AGENT_PAGE }],
         point: 'files',
-        see: '`src/SalesOverview.tsx` in the file list: a whole page, with its own helpers.',
+        see: '`src/SalesOverview.tsx` in the file list: a whole page, with its own functions.',
       },
       {
         do: 'Add it to our report: the agent asked for a page id, a `PAGES` entry and an import. **Do it for me** makes the three edits.',
@@ -1512,7 +1520,7 @@ export const lessons = [
         code: "({ label: String(row[col(result, 'store[CountryName]')]), value: Number(row[col(result, '[Revenue]')]) })",
         edits: [{ file: AGENT, from: '({ label: String(row[0]), value: Number(row[1]) })', to: "({ label: String(row[col(result, 'store[CountryName]')]), value: Number(row[col(result, '[Revenue]')]) })" }],
         see: 'United States: 60,466,772, and the bars are in order.',
-        why: '`col` is the agent\'s own helper, already used by its `toTotals`: it finds a column by name.',
+        why: '`col` is the agent\'s own function, already used by its `toTotals`: it finds a column by name.',
       },
       {
         do: 'Check 3: what happens when a query fails? In the **Queries** tab, pick **Network down**.',
@@ -1736,7 +1744,7 @@ export const lessons = [
         see: 'No red lines.',
         why: '`runPareto` is a runner: the function a page passes to `useDax`, which picks the connector, and so the model. It has the same type as `runDax`, and is made once, outside any page, for the reason in **The redraw trap**. Only the connector differs.',
       },
-      newFile(PARETO_HEADLINE_DAX, 'The second model\'s first query gets a file, in a folder for its page: ', {
+      newFile(PARETO_HEADLINE_DAX, 'The second model\'s first query gets a file, in `src/queries/categories`, for the **Categories** page we add in a few steps: ', {
         see: 'A new folder, `src/queries/categories`, with an empty `pareto-headline.dax` in it.',
       }),
       paste(PARETO_HEADLINE_DAX, C.PARETO_HEADLINE_DAX, 'Paste the query. It names two measures from the Pareto model:', { see: 'Nothing changes yet.' }),
@@ -2141,32 +2149,28 @@ export const lessons = [
         see: 'The red line goes.',
         why: 'No `runtime` entry this time: `runtime` is for function-style connectors such as the semantic model, whose `fabricSemanticModel()` decodes the answer. An entity connector, such as a lakehouse, needs its configuration only.',
       },
+      newFile(USE_LOAD, 'First, a hook that waits for any promise. Hooks go in `src/hooks`: '),
       {
-        do: 'Click **+ New file**, at the top of the file list, and type `lib/lake.ts` after the `src/` already there.',
-        edits: [{ file: LAKE_TS, from: '', to: '' }],
-        point: 'files',
-        see: 'A new, empty `src/lib/lake.ts`, open in the editor.',
-      },
-      {
-        do: 'Paste a hook that waits for any promise into it:',
+        do: 'Paste the hook into it:',
         code: C.LAKE_HOOK,
-        edits: [{ file: LAKE_TS, from: '', to: C.LAKE_HOOK }],
+        edits: [{ file: USE_LOAD, from: '', to: C.LAKE_HOOK }],
         see: 'No red lines.',
         why: 'A lakehouse call doesn\'t return a `status`, as `executeQuery` does: it gives the rows, or it throws. So the hook catches the error and turns it into a state, as **Failure** taught. `key` plays the part of the dependency list from **The redraw trap**.',
       },
       {
         do: 'Look at the marked `let live = true;` in `useLoad`.',
-        file: LAKE_TS,
+        file: USE_LOAD,
         find: 'let live = true;',
         see: '`live` is checked before every `setState`.',
         why: '`Loaded<T>` is the three states from **Failure** for any kind of value. `live` ignores an answer that arrives after the page has moved on (React runs the returned function when `key` changes or the page closes).',
       },
+      newFile(LAKE_TS, 'The lakehouse reads are code the pages share, so they go in `src/lib`: '),
       {
-        do: 'At the end of `src/lib/lake.ts`, add the two queries:',
-        code: C.LAKE_QUERIES.trimStart(),
-        edits: [{ file: LAKE_TS, from: C.LAKE_HOOK, to: C.LAKE_HOOK + C.LAKE_QUERIES }],
+        do: 'Paste the two reads into it:',
+        code: C.LAKE_QUERIES,
+        edits: [{ file: LAKE_TS, from: '', to: C.LAKE_QUERIES }],
         see: 'No red lines.',
-        why: 'The chain reads like a query: `select` the columns, `where` to filter, `orderBy`, `first` for the row count, then `execute`. Two calls, because the tables have no relationship: the first finds France\'s store keys, the second the lines in those stores. (The `import` may sit halfway down the file: imports count wherever they are, though most files keep them at the top.)',
+        why: 'The chain reads like a query: `select` the columns, `where` to filter, `orderBy`, `first` for the row count, then `execute`. Two calls, because the tables have no relationship: the first finds France\'s store keys, the second the lines in those stores.',
       },
       {
         do: 'Add the page as **Order lines**: **Do it for me** writes `src/LinesPage.tsx` and adds the page to the report (page id, import and `PAGES` entry); this is the line it adds to `PAGES`:',
@@ -2247,7 +2251,7 @@ export const lessons = [
         code: C.REVENUE_CARD.trim(),
         edits: [
           { file: LINES, from: IMP_ERR, to: IMP_ERR + COMP_IMPORT },
-          { file: LINES, from: "import { latestLines, storeKeysIn, useLoad } from './lib/lake';", to: "import { latestLines, revenueFromLines, storeKeysIn, useLoad } from './lib/lake';" },
+          { file: LINES, from: "import { latestLines, storeKeysIn } from './lib/lake';", to: "import { latestLines, revenueFromLines, storeKeysIn } from './lib/lake';" },
           { file: LINES, from: LINES_HOOK, to: LINES_HOOK + C.REVENUE_HOOK },
           { file: LINES, from: LINES_END, to: `      </section>\n${C.REVENUE_CARD}    </div>\n  );\n}\n` },
         ],
@@ -2277,7 +2281,7 @@ export const lessons = [
         do: 'Keep totals in the model: **Do it for me** takes the card and `revenueFromLines` out again.',
         edits: [
           { file: LINES, from: IMP_ERR + COMP_IMPORT, to: IMP_ERR },
-          { file: LINES, from: "import { latestLines, revenueFromLines, storeKeysIn, useLoad } from './lib/lake';", to: "import { latestLines, storeKeysIn, useLoad } from './lib/lake';" },
+          { file: LINES, from: "import { latestLines, revenueFromLines, storeKeysIn } from './lib/lake';", to: "import { latestLines, storeKeysIn } from './lib/lake';" },
           { file: LINES, from: LINES_HOOK + C.REVENUE_HOOK, to: LINES_HOOK },
           { file: LINES, from: `      </section>\n${C.REVENUE_CARD}    </div>\n  );\n}\n`, to: LINES_END },
           { file: LAKE_TS, from: C.REVENUE_PAGED, to: '' },
@@ -2794,17 +2798,18 @@ export const lessons = [
         see: 'The page still says Alice.',
         why: 'The page read the session once, when it drew, and didn\'t hear about the change. We need [[state]] that listens, as **State as a slicer** taught.',
       },
+      newFile(USE_SESSION, 'Listening is a hook\'s job, so it gets a file in `src/hooks`: '),
       {
-        do: 'At the end of `src/lib/session.ts`, add a hook:',
-        code: C.USE_SESSION.trimStart(),
-        edits: [{ file: SESSION_TS, from: C.SESSION_READ, to: C.SESSION_READ + C.USE_SESSION }],
+        do: 'Paste the hook into it:',
+        code: C.USE_SESSION,
+        edits: [{ file: USE_SESSION, from: '', to: C.USE_SESSION }],
         see: 'No red lines.',
         why: '`onSessionChange` calls us back at each sign-in, sign-out or refresh, and returns a function that stops listening. Returning it from `useEffect` stops it when the page goes away.',
       },
       {
-        do: 'Use it: **Do it for me** makes the page list use `useSession()`, and takes out `signedInEmail`, which nothing uses any more.',
+        do: 'Use it: **Do it for me** makes the page list use `useSession()`, and takes `signedInEmail` out of `src/lib/session.ts`: nothing uses it any more, and only the client import stays there for now.',
         edits: [
-          { from: "import { signedInEmail } from './lib/session';\n", to: "import { useSession } from './lib/session';\n" },
+          { from: "import { signedInEmail } from './lib/session';\n", to: "import { useSession } from './hooks/use-session';\n" },
           { from: APP_PAGE_STATE, to: `${APP_PAGE_STATE}  const session = useSession();\n${C.SIGNED_IN_STATE}` },
           { from: C.SIGNED_IN_ONCE, to: C.SIGNED_IN_LIVE },
           { file: SESSION_TS, from: SESSION_ONCE_FN, to: '' },
@@ -3117,7 +3122,7 @@ export const lessons = [
         do: 'Make **Targets** load again when someone else signs in: **Do it for me** adds `useSession()` to the page and puts the user\'s id in the load key.',
         file: TARGETS_PAGE,
         edits: [
-          { file: TARGETS_PAGE, from: "import { addTarget, changeTarget, loadTargets } from './lib/targets';\n", to: "import { useSession } from './lib/session';\nimport { addTarget, changeTarget, loadTargets } from './lib/targets';\n" },
+          { file: TARGETS_PAGE, from: "import { useLoad } from './hooks/use-load';\n", to: "import { useLoad } from './hooks/use-load';\nimport { useSession } from './hooks/use-session';\n" },
           { file: TARGETS_PAGE, from: TARGETS_STATE_END, to: `${TARGETS_STATE_END}  const session = useSession();\n` },
           { file: TARGETS_PAGE, from: C.TARGETS_KEY, to: C.TARGETS_KEY_SESSION },
         ],
@@ -3174,7 +3179,7 @@ export const lessons = [
       {
         do: 'Hide **Add** from people who can\'t use it. At the end of `src/lib/session.ts`, add:',
         code: C.IS_DIRECTOR.trimStart(),
-        edits: [{ file: SESSION_TS, from: C.USE_SESSION, to: C.USE_SESSION + C.IS_DIRECTOR }],
+        edits: [{ file: SESSION_TS, from: SESSION_CLIENT_IMPORT, to: SESSION_CLIENT_IMPORT + C.IS_DIRECTOR }],
         see: 'No red lines.',
         why: 'In the browser, claims come back as text (`\'director\'`), and they\'re a hint for what to show. They decide nothing.',
       },
@@ -3183,7 +3188,7 @@ export const lessons = [
         file: TARGETS_PAGE,
         edits: [
           { file: TARGETS_PAGE, from: "import { Fragment, useState } from 'react';\n", to: "import { Fragment, useEffect, useState } from 'react';\n" },
-          { file: TARGETS_PAGE, from: "import { useSession } from './lib/session';\n", to: "import { isDirector, useSession } from './lib/session';\n" },
+          { file: TARGETS_PAGE, from: "import { addTarget, changeTarget, loadTargets } from './lib/targets';\n", to: "import { isDirector } from './lib/session';\nimport { addTarget, changeTarget, loadTargets } from './lib/targets';\n" },
           { file: TARGETS_PAGE, from: '  const session = useSession();\n', to: `  const session = useSession();\n${C.DIRECTOR_STATE}` },
           { file: TARGETS_PAGE, from: C.TARGETS_ADD_BUTTON, to: C.TARGETS_ADD_BUTTON_DIRECTOR },
         ],

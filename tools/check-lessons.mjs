@@ -40,6 +40,7 @@ const norm = (s) => s.replace(/\s+/g, ' ').trim().toLowerCase();
 // Saved answers are matched on connector + text: the same text can have an answer from each model.
 const keyOf = (connector, query) => `${connector.toLowerCase()}|${norm(query)}`;
 const known = new Map(catalog.queries.map((q) => [keyOf(q.connector, q.query), q]));
+const MODELS = [...new Set(catalog.queries.map((q) => q.connector))];
 const answer = (connector, query) => {
   const e = known.get(keyOf(connector, query));
   return e ? snapshots[e.id] : undefined;
@@ -290,9 +291,24 @@ function queriesOf(project) {
   for (const [path, text] of code) {
     for (const m of text.matchAll(QUERY_STRING)) if (!m[1].includes('${')) found.push({ connector: ownConnector[path] ?? 'contoso', query: m[1], from: path });
   }
+  // A .dax file that other code imports directly as text (?raw) is sent as it is, by that file's runner. A query
+  // file's own .dax import is checked through its function, below.
+  for (const [path, text] of code) {
+    if (/^src\/queries\//.test(path)) continue;
+    for (const m of text.matchAll(/^import \w+ from '(\.[^']+\.dax)\?raw';$/gm)) {
+      const parts = path.split('/').slice(0, -1);
+      for (const part of m[1].split('/')) {
+        if (part === '..') parts.pop();
+        else if (part !== '.') parts.push(part);
+      }
+      const dax = parts.join('/');
+      const query = project.files[dax];
+      if (query?.trim()) found.push({ connector: ownConnector[path] ?? null, query, from: dax });
+    }
+  }
   // The query files (src/queries/<page>/<name>.ts): each exports a function that hands out its .dax text, with
-  // the filters put in. Run each one a page sends, with every choice its parameters allow, for each runner
-  // that sends it. One no page sends yet sends nothing.
+  // the filters put in. Run each one with every choice its parameters allow, for each runner that sends it. One no
+  // page sends yet has no model of its own: connector null, checked against the model it is saved for.
   const load = loader(project, { react: { useState() {}, useEffect() {} } });
   for (const [path] of code) {
     if (!/^src\/queries\/.+\.ts$/.test(path)) continue;
@@ -301,8 +317,8 @@ function queriesOf(project) {
       const years = [undefined, ...catalog.years];
       const countries = [undefined, ...catalog.countries];
       const calls = fn.length === 0 ? [[]] : fn.length === 1 ? years.map((y) => [y]) : years.flatMap((y) => countries.map((c) => [y, c]));
-      for (const connector of sentBy.get(name) ?? []) {
-        for (const args of calls) found.push({ connector, query: fn(...args), from: `${connector}: ${name}(${args.map(String).join(', ')})` });
+      for (const connector of sentBy.get(name) ?? [null]) {
+        for (const args of calls) found.push({ connector, query: fn(...args), from: `${connector ?? 'not sent yet'}: ${name}(${args.map(String).join(', ')})` });
       }
     }
   }
@@ -377,6 +393,12 @@ for (const lesson of order) {
     }
     let anyError = false;
     for (const q of sent) {
+      if (q.connector === null) {
+        // Not sent yet: it must be saved for some model, as data.
+        const saved = MODELS.map((c) => known.get(keyOf(c, q.query))).filter(Boolean);
+        if (!saved.some((e) => snapshots[e.id]?.status !== 'error')) fail(`${label}: query not in the catalog for any model, as data (${q.from}):\n${q.query}`);
+        continue;
+      }
       const entry = known.get(keyOf(q.connector, q.query));
       if (!entry) {
         fail(`${label}: query not in the catalog for ${q.connector} (${q.from}):\n${q.query}`);

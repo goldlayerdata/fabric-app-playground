@@ -213,7 +213,7 @@ export const modules = [
         answer: 1,
         why: 'To TypeScript, the DAX is just text. Only the model knows its measures, and our page showed 0% until it checked `status`.',
         lesson: 'measure-or-query',
-        step: 16,
+        step: 15,
       },
       {
         q: 'The network is down, and the page checks `status`. What does the page show?',
