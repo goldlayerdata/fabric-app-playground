@@ -11,11 +11,13 @@ import { claimsContract, claimsTypesFile, dataService, emptyDb, planApply, unlim
 
 // ---------------------------------------------------------------- the data app template (Rayfin CLI 2.0.0)
 // From @microsoft/rayfin-cli 2.0.0 templates/data-app as bundled with the CLI (MIT, Microsoft Corporation):
-// rayfin/rayfin.yml and src/vite-env.d.ts verbatim; package.json's scripts and dependencies verbatim, with
-// devDependencies cut to a subset and the other fields left out. A real `npm create` may fetch a newer copy
-// of the template from GitHub. The real template has many more files (its own client in
-// src/lib/rayfin-client.ts, Fabric sign-in, its own semantic model hook, components, tests, agent files); the playground keeps
-// the ones this course uses and starts src/App.tsx empty (the real one starts with a placeholder page), so we write the app ourselves.
+// rayfin/rayfin.yml, rayfin/data/schema.ts and src/vite-env.d.ts verbatim; package.json's scripts and dependencies
+// verbatim, with devDependencies cut to a subset and the other fields left out, and `name` set to the app's folder
+// name as the CLI does (rayfin-tools-common, templates/scaffolding.js, customizeTemplateFiles). A real `npm create`
+// may fetch a newer copy of the template from GitHub. The template's other files are written at their real paths as
+// locked placeholders (TEMPLATE_PLACEHOLDERS): one or two lines each, written for the playground, saying what the real
+// file does. src/lib/rayfin-client.ts starts as an editable note, since the lessons replace it; src/App.tsx starts
+// empty (the real one starts with a placeholder page), so we write the app ourselves.
 const TEMPLATE_PACKAGE = {
   name: 'data-app',
   private: true,
@@ -87,6 +89,71 @@ services:
   functions:
     enabled: false
 `;
+
+// rayfin/data/schema.ts as the template ships it (verbatim).
+export const TEMPLATE_DATA_SCHEMA = `export type DataAppSchema = {};
+
+export const schema = [];
+`;
+
+// src/lib/rayfin-client.ts at the start: an editable note in place of the template's client, which the lessons replace.
+export const CLIENT_PLACEHOLDER = `// In a real data app project, this file builds the template's client, which its sign-in uses.
+// The playground starts it with this note instead: we replace it with a small client of our own.
+`;
+
+// The template's other files, as placeholders (locked: see isGenerated). Each says, in that file type's own comment
+// syntax, what the real file does (read from the installed template) and why the playground doesn't need it.
+const PG_JSON = (text) => `${JSON.stringify({ _playground: `Playground: ${text}` }, null, 2)}\n`;
+const SKILLS = {
+  'app-design': 'how to lay out and style the app\'s pages and components',
+  'app-validation': 'what to check in a browser with Playwright, and how',
+  'dax-authoring': 'how to write and test DAX queries against the model',
+  'fabric-cli': 'how to manage the fabric-app-data connections in fabric.yaml',
+  'fabric-sdk': 'how to query a semantic model at run time with @microsoft/fabric-app-data, the template\'s own data path',
+  'playwright-cli': 'how to drive a browser with playwright-cli',
+  'query-design': 'what to work out in DAX and what in TypeScript',
+  'schema-discovery': 'how to explore a model\'s tables, columns and measures with DAX INFO functions',
+  visuals: 'how to build charts and grids with the template\'s VegaVisual and DataGrid',
+};
+const SECOND_PATH = "Microsoft's walkthrough says to use the connector client instead, which these lessons do";
+export const TEMPLATE_PLACEHOLDERS = {
+  '.gitignore': '# Playground: what Git leaves out (logs, node_modules, the dist build, src/fabric.generated.ts). The CLI writes it from the template\'s .gitignore.template.\n',
+  '.playwright-config.json': PG_JSON('settings for the template\'s browser checks with Playwright, in Microsoft Edge. Not used here.'),
+  '.playwright/cli.config.json': PG_JSON('settings for playwright-cli, the tool the template\'s browser checks use. Not used here.'),
+  'AGENTS.md': 'Playground: the template\'s instructions for coding agents: the project layout, the rules these lessons follow for queries (a .dax file per visual, in src/queries), and a way of working. Read the real one in a project you create.\n',
+  'README.md': 'Playground: the template\'s README: what to install first (Node.js, GitHub Copilot CLI, Playwright CLI, Azure CLI) and how to build an app with a coding agent. The real CLI puts the app\'s name into it.\n',
+  'components.json': PG_JSON('settings for shadcn/ui, which the template\'s components are set up with (its style, src/global.css, the @/ paths). Not used here.'),
+  'eslint.config.js': '// Playground: the template\'s lint rules (ESLint, with TypeScript and React hooks checks), run by `npm run lint`. Not run here.\n',
+  'fabric.yaml': `# Playground: the connections of the template's own data path (fabric-app-data, managed by npx fabric-app-data). ${SECOND_PATH}: our connectors are in rayfin/rayfin.yml.\n`,
+  'index.html': '<!-- Playground: the page the browser opens: one empty div that src/main.tsx draws the app into. The preview here draws App directly. -->\n',
+  'tsconfig.json': PG_JSON('TypeScript settings: strict checks, and the @/ shortcut for src/. The playground\'s editor has its own settings and resolves relative paths only.'),
+  'vite.config.ts': '// Playground: the settings Vite builds the app with: React, Tailwind CSS, Rayfin\'s local dev, and the @/ shortcut for src/. The playground builds the preview itself.\n',
+  'vitest.config.ts': '// Playground: the settings for the template\'s tests (Vitest, in a simulated browser, set up by src/test/setup.ts). No tests run here.\n',
+  'rayfin/.gitignore': '# Playground: what Git leaves out of the rayfin folder (its .temp folder). The CLI writes it from the template\'s .gitignore.template.\n',
+  'rayfin/tsconfig.json': PG_JSON('TypeScript settings for the rayfin folder (entities, functions), built on the root tsconfig.json.'),
+  'scripts/open-fabric-portal.mjs': '// Playground: opens the app inside the Fabric portal in a browser, for `npm run test:fabric`. Not available here.\n',
+  ...Object.fromEntries(Object.entries(SKILLS).map(([name, what]) => [`.agents/skills/${name}/SKILL.md`, `Playground: one of the template's skills for coding agents: ${what}. Read the real one in a project you create.\n`])),
+  'src/main.tsx': '// Playground: the app\'s entry point: it draws App inside the template\'s error boundary, sign-in gate and theme. The preview here draws App directly.\n',
+  'src/App.spec.tsx': '// Playground: the template\'s test that App draws without an error (Vitest). No tests run here.\n',
+  'src/EmptyStatePreview.tsx': '// Playground: the template\'s placeholder page, which its starting App.tsx shows until you replace it. Our App.tsx starts empty instead.\n',
+  'src/ErrorFallback.tsx': '// Playground: what the template shows when the app crashes (main.tsx\'s error boundary uses it).\n',
+  'src/global.css': '/* Playground: the template\'s styles: Tailwind CSS and its colour tokens, light and dark. The preview here loads Tailwind CSS itself. */\n',
+  'src/components/auth-gate.component.tsx': '// Playground: the template\'s sign-in gate: a loading screen until the person is signed in, then the app.\n',
+  'src/hooks/auth.context.ts': '// Playground: the template\'s sign-in state (useAuth), which its components read.\n',
+  'src/hooks/use-auth.tsx': '// Playground: the template\'s sign-in provider: inside Fabric, it gets the person\'s session from the Fabric host.\n',
+  'src/hooks/theme.context.ts': '// Playground: the template\'s light or dark theme, which its components read.\n',
+  'src/hooks/use-theme.ts': '// Playground: the template\'s hook that follows the light or dark setting and switches it.\n',
+  'src/hooks/use-semantic-model-query.ts': `// Playground: the template's own hook for DAX queries, its second data path. ${SECOND_PATH} (src/hooks/use-dax.ts).\n`,
+  'src/hooks/use-semantic-model-query.spec.ts': '// Playground: the template\'s tests for use-semantic-model-query.ts. No tests run here.\n',
+  'src/lib/fabric-client.ts': `// Playground: the client of the template's second data path (fabric-app-data). ${SECOND_PATH} (src/lib/rayfin-client.ts).\n`,
+  'src/lib/to-data-table.ts': '// Playground: turns a query result into a table for the template\'s VegaVisual and DataGrid, with each column\'s name and format (columnMetadata). Our own visuals use src/lib/conversions.ts.\n',
+  'src/lib/to-data-table.spec.ts': '// Playground: the template\'s tests for to-data-table.ts. No tests run here.\n',
+  'src/lib/utils.ts': '// Playground: cn(), which merges Tailwind CSS class names. Our components write their classes out in full.\n',
+  'src/services/rayfin-auth.service.ts': '// Playground: the template\'s Fabric sign-in, which uses the client in src/lib/rayfin-client.ts. No sign-in happens here: the playground simulates who is signed in.\n',
+  'src/test/setup.ts': '// Playground: setup for the template\'s tests (Testing Library\'s extra checks). No tests run here.\n',
+};
+/** Folders of placeholders only, folded in the file list until opened. */
+export const FOLDED_AT_START = ['.agents', '.playwright', 'scripts', 'src/test'];
 
 const TEMPLATE_VITE_ENV = `/// <reference types="vite/client" />
 
@@ -182,7 +249,9 @@ const clone = (p) => JSON.parse(JSON.stringify(p));
 
 /** Is a file generated by the CLI (and read-only here)? metadata.json is never edited by hand (rayfin.ai). */
 export const isGenerated = (path, text = '') =>
-  /^\/\/ @generated/.test(text) || path === 'package.json' || path.endsWith('.yml') || path.endsWith('/metadata.json') || path.endsWith('.generated.d.ts');
+  /^\/\/ @generated/.test(text) ||
+  /^(?:\/\/|#|\/\*|<!--)?\s*Playground:/.test(text) ||
+  /^\{\s*"_playground"/.test(text) || path === 'package.json' || path.endsWith('.yml') || path.endsWith('/metadata.json') || path.endsWith('.generated.d.ts');
 
 // ---------------------------------------------------------------- the terminal
 /** Split a command line into words, keeping '…' and "…" together. */
@@ -258,7 +327,8 @@ export function runCommand(start, line, answer) {
   if (cmd === 'ls' || cmd === 'dir') {
     if (!p.appDir) return done(PG('An empty folder: no project yet.'), ...NO_PROJECT.slice(1));
     if (!p.cwd) return done(p.appDir);
-    const top = [...new Set(Object.keys(p.files).map((f) => f.split('/')[0]))].sort();
+    // Like ls: names starting with a dot (.gitignore, .agents) are hidden.
+    const top = [...new Set(Object.keys(p.files).map((f) => f.split('/')[0]))].filter((f) => !f.startsWith('.')).sort();
     return done(top.join('  '));
   }
   if (cmd === 'cd') {
@@ -292,17 +362,21 @@ export function runCommand(start, line, answer) {
     if (f.template !== 'dataapp') return fail(PG(`Only the dataapp template is simulated here (you asked for ${f.template}).`));
     p.appDir = name;
     p.files = {
-      'package.json': `${JSON.stringify(TEMPLATE_PACKAGE, null, 2)}\n`,
+      ...TEMPLATE_PLACEHOLDERS,
+      'package.json': `${JSON.stringify({ ...TEMPLATE_PACKAGE, name }, null, 2)}\n`,
       'rayfin/rayfin.yml': TEMPLATE_RAYFIN_YML,
+      'rayfin/data/schema.ts': TEMPLATE_DATA_SCHEMA,
       'src/vite-env.d.ts': TEMPLATE_VITE_ENV,
+      'src/lib/rayfin-client.ts': CLIENT_PLACEHOLDER,
       [PAGE_FILE]: '',
     };
     return done(
       SIMULATED,
       PG(`Created ${name}/ from the dataapp template.`),
-      PG('Shown here: package.json, rayfin/rayfin.yml, src/vite-env.d.ts, and an empty src/App.tsx.'),
-      PG('The real template has more: its own client (src/lib/rayfin-client.ts), Fabric sign-in, components,'),
-      PG('its own semantic model hook, tests, agent files and a placeholder page. Creating it does not sign you in.'),
+      PG('Written as the template has them: package.json, rayfin/rayfin.yml, rayfin/data/schema.ts, src/vite-env.d.ts.'),
+      PG('src/App.tsx starts empty, and src/lib/rayfin-client.ts with a note: the lessons write both.'),
+      PG('The template\'s other files (sign-in, tests, its own query hook, agent files) are shown locked, as placeholders'),
+      PG('that say what the real file does. Creating it does not sign you in.'),
       PG(`Next: cd ${name}, then npm install.`),
     );
   }

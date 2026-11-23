@@ -253,7 +253,7 @@ export const modules = [
         answer: 1,
         why: 'Lifting state up: the chart only reports the click; the page keeps the selection and hands it to the queries that use it.',
         lesson: 'cross-filter',
-        step: 11,
+        step: 12,
       },
       {
         q: 'A new page id is added to `PageId`, but not to `PAGES`. What happens?',
@@ -318,7 +318,7 @@ export const modules = [
         answer: 2,
         why: 'Without its runtime, `executeQuery` returns the raw payload, with no `status: \'success\'` or `\'error\'` to read, and TypeScript doesn\'t check `runtime`.',
         lesson: 'second-client',
-        step: 11,
+        step: 12,
       },
       {
         q: 'The Pareto query is sent with `runDax` instead of `runPareto`. What reports it?',
@@ -435,7 +435,7 @@ export const modules = [
         step: 7,
       },
       {
-        q: 'A new entity is in the `schema` array but not in `AppSchema`. What happens?',
+        q: 'A new entity is in the `schema` array but not in `DataAppSchema`. What happens?',
         options: ['Nothing: one list is enough', 'The table is never created', 'The table is created, but the client has no typed entity for it'],
         answer: 2,
         why: 'Rayfin\'s docs ask for both lists. The type is what the client knows: without it there is no `rayfinClient.data.NewEntity`, so its uses get red lines. (The 2.0 CLI applies every exported entity under `rayfin/data/` anyway.)',

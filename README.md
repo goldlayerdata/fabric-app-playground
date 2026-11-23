@@ -25,9 +25,12 @@ These are the files the lessons create, with the closest thing in a PBIP project
 | `src/App.tsx`, `src/SalesOverview.tsx` and the other `…Page.tsx` files | The pages, written as code | The `.Report` folder's pages (`page.json`), but written by you, not by Desktop |
 | `src/components/*.tsx` | The visuals, one per file (our choice): a card, a bar chart, a slicer, an error panel | The visuals on a page (`visual.json`) |
 | `src/queries/<page>/*.dax` | One DAX query per file, as plain text, named after the visual it feeds, in a folder per page, the way the data app template's `AGENTS.md` asks for them | The query a visual sends for you (what Performance analyzer shows), saved as a file you could run in DAX query view |
+| `src/queries/index.ts`, `src/queries/<page>/index.ts` | Lists that pass on every query file, so a page imports any query from `./queries` | No direct match: like a display folder that gathers measures in one place |
 | `src/queries/<page>/*.ts` | Next to each `.dax` file: a small function that hands the query to the page, with a slicer's filters put in | What Desktop does for you when you drop fields on a visual and add a slicer |
 | `src/hooks/*.ts` | Hooks: code a page calls to run a query, a read or the sign-in and keep the answer while the page draws (`use-dax.ts`, `use-load.ts`, `use-session.ts`) | A visual loading its data |
 | `src/lib/*.ts` | Code the pages share: the client, the conversions that turn a result into what a visual draws, a slicer's DAX filters, the lakehouse reads, the targets and the session (`rayfin-client.ts`, `conversions.ts`, `filters.ts`, `lake.ts`, `targets.ts`, `session.ts`) | No direct match: Desktop does this for you |
+| `rayfin/data/schema.ts` | The list of the app's own tables (the template makes it, empty) | No real match: the app's own small database |
+| Files marked 🔒 in the playground (`src/main.tsx`, `AGENTS.md`, `src/hooks/use-auth.tsx` and others) | The template's own files, shown as one-line placeholders that say what the real file does: sign-in, tests, theme, agent instructions, and its second way to query a model | Files Power BI Desktop writes for you |
 | `rayfin/data/SalesTarget.ts` | A table the app keeps itself, with who may read and change it | No real match: a small database the app owns. The "who may" part is a bit like a role in the model |
 | `.gitignore`, Git | What stays out of source control, and the history | The same idea as a PBIP's `.gitignore` |
 

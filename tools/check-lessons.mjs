@@ -312,6 +312,7 @@ function queriesOf(project) {
   const load = loader(project, { react: { useState() {}, useEffect() {} } });
   for (const [path] of code) {
     if (!/^src\/queries\/.+\.ts$/.test(path)) continue;
+    if (/\/index\.ts$/.test(path)) continue; // re-exports only: their functions are run from their own files
     for (const [name, fn] of Object.entries(load(path))) {
       if (typeof fn !== 'function') continue;
       const years = [undefined, ...catalog.years];

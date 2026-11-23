@@ -12,6 +12,7 @@ import { DISCLAIMER_FOOTER, DISCLAIMER_SHORT, DISCLAIMER_TEXT, DISCLAIMER_TITLE,
 import {
   CLAIMS_TYPES,
   FUNCTION_APP,
+  FOLDED_AT_START,
   PAGE_FILE,
   SIMULATED_ENV,
   applyFileEdits,
@@ -1284,7 +1285,8 @@ function showNoFiles() {
 /** Folders the reader folded. A folder opens again when a file in it is opened, or a step creates one. */
 const folded = new Set<string>();
 try {
-  for (const p of JSON.parse(store.get('folded') ?? '[]') as string[]) folded.add(p);
+  // The template's folders of placeholders start folded; after that, the reader's choice is kept.
+  for (const p of JSON.parse(store.get('folded') ?? JSON.stringify(FOLDED_AT_START)) as string[]) folded.add(p);
 } catch {
   /* unreadable: every folder open */
 }
@@ -2586,7 +2588,7 @@ function renderData() {
   for (const name of names) {
     const e = files.find((x) => x.name === name);
     const table = db.tables[name] as AppTable | undefined;
-    const typed = inAppSchema(project, name) ? '' : ' · not in AppSchema yet, so the client has no typed entity for it';
+    const typed = inAppSchema(project, name) ? '' : ' · not in DataAppSchema yet, so the client has no typed entity for it';
     const state = !table ? `not applied yet${e ? typed : ''}` : !e ? 'applied; no longer declared' : `applied${typed}`;
     const section = h('section', { class: 'data-entity' }, h('h3', {}, name, h('span', { class: 'muted' }, ` · ${state}`)));
     // Columns, from the decorators, marked where they differ from the applied table.

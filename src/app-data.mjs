@@ -296,17 +296,18 @@ export function entityFiles(project) {
 /**
  * The entities `db apply` applies. Like the Rayfin CLI 2.0.0 (rayfin-tools-common, services/data/node/dab-config.js:
  * findCompiledDataFiles, collectEntities), every exported @entity() class in rayfin/data/ counts, whether or not
- * rayfin/data/schema.ts lists it: the `schema` array and the `AppSchema` type are the lists Rayfin's docs ask for.
+ * rayfin/data/schema.ts lists it: the `schema` array and the type (the template's `DataAppSchema`; `AppSchema` in Rayfin's
+ * docs) are the lists Rayfin's docs ask for.
  */
 export function declared(project) {
   const entities = entityFiles(project);
   return { entities, problems: entities.flatMap((e) => e.problems) };
 }
 
-/** Is the entity in the `AppSchema` type of rayfin/data/schema.ts (what the client's types come from)? */
+/** Is the entity in the schema type of rayfin/data/schema.ts, `DataAppSchema` (or `AppSchema`)? The client's types come from it. */
 export function inAppSchema(project, name) {
   const text = stripComments(project.files[SCHEMA_FILE] ?? '');
-  const type = text.match(/export\s+type\s+AppSchema\s*=\s*\{([^}]*)\}/);
+  const type = text.match(/export\s+type\s+(?:Data)?AppSchema\s*=\s*\{([^}]*)\}/);
   return !!type && new RegExp(`\\b${name}\\s*:`).test(type[1]);
 }
 

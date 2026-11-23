@@ -44,7 +44,7 @@
 // Text formatting: inline `code`, **bold**, and [[term]] or [[shown text|term-id]] for a word in the
 // glossary (terms.mjs). Nothing else.
 import * as C from './course-code.mjs';
-import { FUNCTION_APP, FUNCTION_APP_TEMPLATE, PLACEHOLDER, sqlPlaceholder } from './project.mjs';
+import { CLIENT_PLACEHOLDER, FUNCTION_APP, FUNCTION_APP_TEMPLATE, PLACEHOLDER, TEMPLATE_DATA_SCHEMA, sqlPlaceholder } from './project.mjs';
 
 const LEARN = 'https://learn.microsoft.com/fabric/apps';
 const learn = {
@@ -138,6 +138,12 @@ const PARETO_BY_CATEGORY_DAX = 'src/queries/categories/pareto-by-category.dax';
 const PARETO_BY_CATEGORY_TS = 'src/queries/categories/pareto-by-category.ts';
 const REVENUE_CARD_DAX = 'src/queries/categories/revenue-card.dax';
 const REVENUE_CARD_TS = 'src/queries/categories/revenue-card.ts';
+// The index.ts files that re-export them (the template's AGENTS.md, "Re-export via index.ts").
+const QUERIES_INDEX = 'src/queries/index.ts';
+const OVERVIEW_INDEX = 'src/queries/overview/index.ts';
+const YEARS_INDEX = 'src/queries/years/index.ts';
+const CATEGORIES_INDEX = 'src/queries/categories/index.ts';
+const reExport = C.reExport;
 // A step that makes a new, empty file.
 const newFile = (file, lead, extra = {}) => ({
   do: `${lead}click **+ New file** and type \`${file.slice(4)}\` after the \`src/\` already there.`,
@@ -147,7 +153,8 @@ const newFile = (file, lead, extra = {}) => ({
   ...extra,
 });
 // A step where Do it for me writes a whole new file: for a query's .ts file that only hands out its .dax text.
-const writeFile = (file, text, doText, extra = {}) => ({ do: doText, code: text, copy: false, edits: [{ file, from: '', to: text }], point: 'files', see: 'Nothing on the page yet.', ...extra });
+// `more`: other edits the same card makes, such as the file's line in its folder's index.ts.
+const writeFile = (file, text, doText, extra = {}, more = []) => ({ do: doText, code: text, copy: false, edits: [{ file, from: '', to: text }, ...more], point: 'files', see: 'Nothing on the page yet.', ...extra });
 // A step that pastes a whole file into the empty file the step before made.
 const paste = (file, text, doText, extra = {}) => ({ do: doText, code: text, edits: [{ file, from: '', to: text }], see: 'Nothing on the page yet.', ...extra });
 const YML = 'rayfin/rayfin.yml';
@@ -172,12 +179,14 @@ const IMP_HOOK = "import { runDax, useDax } from './hooks/use-dax';\n";
 const IMP_CONV_1 = "import { toBars } from './lib/conversions';";
 const IMP_CONV_2 = "import { toBars, toTotals } from './lib/conversions';";
 const IMP_CONV_3 = "import { toBars, toPercent, toTotals } from './lib/conversions';";
-const IMP_Q_COUNTRY = "import { revenueByStoreCountry } from './queries/overview/revenue-by-store-country';\n";
-const IMP_Q_TOTALS = "import { salesTotals } from './queries/overview/sales-totals';\n";
-const IMP_Q_MARGIN = "import { marginPct } from './queries/overview/margin-pct';\n";
-const IMP_Q_CATEGORY = "import { revenueByCategory } from './queries/overview/revenue-by-category';\n";
-const IMP_Q_YEARS = "import { revenueByYear } from './queries/years/revenue-by-year';\n";
-const FIRST_IMPORTS = `${IMP_HOOK}${IMP_CONV_1}\n${IMP_Q_COUNTRY}`;
+// The page's one import of queries, from src/queries/index.ts: names are added to it as queries are added.
+const qImport = (...names) => `import { ${names.sort().join(', ')} } from './queries';\n`;
+const IMP_Q_1 = qImport('revenueByStoreCountry');
+const IMP_Q_2 = qImport('revenueByStoreCountry', 'salesTotals');
+const IMP_Q_3 = qImport('marginPct', 'revenueByStoreCountry', 'salesTotals');
+const IMP_Q_4 = qImport('marginPct', 'revenueByCategory', 'revenueByStoreCountry', 'salesTotals');
+const IMP_Q_5 = qImport('marginPct', 'revenueByCategory', 'revenueByStoreCountry', 'revenueByYear', 'salesTotals');
+const FIRST_IMPORTS = `${IMP_HOOK}${IMP_CONV_1}\n${IMP_Q_1}`;
 // The .dax import at the top of a query's .ts file, under which a filters import goes.
 const TOTALS_DAX_IMPORT = "import salesTotalsDax from './sales-totals.dax?raw';\n";
 const COUNTRY_DAX_IMPORT = "import revenueByStoreCountryDax from './revenue-by-store-country.dax?raw';\n";
@@ -325,13 +334,14 @@ export const lessons = [
         do: 'In the **Terminal**, create the project:',
         run: 'npm create @microsoft/rayfin@latest contoso-app -- --template dataapp',
         point: 'terminal',
-        see: 'A `contoso-app` folder, and its files in the file list.',
+        see: 'A `contoso-app` folder, and its files in the file list. Those marked 🔒 are the template\'s own, shown as placeholders: open one, and it says what the real file does.',
         why: '`npm` fetches and runs JavaScript packages; `npm create` runs a project creator, here Rayfin\'s (`@latest`: its newest version). The lone `--` passes `--template dataapp` on to Rayfin\'s creator. Without it, the real command asks which template to use. (In Windows PowerShell, some versions drop the lone `--`: Rayfin\'s docs say to use `npm.cmd` there.)',
       },
       {
         do: 'Move into the new folder:',
         run: 'cd contoso-app',
         see: 'The text before the cursor now ends in `contoso-app`: commands now run inside that folder, where the project\'s files are.',
+        why: 'The folders, in Power BI terms: `src` holds the pages. Inside it, `components` holds the visuals, `hooks` the code that runs a query and waits for it, and `lib` the connection and other shared code; `queries`, the DAX behind each visual, comes in **The first queries**. `rayfin` holds the app\'s settings (`rayfin.yml`) and, later, its own data. The template\'s own files are already in some of them, locked.',
       },
       {
         do: 'Install the packages the template lists:',
@@ -371,7 +381,7 @@ export const lessons = [
       '`package.json` lists packages and scripts; `rayfin.yml` holds the app\'s settings. `npm run dev` starts the loop: edit, and see the page.',
     ],
     fabric: {
-      text: 'Microsoft\'s walkthrough starts with a similar `npm create … --template dataapp` (it also passes `--workspace`), then adds the connector. The real template comes with more than we show: its own client, Fabric sign-in, a placeholder page, and its own way to query a semantic model. These lessons use Rayfin\'s connector instead, as rayfin.ai documents it.',
+      text: 'Microsoft\'s walkthrough starts with a similar `npm create … --template dataapp` (it also passes `--workspace`), then adds the connector. The template\'s other files are in the file list as locked placeholders: its sign-in, a placeholder page, tests, agent files, and its own way to query a semantic model. These lessons use Rayfin\'s connector instead, as rayfin.ai documents it.',
       links: [learn.template, rayfin.quickstart],
     },
   },
@@ -440,16 +450,17 @@ export const lessons = [
     idea: 'We write `src/lib/rayfin-client.ts` in three parts: what we import, the list of connectors, and the client itself. Then a first query from the page.',
     steps: [
       {
-        do: 'Click **+ New file**, at the top of the file list, and type `lib/rayfin-client.ts` after the `src/` already there.',
-        edits: [{ file: CLIENT, from: '', to: '' }],
+        do: 'Open `src/lib/rayfin-client.ts`, from the template, in the file list.',
+        file: CLIENT,
+        find: 'In a real data app project',
         point: 'files',
-        see: 'A new, empty `src/lib/rayfin-client.ts`, open in the editor. The `lib` folder is made with it.',
-        why: 'The data app template keeps its client in this file, in `src/lib`, with its other shared code. In a real project the file already exists: it builds the client the template\'s sign-in uses (the sign-in itself is in `src/services`), and you add the connector to it. The playground starts without it, so we write a small one.',
+        see: 'A note, where a real project has the template\'s client.',
+        why: 'In a real project this file builds the client the template\'s sign-in uses (the sign-in itself is in `src/services`), and you add the connector to it. The playground starts with the note instead, so we write a small client of our own.',
       },
       {
-        do: 'Paste these imports into it:',
+        do: 'Replace the note with these imports (select all with Ctrl+A, or Cmd+A on a Mac, then paste):',
         code: C.CLIENT_IMPORTS,
-        edits: [{ file: CLIENT, from: '', to: C.CLIENT_IMPORTS }],
+        edits: [{ file: CLIENT, from: CLIENT_PLACEHOLDER, to: C.CLIENT_IMPORTS }],
         see: 'No red lines: every package it names is installed.',
         why: '`import` brings in code from a package (`@microsoft/…`) or another project file. `{ … }` picks named parts; `../../` means two folders up; `as contosoConfig` gives `connectorConfig` a clearer name here.',
       },
@@ -742,7 +753,14 @@ export const lessons = [
       }),
       newFile(COUNTRY_TS, 'Next to it, a small file that hands the query to the page: '),
       paste(COUNTRY_TS, C.COUNTRY_TS, 'Paste this into it:', {
-        why: '`?raw` means "the file\'s text, as a string": `revenueByStoreCountryDax` holds the DAX exactly as the file has it. The function is named after the file, as in the template. It only hands out the text for now, and the file still earns its place: the template has one per visual, and it is where a slicer\'s filter goes (in **State as a slicer**). The template\'s version returns an object, `{ connection, query, columnMetadata, vegaLiteSpec }`: the query and what its chart needs. Ours returns only the query text. The template also re-exports each folder through an `index.ts`; we import each file directly.',
+        why: '`?raw` means "the file\'s text, as a string": `revenueByStoreCountryDax` holds the DAX exactly as the file has it. The function is named after the file, as in the template. It only hands out the text for now, and the file still earns its place: the template has one per visual, and it is where a slicer\'s filter goes (in **State as a slicer**). The template\'s version returns an object, `{ connection, query, columnMetadata, vegaLiteSpec }`: the query and what its chart needs. Ours returns only the query text, with no `.json` chart spec and no `columnMetadata`, because our visuals are our own components (`BarList`, `KpiCard`), not the template\'s `VegaVisual` and `DataGrid`.',
+      }),
+      newFile(OVERVIEW_INDEX, 'The template lists each query folder\'s files in an `index.ts`, so that pages import every query from one place: '),
+      paste(OVERVIEW_INDEX, C.OVERVIEW_INDEX_V1, 'Paste this line into it:', {
+        why: '`export *` passes on everything the file exports, here `revenueByStoreCountry`. Each new query file gets a line like it.',
+      }),
+      writeFile(QUERIES_INDEX, C.QUERIES_INDEX_V1, '**Do it for me** writes one more, `src/queries/index.ts`, which passes on the whole `overview` folder:', {
+        why: 'So a page imports any query from `./queries`, whichever folder it is in.',
       }),
       newFile(CONV, 'The chart needs bars, not rows. The code that turns one into the other is shared by the pages, so it goes in `src/lib`: '),
       paste(CONV, C.CONVERSIONS_V1, 'Paste the first conversion into it:', {
@@ -769,7 +787,7 @@ export const lessons = [
       {
         do: 'Load the chart into the page: in `src/App.tsx`, add this import on a new line under the last import (marked).',
         code: IMP_BAR.trim(),
-        edits: [{ file: APP, from: IMP_Q_COUNTRY, to: IMP_Q_COUNTRY + IMP_BAR }],
+        edits: [{ file: APP, from: IMP_Q_1, to: IMP_Q_1 + IMP_BAR }],
         see: 'Nothing changes yet.',
       },
       {
@@ -786,7 +804,9 @@ export const lessons = [
       },
       newFile(TOTALS_DAX, 'Now the cards. Their query gets a file too: '),
       paste(TOTALS_DAX, C.TOTALS_DAX, 'Paste the totals query into it:', { why: 'One row with three measures: one for each card.' }),
-      writeFile(TOTALS_TS, C.TOTALS_TS, '**Do it for me** writes its small `.ts` file, `src/queries/overview/sales-totals.ts`, like the countries one:'),
+      writeFile(TOTALS_TS, C.TOTALS_TS, '**Do it for me** writes its small `.ts` file, `src/queries/overview/sales-totals.ts`, like the countries one, and lists it in the folder\'s `index.ts`:', {}, [
+        { file: OVERVIEW_INDEX, from: reExport('revenue-by-store-country'), to: reExport('revenue-by-store-country') + reExport('sales-totals') },
+      ]),
       {
         do: 'At the end of `src/lib/conversions.ts`, add the cards\' conversion:',
         code: C.TOTALS_CONV.trimStart(),
@@ -800,9 +820,8 @@ export const lessons = [
         see: 'Nothing changes yet.',
       },
       {
-        do: 'Then add the query\'s import on a new line under the last import (marked):',
-        code: IMP_Q_TOTALS.trim(),
-        edits: [{ from: IMP_BAR, to: IMP_BAR + IMP_Q_TOTALS }],
+        do: 'Then add `salesTotals` to the marked query import: `import { revenueByStoreCountry, salesTotals } from \'./queries\';`',
+        edits: [{ from: IMP_Q_1, to: IMP_Q_2 }],
         see: 'Nothing changes yet.',
       },
       {
@@ -897,7 +916,9 @@ export const lessons = [
       paste(MARGIN_DAX, C.MARGIN_IN_QUERY_DAX, 'Paste this query into it. It has the formula written in, as an agent often writes it:', {
         why: '`DEFINE MEASURE` adds a measure for this one query. The model never stores it, and no report can see it.',
       }),
-      writeFile(MARGIN_TS, C.MARGIN_TS, '**Do it for me** writes its small `.ts` file, `src/queries/overview/margin-pct.ts`, like the others:'),
+      writeFile(MARGIN_TS, C.MARGIN_TS, '**Do it for me** writes its small `.ts` file, `src/queries/overview/margin-pct.ts`, like the others, and lists it in the folder\'s `index.ts`:', {}, [
+        { file: OVERVIEW_INDEX, from: reExport('sales-totals'), to: reExport('sales-totals') + reExport('margin-pct') },
+      ]),
       {
         do: 'At the end of `src/lib/conversions.ts`, add the card\'s conversion:',
         code: C.PERCENT_CONV.trimStart(),
@@ -928,9 +949,8 @@ export const lessons = [
         see: 'Nothing changes yet.',
       },
       {
-        do: 'Then add the query\'s import on a new line under the last import (marked):',
-        code: IMP_Q_MARGIN.trim(),
-        edits: [{ from: IMP_Q_TOTALS, to: IMP_Q_TOTALS + IMP_Q_MARGIN }],
+        do: 'Then add `marginPct` to the marked query import: `import { marginPct, revenueByStoreCountry, salesTotals } from \'./queries\';`',
+        edits: [{ from: IMP_Q_2, to: IMP_Q_3 }],
         see: 'Nothing changes yet.',
       },
       {
@@ -1021,7 +1041,7 @@ export const lessons = [
       {
         do: 'Load it into the page: in `src/App.tsx`, add this import on a new line under the last import (marked).',
         code: IMP_ERR.trim(),
-        edits: [{ from: IMP_Q_MARGIN, to: IMP_Q_MARGIN + IMP_ERR }],
+        edits: [{ from: IMP_BAR, to: IMP_BAR + IMP_ERR }],
         queryFails: true,
         see: 'Nothing changes yet.',
       },
@@ -1153,6 +1173,7 @@ export const lessons = [
         code: C.IMPORT_FILTERS,
         edits: [{ file: TOTALS_TS, from: TOTALS_DAX_IMPORT, to: `${C.IMPORT_FILTERS}\n${TOTALS_DAX_IMPORT}` }],
         see: 'Nothing changes yet.',
+        why: '`../../` climbs two folders, from `src/queries/overview` up to `src`. The template would write `@/lib/filters`: its `tsconfig.json` and `vite.config.ts` set `@` to `src/`. The playground\'s editor follows relative paths only.',
       },
       {
         do: 'Then replace the marked `salesTotals` with this version, which takes a year:',
@@ -1311,9 +1332,15 @@ export const lessons = [
         why: 'It takes the year and the country from the start: both go where the `.dax` file has `/* filters */`.',
       }),
       {
-        do: 'Load it into the page: in `src/App.tsx`, add this import on a new line under the last import (marked).',
-        code: IMP_Q_CATEGORY.trim(),
-        edits: [{ from: IMP_SLICER, to: IMP_SLICER + IMP_Q_CATEGORY }],
+        do: 'List it in the folder\'s index: in `src/queries/overview/index.ts`, add this line under the last one.',
+        code: reExport('revenue-by-category').trim(),
+        edits: [{ file: OVERVIEW_INDEX, from: reExport('margin-pct'), to: reExport('margin-pct') + reExport('revenue-by-category') }],
+        see: 'Nothing changes yet.',
+      },
+      {
+        do: 'Load it into the page: in `src/App.tsx`, add `revenueByCategory` to the marked query import.',
+        code: IMP_Q_4.trim(),
+        edits: [{ from: IMP_Q_3, to: IMP_Q_4 }],
         see: 'Nothing changes yet.',
       },
       {
@@ -1417,9 +1444,21 @@ export const lessons = [
       paste(YEARS_DAX, C.YEARS_DAX, 'Paste its query:', { errors: 1, see: 'The red line stays.' }),
       writeFile(YEARS_TS, C.YEARS_TS, '**Do it for me** writes its small `.ts` file, `src/queries/years/revenue-by-year.ts`:', { errors: 1, see: 'The red line stays.' }),
       {
-        do: 'Load the query: in `src/App.tsx`, add this import on a new line under the last import (marked).',
-        code: IMP_Q_YEARS.trim(),
-        edits: [{ from: IMP_Q_CATEGORY, to: IMP_Q_CATEGORY + IMP_Q_YEARS }],
+        do: '**Do it for me** gives the new folder its `index.ts`, and lists the folder in `src/queries/index.ts` with this line:',
+        code: reExport('years').trim(),
+        copy: false,
+        edits: [
+          { file: YEARS_INDEX, from: '', to: reExport('revenue-by-year') },
+          { file: QUERIES_INDEX, from: reExport('overview'), to: reExport('overview') + reExport('years') },
+        ],
+        point: 'files',
+        errors: 1,
+        see: 'The red line stays.',
+      },
+      {
+        do: 'Load the query: in `src/App.tsx`, add `revenueByYear` to the marked query import.',
+        code: IMP_Q_5.trim(),
+        edits: [{ from: IMP_Q_4, to: IMP_Q_5 }],
         errors: 1,
         see: 'The red line stays.',
       },
@@ -1573,6 +1612,7 @@ export const lessons = [
         code: 'const marginQuery = `\nEVALUATE\nROW ( "Margin %", [Margin %] )\n`;',
         edits: [{ file: AGENT, from: C.AGENT_MARGIN_IN_QUERY, to: 'const marginQuery = `\nEVALUATE\nROW ( "Margin %", [Margin %] )\n`;' }],
         see: 'Still 55.9%: the same number, but the formula now lives in one place, the model.',
+        why: 'The rest of the page is worth a note too: the agent wrote its own `useDax` hook and its own `Card`, `Bars` and `ErrorPanel` components inside `SalesOverview.tsx`, where our project keeps them in `src/hooks` and `src/components`.',
       },
     ],
     summary: [
@@ -1754,6 +1794,17 @@ export const lessons = [
         why: 'With a year, its `ROW` goes inside `CALCULATETABLE`, as for the cards. The Pareto model is built on the same tables, so the same filter text works there: `\'date\'[Year]` is in both. A filter is only DAX text: it works in any model that has that column.',
       }),
       {
+        do: '**Do it for me** gives `src/queries/categories` its `index.ts`, and lists the folder in `src/queries/index.ts` with this line:',
+        code: reExport('categories').trim(),
+        copy: false,
+        edits: [
+          { file: CATEGORIES_INDEX, from: '', to: reExport('pareto-headline') },
+          { file: QUERIES_INDEX, from: reExport('years'), to: reExport('years') + reExport('categories') },
+        ],
+        point: 'files',
+        see: 'No red lines.',
+      },
+      {
         do: 'At the end of `src/lib/conversions.ts`, add the headline\'s conversion:',
         code: C.HEADLINE_CONV.trimStart(),
         edits: [{ file: CONV, from: PERCENT_END, to: PERCENT_END + C.HEADLINE_CONV }],
@@ -1855,10 +1906,13 @@ export const lessons = [
         why: 'It names the model\'s own measures (`[Revenue Share %]`, `[Revenue Cumulative %]`): the running share stays in the model, as **Measure or query** advised. The year goes where `/* filters */` is.',
       },
       {
-        do: '**Do it for me** writes its `.ts` file, `src/queries/categories/pareto-by-category.ts`:',
+        do: '**Do it for me** writes its `.ts` file, `src/queries/categories/pareto-by-category.ts`, and lists it in the folder\'s `index.ts`:',
         code: C.PARETO_BY_CATEGORY_TS,
         copy: false,
-        edits: [{ file: PARETO_BY_CATEGORY_TS, from: '', to: C.PARETO_BY_CATEGORY_TS }],
+        edits: [
+          { file: PARETO_BY_CATEGORY_TS, from: '', to: C.PARETO_BY_CATEGORY_TS },
+          { file: CATEGORIES_INDEX, from: reExport('pareto-headline'), to: reExport('pareto-headline') + reExport('pareto-by-category') },
+        ],
         point: 'files',
         see: 'No red lines.',
         why: 'The year goes into the file\'s marker, as for the countries chart.',
@@ -1872,10 +1926,13 @@ export const lessons = [
         see: 'One measure, by name. The page sends this same text to both models.',
       },
       {
-        do: '**Do it for me** writes its `.ts` file too, `src/queries/categories/revenue-card.ts`:',
+        do: '**Do it for me** writes its `.ts` file too, `src/queries/categories/revenue-card.ts`, and lists it in the folder\'s `index.ts`:',
         code: C.REVENUE_CARD_TS,
         copy: false,
-        edits: [{ file: REVENUE_CARD_TS, from: '', to: C.REVENUE_CARD_TS }],
+        edits: [
+          { file: REVENUE_CARD_TS, from: '', to: C.REVENUE_CARD_TS },
+          { file: CATEGORIES_INDEX, from: reExport('pareto-by-category'), to: reExport('pareto-by-category') + reExport('revenue-card') },
+        ],
         point: 'files',
         see: 'No red lines.',
         why: 'With a year, its `ROW` goes inside `CALCULATETABLE`, as for the cards.',
@@ -2511,17 +2568,18 @@ export const lessons = [
     idea: 'We list the entity in the schema, [[apply|schema-apply]] it, and check the deployment. Then a slip that a successful apply hides.',
     steps: [
       {
-        do: 'Click **+ New file**, at the top of the file list, and type `rayfin/data/schema.ts` in place of the `src/` already there.',
-        edits: [{ file: DATA_SCHEMA, from: '', to: '' }],
+        do: 'Open `rayfin/data/schema.ts`, beside `SalesTarget.ts`: the template made it.',
+        file: DATA_SCHEMA,
+        find: 'export type DataAppSchema = {};',
         point: 'files',
-        see: 'A new, empty `schema.ts`, beside `SalesTarget.ts`, open in the editor.',
+        see: 'Two empty lists: the type `DataAppSchema` and the array `schema`.',
       },
       {
-        do: 'Paste the schema into it:',
+        do: 'Replace everything in it with this (select all, then paste):',
         code: C.DATA_SCHEMA,
-        edits: [{ file: DATA_SCHEMA, from: '', to: C.DATA_SCHEMA }],
+        edits: [{ file: DATA_SCHEMA, from: TEMPLATE_DATA_SCHEMA, to: C.DATA_SCHEMA }],
         see: 'No red lines.',
-        why: 'Two lists, kept in step: the type `AppSchema` (for the client\'s types) and the array `schema`, the list Rayfin\'s docs ask you to keep. Every new entity goes in both. As in **Entities from the metadata**, imports under `rayfin/` end in `.js`.',
+        why: 'Two lists, kept in step: the type `DataAppSchema` (for the client\'s types; Rayfin\'s docs call theirs `AppSchema`) and the array `schema`, the list Rayfin\'s docs ask you to keep. Every new entity goes in both. As in **Entities from the metadata**, imports under `rayfin/` end in `.js`.',
       },
       {
         do: 'Apply the schema:',
@@ -2574,7 +2632,7 @@ export const lessons = [
       },
     ],
     summary: [
-      'Register each entity twice: in the `AppSchema` type and in the `schema` array.',
+      'Register each entity twice: in the `DataAppSchema` type and in the `schema` array.',
       '`db apply` changes the database; `up status` checks the deployment. Neither proves every query works.',
       'Every `@text()` needs a `max`. `--force` only after reading what it lists.',
     ],
@@ -2601,10 +2659,10 @@ export const lessons = [
       },
       {
         do: 'In `services`, add a line above `connectors:`, under the marked `services: {`:',
-        code: 'data: dataService<AppSchema>(),',
-        edits: [{ file: CLIENT, from: '  services: {\n', to: '  services: {\n    data: dataService<AppSchema>(),\n' }],
+        code: 'data: dataService<DataAppSchema>(),',
+        edits: [{ file: CLIENT, from: '  services: {\n', to: '  services: {\n    data: dataService<DataAppSchema>(),\n' }],
         see: 'No red lines. `rayfinClient.data.SalesTarget` now exists.',
-        why: 'The client has only the services we register: until now, connectors. `<AppSchema>` gives it our entities\' types.',
+        why: 'The client has only the services we register: until now, connectors. `<DataAppSchema>` gives it our entities\' types.',
       },
       {
         do: 'Click **+ New file**, at the top of the file list, and type `lib/targets.ts` after the `src/` already there.',
@@ -2677,7 +2735,7 @@ export const lessons = [
       },
     ],
     summary: [
-      'Register `dataService<AppSchema>()` once, then read with the same chain as the lakehouse.',
+      'Register `dataService<DataAppSchema>()` once, then read with the same chain as the lakehouse.',
       '`create` and `update` take typed fields; writes return the key and what you sent.',
       'A result has only the fields you select: reading another one is a red line.',
     ],

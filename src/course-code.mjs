@@ -309,6 +309,11 @@ export function revenueCard(year?: number) {
   return \`EVALUATE CALCULATETABLE ( \${row}, \${f.join(', ')} )\`;
 }
 `;
+// The index.ts files: each folder re-exports its query files, and src/queries/index.ts re-exports the folders
+// (the template's AGENTS.md, "Re-export via index.ts"), so a page imports every query from './queries'.
+export const reExport = (name) => `export * from './${name}';\n`;
+export const OVERVIEW_INDEX_V1 = reExport('revenue-by-store-country');
+export const QUERIES_INDEX_V1 = reExport('overview');
 export const IMPORT_FILTERS = `import { filters } from '../../lib/filters';`;
 export const IMPORT_FILTERS_BOTH = `import { filters, withFilters } from '../../lib/filters';`;
 
@@ -729,7 +734,7 @@ import { ErrorPanel } from './components/error-panel';
 import { YearSlicer } from './components/year-slicer';
 import { runPareto, useDax } from './hooks/use-dax';
 import { toHeadline } from './lib/conversions';
-import { paretoHeadline } from './queries/categories/pareto-headline';
+import { paretoHeadline } from './queries';
 
 // A page on the second model: for now, its headline.
 export default function ParetoPage() {
@@ -763,9 +768,7 @@ import { KpiCard } from './components/kpi-card';
 import { YearSlicer } from './components/year-slicer';
 import { runDax, runPareto, useDax } from './hooks/use-dax';
 import { toHeadline, toPareto, toRevenue } from './lib/conversions';
-import { paretoByCategory } from './queries/categories/pareto-by-category';
-import { paretoHeadline } from './queries/categories/pareto-headline';
-import { revenueCard } from './queries/categories/revenue-card';
+import { paretoByCategory, paretoHeadline, revenueCard } from './queries';
 
 const percent = (n: number) => n.toLocaleString('en-US', { style: 'percent', maximumFractionDigits: 1 });
 
@@ -1044,9 +1047,10 @@ ${TARGET_RULE_ALL}export class SalesTarget {
 `;
 
 // ---------------------------------------------------------------- register and apply
+// rayfin/data/schema.ts, with SalesTarget in both lists. DataAppSchema is the template's name for the type.
 export const DATA_SCHEMA = `import { SalesTarget } from './SalesTarget.js';
 
-export type AppSchema = {
+export type DataAppSchema = {
   SalesTarget: SalesTarget;
 };
 
@@ -1055,7 +1059,7 @@ export const schema = [SalesTarget];
 
 // ---------------------------------------------------------------- read and write targets
 export const CLIENT_DATA_IMPORTS = `import { dataService } from '@microsoft/rayfin-data';
-import type { AppSchema } from '../../rayfin/data/schema';
+import type { DataAppSchema } from '../../rayfin/data/schema';
 `;
 
 export const TARGETS_LOAD = `import { rayfinClient } from './rayfin-client';

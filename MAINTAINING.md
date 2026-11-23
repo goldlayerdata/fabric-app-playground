@@ -95,6 +95,7 @@ visuals page: all checks passed
 | Parts (groups of chapters) | `src/course.mjs`, `parts` |
 | Glossary terms and the Help tab's troubleshooting rows | `src/terms.mjs`, `terms` and `help` |
 | What the simulated terminal does and writes | `src/project.mjs` |
+| The template's files written at `npm create`: verbatim ones, the editable client note, and the locked placeholders (`TEMPLATE_PLACEHOLDERS`, one or two lines each, starting `Playground:`; JSON ones as `{ "_playground": … }`) | `src/project.mjs` |
 | The app's own database, permissions, claims | `src/app-data.mjs` |
 | How connector names resolve | `src/connectors-sim.mjs` |
 | The queries the models can answer | `tools/make-catalog.mjs`, which writes `data/catalog.json` |
