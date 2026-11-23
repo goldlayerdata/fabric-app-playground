@@ -108,35 +108,44 @@ const rayfin = {
 };
 
 const APP = 'src/App.tsx';
-const COMP = 'src/components.tsx';
-const DATA = 'src/data.ts';
-const CLIENT = 'src/services/rayfinClient.ts';
 const AGENT = 'src/SalesOverview.tsx';
-// The query files: one .dax file per visual, as the data app template keeps them (its AGENTS.md).
-const COUNTRY_DAX = 'src/queries/revenue-by-store-country.dax';
-const TOTALS_DAX = 'src/queries/sales-totals.dax';
-const MARGIN_DAX = 'src/queries/margin-pct.dax';
-const CATEGORY_DAX = 'src/queries/revenue-by-category.dax';
-const YEARS_DAX = 'src/queries/revenue-by-year.dax';
-const PARETO_HEADLINE_DAX = 'src/queries/pareto-headline.dax';
-const PARETO_BY_CATEGORY_DAX = 'src/queries/pareto-by-category.dax';
-const REVENUE_CARD_DAX = 'src/queries/revenue-card.dax';
-const CLIENT_IMPORT_LINE = "import { rayfinClient } from './services/rayfinClient';\n";
-// A step that makes a new query file, and the step that imports it into src/data.ts under the import before it.
-const newQueryFile = (file, lead, extra = {}) => ({
+// The project's folders follow the data app template (its AGENTS.md, "Project Structure"): components/ for
+// visuals, hooks/ for React hooks, lib/ for the client and helpers, queries/<page>/ for the DAX.
+const CLIENT = 'src/lib/rayfin-client.ts';
+const HOOK = 'src/hooks/use-dax.ts';
+const CONV = 'src/lib/conversions.ts';
+const FILTERS = 'src/lib/filters.ts';
+const KPI = 'src/components/kpi-card.tsx';
+const BAR = 'src/components/bar-list.tsx';
+const ERR = 'src/components/error-panel.tsx';
+const SLICER = 'src/components/year-slicer.tsx';
+// Each query: a .dax file and a .ts file of the same name, in a folder per page.
+const COUNTRY_DAX = 'src/queries/overview/revenue-by-store-country.dax';
+const COUNTRY_TS = 'src/queries/overview/revenue-by-store-country.ts';
+const TOTALS_DAX = 'src/queries/overview/sales-totals.dax';
+const TOTALS_TS = 'src/queries/overview/sales-totals.ts';
+const MARGIN_DAX = 'src/queries/overview/margin-pct.dax';
+const MARGIN_TS = 'src/queries/overview/margin-pct.ts';
+const CATEGORY_DAX = 'src/queries/overview/revenue-by-category.dax';
+const CATEGORY_TS = 'src/queries/overview/revenue-by-category.ts';
+const YEARS_DAX = 'src/queries/years/revenue-by-year.dax';
+const YEARS_TS = 'src/queries/years/revenue-by-year.ts';
+const PARETO_HEADLINE_DAX = 'src/queries/categories/pareto-headline.dax';
+const PARETO_HEADLINE_TS = 'src/queries/categories/pareto-headline.ts';
+const PARETO_BY_CATEGORY_DAX = 'src/queries/categories/pareto-by-category.dax';
+const PARETO_BY_CATEGORY_TS = 'src/queries/categories/pareto-by-category.ts';
+const REVENUE_CARD_DAX = 'src/queries/categories/revenue-card.dax';
+const REVENUE_CARD_TS = 'src/queries/categories/revenue-card.ts';
+// A step that makes a new, empty file.
+const newFile = (file, lead, extra = {}) => ({
   do: `${lead}click **+ New file** and type \`${file.slice(4)}\` after the \`src/\` already there.`,
   edits: [{ file, from: '', to: '' }],
   point: 'files',
   see: `An empty \`${file}\`, open in the editor.`,
   ...extra,
 });
-const importQuery = (line, under, extra = {}) => ({
-  do: 'Load the new file into `src/data.ts`: add this import on a new line under the marked one.',
-  code: line,
-  edits: [{ file: DATA, from: `${under}\n`, to: `${under}\n${line}\n` }],
-  see: 'Nothing changes yet.',
-  ...extra,
-});
+// A step that pastes a whole file into the empty file the step before made.
+const paste = (file, text, doText, extra = {}) => ({ do: doText, code: text, edits: [{ file, from: '', to: text }], see: 'Nothing on the page yet.', ...extra });
 const YML = 'rayfin/rayfin.yml';
 const UNDO = 'Undo: click in the editor and press Ctrl+Z (Cmd+Z on a Mac), or use **Do it for me**.';
 
@@ -151,14 +160,29 @@ const COUNTRY_ROW_ORDERS = "    'store'[CountryName],\n    \"Orders\", [# Orders
 const COUNTRY_ROW_MARKED = "    'store'[CountryName],\n    /* filters */ \"Revenue\", [Revenue]";
 const KPI_VALUE_LINE = "      <p className=\"text-2xl font-bold\">{value.toLocaleString('en-US', { notation: 'compact', maximumFractionDigits: 1 })}</p>\n";
 const KPI_VALUE_FORMAT = "      <p className=\"text-2xl font-bold\">\n        {format === 'percent'\n          ? value.toLocaleString('en-US', { style: 'percent', maximumFractionDigits: 1 })\n          : value.toLocaleString('en-US', { notation: 'compact', maximumFractionDigits: 1 })}\n      </p>\n";
-const COMP_IMPORT = "import { KpiCard } from './components';\n";
-const DATA_IMPORT_1 = "import { runDax, salesByCountryQuery, toBars, useDax } from './data';";
-const DATA_IMPORT_2 = "import { runDax, salesByCountryQuery, toBars, toTotals, totalsQuery, useDax } from './data';";
-const DATA_IMPORT_3 = "import { marginQuery, runDax, salesByCountryQuery, toBars, toPercent, toTotals, totalsQuery, useDax } from './data';";
-const DATA_IMPORT_4 = "import { marginQuery, runDax, salesByCategoryQuery, salesByCountryQuery, toBars, toPercent, toTotals, totalsQuery, useDax } from './data';";
-const COUNTRIES_LINES = '  const countriesResult = useDax(runDax, salesByCountryQuery);\n  const countries = countriesResult ? toBars(countriesResult) : [];\n';
-const TOTALS_LINES = '  const totalsResult = useDax(runDax, totalsQuery);\n  const totals = totalsResult ? toTotals(totalsResult) : { revenue: 0, orders: 0, customers: 0 };\n';
-const MARGIN_LINE = '  const marginResult = useDax(runDax, marginQuery);\n';
+const COMP_IMPORT = "import { KpiCard } from './components/kpi-card';\n";
+const IMP_BAR = "import { BarList } from './components/bar-list';\n";
+const IMP_ERR = "import { ErrorPanel } from './components/error-panel';\n";
+const IMP_SLICER = "import { YearSlicer } from './components/year-slicer';\n";
+const IMP_HOOK = "import { runDax, useDax } from './hooks/use-dax';\n";
+const IMP_CONV_1 = "import { toBars } from './lib/conversions';";
+const IMP_CONV_2 = "import { toBars, toTotals } from './lib/conversions';";
+const IMP_CONV_3 = "import { toBars, toPercent, toTotals } from './lib/conversions';";
+const IMP_Q_COUNTRY = "import { revenueByStoreCountry } from './queries/overview/revenue-by-store-country';\n";
+const IMP_Q_TOTALS = "import { salesTotals } from './queries/overview/sales-totals';\n";
+const IMP_Q_MARGIN = "import { marginPct } from './queries/overview/margin-pct';\n";
+const IMP_Q_CATEGORY = "import { revenueByCategory } from './queries/overview/revenue-by-category';\n";
+const IMP_Q_YEARS = "import { revenueByYear } from './queries/years/revenue-by-year';\n";
+const FIRST_IMPORTS = `${IMP_HOOK}${IMP_CONV_1}\n${IMP_Q_COUNTRY}`;
+// The .dax import at the top of a query's .ts file, under which a filters import goes.
+const TOTALS_DAX_IMPORT = "import salesTotalsDax from './sales-totals.dax?raw';\n";
+const COUNTRY_DAX_IMPORT = "import revenueByStoreCountryDax from './revenue-by-store-country.dax?raw';\n";
+// The ends of conversions, under which the next one goes.
+const PERCENT_END = '  return Number(result.table.rows[0][at]);\n}';
+const HEADLINE_END = "text: String(rows[0][at('[Headline]')]) };\n}";
+const COUNTRIES_LINES = '  const countriesResult = useDax(runDax, revenueByStoreCountry());\n  const countries = countriesResult ? toBars(countriesResult) : [];\n';
+const TOTALS_LINES = '  const totalsResult = useDax(runDax, salesTotals());\n  const totals = totalsResult ? toTotals(totalsResult) : { revenue: 0, orders: 0, customers: 0 };\n';
+const MARGIN_LINE = '  const marginResult = useDax(runDax, marginPct());\n';
 const LOADING = '  if (!countriesResult || !totalsResult || !marginResult) return <p className="p-4">Loading…</p>;\n';
 const ERRORS = "  for (const r of [countriesResult, totalsResult, marginResult]) if (r.status === 'error') return <ErrorPanel message={r.error.message} />;\n";
 const YEAR_STATE = '  const [year, setYear] = useState<number | undefined>(undefined);\n';
@@ -166,7 +190,6 @@ const LOCAL_RUNDAX = '  const runDax = (query: string) => rayfinClient.connector
 const AGENT_RUNDAX_IN_PAGE = '  // Runs a DAX query against the model.\n  const runDax: RunDax = (query) => rayfinClient.connectors.contoso.executeQuery({ query });\n\n';
 
 // Chapter 2: the second semantic model.
-const PARETO_TS = 'src/pareto.ts';
 const PARETO_PAGE = 'src/ParetoPage.tsx';
 const PARETO_SCHEMA_FILE = 'rayfin/connectors/pareto/schema.ts';
 const ADD_PARETO_AS_CONTOSO = `npx rayfin connector add --type fabric-semanticmodel --workspace-id ${PLACEHOLDER.workspaceId} --item-id ${PLACEHOLDER.paretoId} --name Contoso`;
@@ -181,7 +204,7 @@ const IMPORT_AGENT = "import SalesOverview from './SalesOverview';\n";
 const IMPORT_PARETO = "import ParetoPage from './ParetoPage';\n";
 
 // Chapter 3: the lakehouse.
-const LAKE_TS = 'src/lake.ts';
+const LAKE_TS = 'src/lib/lake.ts';
 const LINES = 'src/LinesPage.tsx';
 const LAKE_DIR = 'rayfin/connectors/lake';
 const LAKE_METADATA = `${LAKE_DIR}/metadata.json`;
@@ -203,9 +226,9 @@ const LINES_END = '      </section>\n    </div>\n  );\n}\n';
 // The app's own data, sign-in and claims.
 const TARGET = 'rayfin/data/SalesTarget.ts';
 const DATA_SCHEMA = 'rayfin/data/schema.ts';
-const TARGETS_TS = 'src/targets.ts';
+const TARGETS_TS = 'src/lib/targets.ts';
 const TARGETS_PAGE = 'src/TargetsPage.tsx';
-const SESSION_TS = 'src/session.ts';
+const SESSION_TS = 'src/lib/session.ts';
 const DB_APPLY = 'npx rayfin up db apply';
 const DATA_OFF = '  data:\n    enabled: false\n';
 const DATA_ON = '  data:\n    enabled: true\n    dialect: mssql\n';
@@ -409,13 +432,14 @@ export const lessons = [
     goal: 'create the client the app uses to call the connector',
     builds: ['connector'],
     pbi: 'The connector is like a connection in a report. The client is what lets the page use it: one object, created once, that every query goes through.',
-    idea: 'We write `src/services/rayfinClient.ts` in three parts: what we import, the list of connectors, and the client itself. Then a first query from the page.',
+    idea: 'We write `src/lib/rayfin-client.ts` in three parts: what we import, the list of connectors, and the client itself. Then a first query from the page.',
     steps: [
       {
-        do: 'Click **+ New file**, at the top of the file list, and type `services/rayfinClient.ts` after the `src/` already there.',
+        do: 'Click **+ New file**, at the top of the file list, and type `lib/rayfin-client.ts` after the `src/` already there.',
         edits: [{ file: CLIENT, from: '', to: '' }],
         point: 'files',
-        see: 'A new, empty `src/services/rayfinClient.ts`, open in the editor. The `services` folder is made with it.',
+        see: 'A new, empty `src/lib/rayfin-client.ts`, open in the editor. The `lib` folder is made with it.',
+        why: 'The data app template keeps its client in this file, in `src/lib`, next to its other helpers. In a real project the file already exists, with the template\'s own sign-in, and you add the connector to it. The playground starts without it, so we write a small one.',
       },
       {
         do: 'Paste these imports into it:',
@@ -453,7 +477,7 @@ export const lessons = [
         why: 'That is the red line: the client needs text for `baseUrl`. `import.meta.env` holds the values `rayfin dev` writes for us.',
       },
       {
-        do: 'Back in `src/services/rayfinClient.ts`, check the values first: replace the marked lines with these.',
+        do: 'Back in `src/lib/rayfin-client.ts`, check the values first: replace the marked lines with these.',
         code: C.CLIENT_ENV_TO,
         file: CLIENT,
         edits: [{ file: CLIENT, from: C.CLIENT_ENV_FROM, to: C.CLIENT_ENV_TO }],
@@ -475,7 +499,7 @@ export const lessons = [
       '`executeQuery({ query })` sends DAX through the connector.',
     ],
     fabric: {
-      text: 'This is Rayfin 2.0\'s way to register a semantic model connector: `connectorsService` with `fabricSemanticModel()` in its `runtime` map. In a real data app project, add it to the template\'s existing client (`src/lib/rayfin-client.ts`) instead of making a second one; that client is fetched with `await getRayfinClient()`. As of November 2026, Microsoft Learn\'s pages still show the 1.x client (`ConnectorsRayfinClient`), so an agent following them may write that; the 2.0 version is on rayfin.ai.',
+      text: 'This is Rayfin 2.0\'s way to register a semantic model connector: `connectorsService` with `fabricSemanticModel()` in its `runtime` map. In a real data app project, this file already exists: add the connector to the template\'s client in it instead of making a second one; that client is fetched with `await getRayfinClient()`. As of November 2026, Microsoft Learn\'s pages still show the 1.x client (`ConnectorsRayfinClient`), so an agent following them may write that; the 2.0 version is on rayfin.ai.',
       links: [rayfin.clientSetup, rayfin.semanticModels],
     },
   },
@@ -549,24 +573,25 @@ export const lessons = [
     idea: 'Our two cards repeat the same markup. We write a card component once, in its own file, and use it for every card.',
     steps: [
       {
-        do: 'Click **+ New file**, at the top of the file list, and type `components.tsx` after the `src/` already there.',
-        edits: [{ file: COMP, from: '', to: '' }],
+        do: 'Click **+ New file**, at the top of the file list, and type `components/kpi-card.tsx` after the `src/` already there.',
+        edits: [{ file: KPI, from: '', to: '' }],
         point: 'files',
-        see: 'A new, empty `src/components.tsx`, open in the editor.',
+        see: 'A new folder, `src/components`, with an empty `kpi-card.tsx` in it, open in the editor.',
+        why: 'The data app template keeps its visuals in `src/components`, one per file.',
       },
       {
         do: 'Paste the card component into it:',
         code: C.KPI_CARD,
-        edits: [{ file: COMP, from: '', to: C.KPI_CARD }],
+        edits: [{ file: KPI, from: '', to: C.KPI_CARD }],
         see: '`KpiCardProps` lists the props: a `title` that is text (`string`) and a `value` that is a `number`.',
         why: '`export` lets other files use it.',
       },
       {
         do: 'In `src/App.tsx`, add this line at the very top, above the marked line:',
-        code: "import { KpiCard } from './components';",
+        code: COMP_IMPORT.trim(),
         edits: [{ file: APP, from: 'export default function App() {', to: `${COMP_IMPORT}\nexport default function App() {` }],
         see: 'Nothing changes yet.',
-        why: '`./components` is our `src/components.tsx`; imports leave out the `.tsx`.',
+        why: '`./components/kpi-card` is our `src/components/kpi-card.tsx`; imports leave out the `.tsx`.',
       },
       {
         do: 'Replace the marked Revenue card with the component:',
@@ -659,7 +684,7 @@ export const lessons = [
         do: 'Hover over the marked `KpiCard`.',
         file: APP,
         find: 'KpiCard title="Revenue (USD)"',
-        see: 'Its props and their types, read from `src/components.tsx`.',
+        see: 'Its props and their types, read from `src/components/kpi-card.tsx`.',
         why: 'TypeScript checks across files. It can\'t see the model, though: a wrong column or a wrong number in a query still passes. That comes next.',
       },
     ],
@@ -681,67 +706,49 @@ export const lessons = [
     goal: 'replace typed-in numbers with the model\'s',
     builds: ['types'],
     pbi: 'Binding fields to visuals: each visual asks the model a [[query]] and draws the [[result]].',
-    idea: 'We add `src/data.ts`, the code that runs queries and turns their results into what the visuals draw, and a `.dax` file for each query. Then the chart and the cards use them.',
+    idea: 'Each query gets two files, as in the data app template: a `.dax` file with the DAX, and a small `.ts` file that hands it to the page. A [[hook]] runs the queries, and conversions turn their results into what the visuals draw. Then the chart and the cards use them.',
     steps: [
-      {
-        do: 'Click **+ New file**, at the top of the file list, and type `data.ts` after the `src/` already there.',
-        edits: [{ file: DATA, from: '', to: '' }],
-        point: 'files',
-        see: 'A new, empty `src/data.ts`, open in the editor.',
-      },
-      {
-        do: 'Paste the code that runs queries into it:',
-        code: C.DATA_START,
-        edits: [{ file: DATA, from: '', to: C.DATA_START }],
+      newFile(HOOK, 'First, the code that runs queries. It is a hook, and the template keeps hooks in a folder of their own: ', {
+        see: 'A new folder, `src/hooks`, with an empty `use-dax.ts` in it, open in the editor.',
+      }),
+      paste(HOOK, C.USE_DAX, 'Paste the code that runs queries into it:', {
         see: 'Nothing on the page changes yet.',
         why: 'We don\'t need every line of it. Two parts matter, and the next two cards mark them.',
-      },
+      }),
       {
         do: 'Look at the marked `runDax`.',
-        file: DATA,
+        file: HOOK,
         find: 'export const runDax',
         see: 'One line: it sends a DAX query through our client, the same call as the test page.',
       },
       {
         do: 'Look at the marked `useDax`.',
-        file: DATA,
+        file: HOOK,
         find: 'export function useDax',
         see: 'Like a visual loading: `undefined` while it waits, then the model\'s result.',
         why: 'The `cancelled` lines drop an answer that arrives after the page has moved on. It takes `runDax` as an input; **The redraw trap** shows why that matters.',
       },
-      {
-        do: 'Now the first query. It gets a file of its own: click **+ New file** and type `queries/revenue-by-store-country.dax` after the `src/` already there.',
-        edits: [{ file: COUNTRY_DAX, from: '', to: '' }],
-        point: 'files',
-        see: 'A new folder, `src/queries`, with an empty `revenue-by-store-country.dax` in it, open in the editor.',
-        why: 'Microsoft\'s data app template asks the same of coding agents, in its `AGENTS.md`: every DAX query in a `.dax` file of its own, in `src/queries`, named after the visual it feeds.',
-      },
-      {
-        do: 'Paste the query into it:',
-        code: C.COUNTRY_DAX,
-        edits: [{ file: COUNTRY_DAX, from: '', to: C.COUNTRY_DAX }],
-        see: 'Nothing on the page yet.',
+      newFile(COUNTRY_DAX, 'Now the first query. It gets a file of its own: ', {
+        see: 'New folders, `src/queries/overview`, with an empty `revenue-by-store-country.dax` in them, open in the editor.',
+        why: 'Microsoft\'s data app template asks the same of coding agents, in its `AGENTS.md`: every DAX query in a `.dax` file of its own, under `src/queries`, in a folder per page, named after the visual it feeds. This one feeds the countries chart on the Overview page.',
+      }),
+      paste(COUNTRY_DAX, C.COUNTRY_DAX, 'Paste the query into it:', {
         why: 'Only DAX, nothing else: on the same model, it runs as it is in DAX query view in Power BI Desktop. It names the model\'s own measure, `[Revenue]`, as a report visual does.',
-      },
+      }),
+      newFile(COUNTRY_TS, 'Next to it, a small file that hands the query to the page: '),
+      paste(COUNTRY_TS, C.COUNTRY_TS, 'Paste this into it:', {
+        why: '`?raw` means "the file\'s text, as a string": `revenueByStoreCountryDax` holds the DAX exactly as the file has it. The function is named after the file, as in the template; in **State as a slicer** it learns to add the year. The template\'s version also returns the chart\'s spec, and each folder re-exports its files through an `index.ts`; we import each file directly.',
+      }),
+      newFile(CONV, 'The chart needs bars, not rows. The code that turns one into the other is a helper, so it goes in `src/lib`: '),
+      paste(CONV, C.CONVERSIONS_V1, 'Paste the first conversion into it:', {
+        why: '`.map` makes one bar for each row. `toBars` reads `row[0]` as the label and `row[1]` as the value: positions, counted from 0. Keep that in mind.',
+      }),
       {
-        do: 'In `src/data.ts`, load it: add this import on a new line under the marked `rayfinClient` import.',
-        code: C.IMPORT_COUNTRY,
-        edits: [{ file: DATA, from: CLIENT_IMPORT_LINE, to: `${CLIENT_IMPORT_LINE}${C.IMPORT_COUNTRY}\n` }],
-        see: 'Nothing changes yet.',
-        why: '`?raw` means "the file\'s text, as a string": `revenueByStoreCountryDax` holds the DAX exactly as the file has it. TypeScript never reads the DAX itself: to it, the query is only text.',
-      },
-      {
-        do: 'At the end of `src/data.ts`, add the query, and the code that turns its result into bars:',
-        code: C.COUNTRY_QUERY.trimStart(),
-        edits: [{ file: DATA, from: '  return result;\n}\n', to: `  return result;\n}\n${C.COUNTRY_QUERY}` }],
-        see: 'Still nothing on the page.',
-        why: '`salesByCountryQuery` is the name the page will use; in **State as a slicer** it becomes a function that adds the year. `.map` makes one bar for each row. `toBars` reads `row[0]` as the label and `row[1]` as the value: positions, counted from 0. Keep that in mind.',
-      },
-      {
-        do: 'In `src/App.tsx`, add this import on a new line under the marked one:',
-        code: DATA_IMPORT_1,
-        edits: [{ file: APP, from: COMP_IMPORT, to: `${COMP_IMPORT}${DATA_IMPORT_1}\n` }],
+        do: 'The page needs the hook, the conversion and the query. In `src/App.tsx`, add these imports under the marked `KpiCard` one:',
+        code: FIRST_IMPORTS.trimEnd(),
+        edits: [{ file: APP, from: COMP_IMPORT, to: COMP_IMPORT + FIRST_IMPORTS }],
         see: 'Nothing on the page yet.',
+        why: 'TypeScript never reads the DAX itself: to it, the query is only text.',
       },
       {
         do: 'Run the query: add these lines on new lines under the marked `export default function App() {`.',
@@ -750,22 +757,14 @@ export const lessons = [
         see: 'In the Log, the query and what came back: a `status`, `columns` (their names) and `rows` (lists of values).',
         why: '`a ? b : c` works like `IF(a, b, c)`: no result yet, no bars.',
       },
-      {
-        do: 'Now the chart. In `src/components.tsx`, add this line at the very top, above the marked line:',
-        code: "import type { Bar } from './data';",
-        edits: [{ file: COMP, from: 'type KpiCardProps = {', to: "import type { Bar } from './data';\n\ntype KpiCardProps = {" }],
-        see: 'Nothing changes yet.',
+      newFile(BAR, 'Now the chart. It is a visual, so it goes in `src/components`: '),
+      paste(BAR, C.BAR_LIST_FILE, 'Paste the bar chart into it:', {
         why: '`import type` brings in only a type, here the shape of one bar.',
-      },
+      }),
       {
-        do: 'At the end of `src/components.tsx`, under the marked end of `KpiCard`, add the bar chart:',
-        code: C.BAR_LIST.trimStart(),
-        edits: [{ file: COMP, from: `${KPI_VALUE_LINE}    </div>\n  );\n}\n`, to: `${KPI_VALUE_LINE}    </div>\n  );\n}\n${C.BAR_LIST}` }],
-        see: 'Nothing on the page yet.',
-      },
-      {
-        do: 'In `src/App.tsx`, add `BarList` to the marked import: `import { BarList, KpiCard } from \'./components\';`',
-        edits: [{ file: APP, from: "import { KpiCard } from './components';", to: "import { BarList, KpiCard } from './components';" }],
+        do: 'Load the chart into the page: in `src/App.tsx`, add this import on a new line above the marked `KpiCard` one.',
+        code: IMP_BAR.trim(),
+        edits: [{ file: APP, from: COMP_IMPORT, to: IMP_BAR + COMP_IMPORT }],
         see: 'Nothing changes yet.',
       },
       {
@@ -780,26 +779,26 @@ export const lessons = [
         see: 'Real bars: United States 60,466,772, then Online, Canada…',
         visual: 'bar',
       },
-      newQueryFile(TOTALS_DAX, 'Now the cards. Their query gets a file too: '),
+      newFile(TOTALS_DAX, 'Now the cards. Their query gets a file too: '),
+      paste(TOTALS_DAX, C.TOTALS_DAX, 'Paste the totals query into it:', { why: 'One row with three measures: one for each card.' }),
+      newFile(TOTALS_TS, 'And its small `.ts` file: '),
+      paste(TOTALS_TS, C.TOTALS_TS, 'Paste this into it:'),
       {
-        do: 'Paste the totals query into it:',
-        code: C.TOTALS_DAX,
-        edits: [{ file: TOTALS_DAX, from: '', to: C.TOTALS_DAX }],
-        see: 'Nothing on the page yet.',
-        why: 'One row with three measures: one for each card.',
-      },
-      importQuery(C.IMPORT_TOTALS, C.IMPORT_COUNTRY),
-      {
-        do: 'At the end of `src/data.ts`, add the totals query and its conversion:',
-        code: C.TOTALS.trimStart(),
-        edits: [{ file: DATA, from: C.TO_BARS_BY_POSITION, to: C.TO_BARS_BY_POSITION + C.TOTALS }],
+        do: 'At the end of `src/lib/conversions.ts`, add the cards\' conversion:',
+        code: C.TOTALS_CONV.trimStart(),
+        edits: [{ file: CONV, from: C.TO_BARS_BY_POSITION, to: C.TO_BARS_BY_POSITION + C.TOTALS_CONV }],
         see: 'Nothing on the page yet.',
         why: '`toTotals` finds each column by its name, such as `[Orders]`.',
       },
       {
-        do: 'In `src/App.tsx`, replace the marked import from `./data` with:',
-        code: DATA_IMPORT_2,
-        edits: [{ from: DATA_IMPORT_1, to: DATA_IMPORT_2 }],
+        do: 'Load both into the page. In `src/App.tsx`, add `toTotals` to the marked import: `import { toBars, toTotals } from \'./lib/conversions\';`',
+        edits: [{ from: IMP_CONV_1, to: IMP_CONV_2 }],
+        see: 'Nothing changes yet.',
+      },
+      {
+        do: 'Then add the query\'s import on a new line under the marked one:',
+        code: IMP_Q_TOTALS.trim(),
+        edits: [{ from: IMP_Q_COUNTRY, to: IMP_Q_COUNTRY + IMP_Q_TOTALS }],
         see: 'Nothing changes yet.',
       },
       {
@@ -820,12 +819,12 @@ export const lessons = [
       },
     ],
     summary: [
-      'A query is DAX text, kept in a `.dax` file of its own; `useDax` runs it and keeps the result while the page draws.',
+      'A query is DAX text, kept in a `.dax` file, with a small `.ts` file of the same name that hands it to the page; `useDax` runs it and keeps the result while the page draws.',
       'A conversion (`toBars`, `toTotals`) turns the result\'s rows into what a visual draws.',
       'The queries name the model\'s measures, such as `[Revenue]` and `[# Orders]`, as a report visual does.',
     ],
     fabric: {
-      text: 'The real connector returns this same result shape: `columns`, each with a name and a data type, and `rows` as lists of values in column order. The `.dax` files follow the data app template. Its scaffold includes instructions for coding agents, and those (its `AGENTS.md`) keep all DAX in `.dax` files under `src/queries`, imported as text with `?raw`.',
+      text: 'The real connector returns this same result shape: `columns`, each with a name and a data type, and `rows` as lists of values in column order. The `.dax` files follow the data app template. Its scaffold includes instructions for coding agents, and those (its `AGENTS.md`) keep all DAX in `.dax` files under `src/queries`, imported as text with `?raw`, and put visuals in `src/components`, hooks in `src/hooks` and helpers in `src/lib`, as here.',
       links: [rayfin.semanticModels, learn.templateAgent],
     },
   },
@@ -839,7 +838,7 @@ export const lessons = [
     idea: '`toBars` reads `row[1]` as the value. That holds only while the DAX keeps its columns in that order. Let\'s change the DAX, the way an agent might.',
     steps: [
       {
-        do: 'Change the DAX the way an agent might (we take it out again at the end): in `src/queries/revenue-by-store-country.dax`, add an Orders column above the marked `"Revenue", [Revenue]` line.',
+        do: 'Change the DAX the way an agent might (we take it out again at the end): in `src/queries/overview/revenue-by-store-country.dax`, add an Orders column above the marked `"Revenue", [Revenue]` line.',
         code: '"Orders", [# Orders],',
         find: '"Revenue", [Revenue]',
         edits: [{ file: COUNTRY_DAX, from: COUNTRY_ROW, to: COUNTRY_ROW_ORDERS }],
@@ -852,9 +851,9 @@ export const lessons = [
         why: 'So `row[1]`, the second column, is now Orders.',
       },
       {
-        do: 'Look columns up by name instead. In `src/data.ts`, replace the marked `toBars` with this:',
+        do: 'Look columns up by name instead. In `src/lib/conversions.ts`, replace the marked `toBars` with this:',
         code: C.TO_BARS_BY_NAME,
-        edits: [{ file: DATA, from: C.TO_BARS_BY_POSITION, to: C.TO_BARS_BY_NAME }],
+        edits: [{ file: CONV, from: C.TO_BARS_BY_POSITION, to: C.TO_BARS_BY_NAME }],
         errors: 1,
         see: 'A red line in `src/App.tsx`: `toBars` now needs two more inputs (arguments). Until we give them, the bars break.',
         why: '`findIndex((c) => c.name === …)` finds the column with that name (`===` means "equals"). The red line shows where to follow up.',
@@ -866,7 +865,7 @@ export const lessons = [
         why: 'In the result, the model names the column `store[CountryName]`, without the quotes the DAX uses. Copy names from the Log.',
       },
       {
-        do: 'We don\'t need orders by country: in `src/queries/revenue-by-store-country.dax`, remove the `"Orders", [# Orders],` line again.',
+        do: 'We don\'t need orders by country: in `src/queries/overview/revenue-by-store-country.dax`, remove the `"Orders", [# Orders],` line again.',
         edits: [{ file: COUNTRY_DAX, from: COUNTRY_ROW_ORDERS, to: COUNTRY_ROW }],
         see: 'Nothing changes on the page. That is the point.',
       },
@@ -890,43 +889,45 @@ export const lessons = [
     pbi: 'In a report, a visual asks for a [[measure]] and the model works it out. An app\'s query can do the same, by naming the measure. It can also carry its own formula instead.',
     idea: 'We add a Margin % card. First with the formula written into the query, with [[DEFINE MEASURE|define-measure]], as an agent often does. Then with the model\'s own measure.',
     steps: [
-      newQueryFile(MARGIN_DAX, 'The Margin % card gets a query file too: '),
-      {
-        do: 'Paste this query into it. It has the formula written in, as an agent often writes it:',
-        code: C.MARGIN_IN_QUERY_DAX,
-        edits: [{ file: MARGIN_DAX, from: '', to: C.MARGIN_IN_QUERY_DAX }],
-        see: 'Nothing on the page yet.',
+      newFile(MARGIN_DAX, 'The Margin % card gets a query file too: '),
+      paste(MARGIN_DAX, C.MARGIN_IN_QUERY_DAX, 'Paste this query into it. It has the formula written in, as an agent often writes it:', {
         why: '`DEFINE MEASURE` adds a measure for this one query. The model never stores it, and no report can see it.',
-      },
-      importQuery(C.IMPORT_MARGIN, C.IMPORT_TOTALS),
+      }),
+      newFile(MARGIN_TS, 'And its small `.ts` file: '),
+      paste(MARGIN_TS, C.MARGIN_TS, 'Paste this into it:'),
       {
-        do: 'At the end of `src/data.ts`, add the margin query and its conversion:',
-        code: C.MARGIN_IN_QUERY.trimStart(),
-        edits: [{ file: DATA, from: "Number(row[at('[Customers]')]) };\n}", to: `Number(row[at('[Customers]')]) };\n}${C.MARGIN_IN_QUERY}` }],
+        do: 'At the end of `src/lib/conversions.ts`, add the card\'s conversion:',
+        code: C.PERCENT_CONV.trimStart(),
+        edits: [{ file: CONV, from: "Number(row[at('[Customers]')]) };\n}", to: `Number(row[at('[Customers]')]) };\n}${C.PERCENT_CONV}` }],
         see: 'Nothing on the page yet.',
       },
       {
-        do: 'Cards need to show a percent too. In `src/components.tsx`, add this line under the marked `value: number;`:',
+        do: 'Cards need to show a percent too. In `src/components/kpi-card.tsx`, add this line under the marked `value: number;`:',
         code: "format?: 'compact' | 'percent';",
-        edits: [{ file: COMP, from: '  value: number;\n', to: "  value: number;\n  format?: 'compact' | 'percent';\n" }],
+        edits: [{ file: KPI, from: '  value: number;\n', to: "  value: number;\n  format?: 'compact' | 'percent';\n" }],
         see: 'Nothing changes yet.',
         why: '`?` means a card can leave it out. `\'compact\' | \'percent\'` means one of those two words, nothing else.',
       },
       {
         do: 'Take `format` in with the other props: change the marked `{ title, value }` to `{ title, value, format }`.',
-        edits: [{ file: COMP, from: 'export function KpiCard({ title, value }: KpiCardProps)', to: 'export function KpiCard({ title, value, format }: KpiCardProps)' }],
+        edits: [{ file: KPI, from: 'export function KpiCard({ title, value }: KpiCardProps)', to: 'export function KpiCard({ title, value, format }: KpiCardProps)' }],
         see: 'Nothing changes yet.',
       },
       {
         do: 'Draw a percent when it says so: replace the marked value line with this.',
         code: KPI_VALUE_FORMAT.trim(),
-        edits: [{ file: COMP, from: KPI_VALUE_LINE, to: KPI_VALUE_FORMAT }],
+        edits: [{ file: KPI, from: KPI_VALUE_LINE, to: KPI_VALUE_FORMAT }],
         see: 'The other cards are unchanged: they leave `format` out.',
       },
       {
-        do: 'In `src/App.tsx`, replace the marked import from `./data` with:',
-        code: DATA_IMPORT_3,
-        edits: [{ from: DATA_IMPORT_2, to: DATA_IMPORT_3 }],
+        do: 'Load them into the page. In `src/App.tsx`, add `toPercent` to the marked import: `import { toBars, toPercent, toTotals } from \'./lib/conversions\';`',
+        edits: [{ from: IMP_CONV_2, to: IMP_CONV_3 }],
+        see: 'Nothing changes yet.',
+      },
+      {
+        do: 'Then add the query\'s import on a new line under the marked one:',
+        code: IMP_Q_MARGIN.trim(),
+        edits: [{ from: IMP_Q_TOTALS, to: IMP_Q_TOTALS + IMP_Q_MARGIN }],
         see: 'Nothing changes yet.',
       },
       {
@@ -952,7 +953,7 @@ export const lessons = [
         see: 'Margin %: 55.9%. The four cards fill the row.',
       },
       {
-        do: 'A slip on purpose, the kind that is easy to make: in `src/queries/margin-pct.dax`, in the first `SUMX`, change `sales[NetPrice]` to `sales[UnitPrice]`.',
+        do: 'A slip on purpose, the kind that is easy to make: in `src/queries/overview/margin-pct.dax`, in the first `SUMX`, change `sales[NetPrice]` to `sales[UnitPrice]`.',
         edits: [{ file: MARGIN_DAX, from: 'sales[Quantity] * ( sales[NetPrice] - sales[UnitCost] )', to: 'sales[Quantity] * ( sales[UnitPrice] - sales[UnitCost] )' }],
         see: 'Margin % shows 62.1%. No red line, no error.',
         why: 'Only the top of the fraction moved to list price; the bottom is still net revenue. A believable number that means nothing.',
@@ -963,7 +964,7 @@ export const lessons = [
         see: 'Back to 55.9%.',
       },
       {
-        do: 'The model already has this measure. Replace the whole of `src/queries/margin-pct.dax` with a query that names it (select all with Ctrl+A, or Cmd+A on a Mac, then paste):',
+        do: 'The model already has this measure. Replace the whole of `src/queries/overview/margin-pct.dax` with a query that names it (select all with Ctrl+A, or Cmd+A on a Mac, then paste):',
         code: C.MARGIN_FROM_MODEL_DAX,
         edits: [{ file: MARGIN_DAX, from: C.MARGIN_IN_QUERY_DAX, to: C.MARGIN_FROM_MODEL_DAX }],
         see: 'Still 55.9%. The formula now lives in one place: the model.',
@@ -1001,7 +1002,7 @@ export const lessons = [
     idea: 'Our conversions turn a failed result into zeros and empty lists, and the page never checks. Let\'s make a slip on purpose, and see.',
     steps: [
       {
-        do: "A slip on purpose: in `src/queries/revenue-by-store-country.dax`, mistype a column: change `'store'[CountryName]` to `'store'[Country]`.",
+        do: "A slip on purpose: in `src/queries/overview/revenue-by-store-country.dax`, mistype a column: change `'store'[CountryName]` to `'store'[Country]`.",
         edits: [{ file: COUNTRY_DAX, from: COUNTRY_ROW, to: "    'store'[Country],\n    \"Revenue\", [Revenue]" }],
         queryFails: true,
         see: 'The bars are gone. No message.',
@@ -1012,16 +1013,12 @@ export const lessons = [
         see: 'The model\'s error: it can\'t find the column `Country`.',
         why: 'The page never showed it: on a failed result, `toBars` returns an empty list.',
       },
+      newFile(ERR, 'The page needs an error panel: a visual for a failed query, so it gets a file in `src/components` too: ', { queryFails: true }),
+      paste(ERR, C.ERROR_PANEL_FILE, 'Paste the error panel into it:', { queryFails: true, see: 'Nothing changes yet.' }),
       {
-        do: 'At the end of `src/components.tsx`, under the marked end of `BarList`, add an error panel:',
-        code: C.ERROR_PANEL.trimStart(),
-        edits: [{ file: COMP, from: '    </ul>\n  );\n}\n', to: `    </ul>\n  );\n}\n${C.ERROR_PANEL}` }],
-        queryFails: true,
-        see: 'Nothing changes yet.',
-      },
-      {
-        do: 'In `src/App.tsx`, add `ErrorPanel` to the marked import: `import { BarList, ErrorPanel, KpiCard } from \'./components\';`',
-        edits: [{ from: "import { BarList, KpiCard } from './components';", to: "import { BarList, ErrorPanel, KpiCard } from './components';" }],
+        do: 'Load it into the page: in `src/App.tsx`, add this import on a new line under the marked `BarList` one.',
+        code: IMP_ERR.trim(),
+        edits: [{ from: IMP_BAR, to: IMP_BAR + IMP_ERR }],
         queryFails: true,
         see: 'Nothing changes yet.',
       },
@@ -1042,7 +1039,7 @@ export const lessons = [
         why: '`for (const r of [a, b, c])` runs the check once for each result; the first one that failed shows its message.',
       },
       {
-        do: "Fix the slip: in `src/queries/revenue-by-store-country.dax`, change it back to `'store'[CountryName]`.",
+        do: "Fix the slip: in `src/queries/overview/revenue-by-store-country.dax`, change it back to `'store'[CountryName]`.",
         edits: [{ file: COUNTRY_DAX, from: "    'store'[Country],\n    \"Revenue\", [Revenue]", to: COUNTRY_ROW }],
         see: 'The page is back.',
       },
@@ -1064,8 +1061,8 @@ export const lessons = [
         why: 'This time there is no result at all: the call "throws". In a real browser app, that is what a request that can\'t reach the app\'s backend does.',
       },
       {
-        do: 'Look at the marked `.catch` in `useDax`, in `src/data.ts`.',
-        file: DATA,
+        do: 'Look at the marked `.catch` in `useDax`, in `src/hooks/use-dax.ts`.',
+        file: HOOK,
         find: '.catch(',
         see: 'It turns a thrown call into an error result, so our status check shows it. Without it, the page would stay on "Loading…".',
         why: 'So a page needs both: the `status` check for a query the model rejects, and `.catch` for a call that never gets an answer (offline, signed out, connector not deployed).',
@@ -1101,10 +1098,11 @@ export const lessons = [
     pbi: '[[State]] is a value the page remembers; when it changes, the page redraws. A slicer selection is state.',
     idea: 'We add a year slicer. The page keeps the selected year, and the queries take it as a filter.',
     steps: [
+      newFile(SLICER, 'A year slicer is a visual too, with a file of its own: '),
       {
-        do: 'At the end of `src/components.tsx`, under the marked end of `ErrorPanel`, add a year slicer:',
-        code: C.YEAR_SLICER.trimStart(),
-        edits: [{ file: COMP, from: '      <p className="mt-1 text-sm">{message}</p>\n    </div>\n  );\n}\n', to: `      <p className="mt-1 text-sm">{message}</p>\n    </div>\n  );\n}\n${C.YEAR_SLICER}` }],
+        do: 'Paste the slicer into it:',
+        code: C.YEAR_SLICER_FILE,
+        edits: [{ file: SLICER, from: '', to: C.YEAR_SLICER_FILE }],
         see: 'Nothing on the page yet.',
         why: 'The slicer shows a year and reports clicks. It doesn\'t keep the year itself: the page will.',
         visual: 'slicer',
@@ -1112,12 +1110,13 @@ export const lessons = [
       {
         do: 'In `src/App.tsx`, add this line at the very top, above the marked line:',
         code: "import { useState } from 'react';",
-        edits: [{ from: "import { BarList, ErrorPanel, KpiCard } from './components';", to: "import { useState } from 'react';\nimport { BarList, ErrorPanel, KpiCard } from './components';" }],
+        edits: [{ from: IMP_BAR, to: `import { useState } from 'react';\n${IMP_BAR}` }],
         see: 'Nothing changes yet.',
       },
       {
-        do: 'Add `YearSlicer` to the marked import: `import { BarList, ErrorPanel, KpiCard, YearSlicer } from \'./components\';`',
-        edits: [{ from: "import { BarList, ErrorPanel, KpiCard } from './components';", to: "import { BarList, ErrorPanel, KpiCard, YearSlicer } from './components';" }],
+        do: 'Load the slicer: add this import on a new line under the marked `KpiCard` one.',
+        code: IMP_SLICER.trim(),
+        edits: [{ from: COMP_IMPORT, to: COMP_IMPORT + IMP_SLICER }],
         see: 'Nothing changes yet.',
       },
       {
@@ -1138,46 +1137,51 @@ export const lessons = [
         ],
         see: 'The slicer, on the right of the title. Clicks move the highlight, but nothing uses the year yet.',
       },
+      newFile(FILTERS, 'The filters are helpers, so they get a file in `src/lib`: '),
       {
-        do: 'In `src/data.ts`, add two filter helpers above the marked `the queries` line:',
-        code: C.FILTERS_YEAR.trimStart(),
-        edits: [
-          {
-            file: DATA,
-            from: '// ------------------------------------------------------------ the queries\n',
-            to: `${C.FILTERS_YEAR.trimStart()}\n// ------------------------------------------------------------ the queries\n`,
-          },
-        ],
+        do: 'Paste the two filter helpers into it:',
+        code: C.FILTERS_FILE,
+        edits: [{ file: FILTERS, from: '', to: C.FILTERS_FILE }],
         see: 'Nothing changes yet.',
-        why: 'For a picked year, `filters` makes one DAX filter, `TREATAS ( { 2024 }, \'date\'[Year] )`: the kind of filter Power BI writes for a slicer selection (copy a visual\'s query from Performance analyzer to see one). `withFilters` puts filters into a query file\'s text, where the file has a `/* filters */` marker.',
+        why: 'For a picked year, `filters` makes one DAX filter, `TREATAS ( { 2024 }, \'date\'[Year] )`: the kind of filter Power BI writes for a slicer selection (copy a visual\'s query from Performance analyzer to see one). `withFilters` puts filters into a query file\'s text, where the file has a `/* filters */` marker. `export` lets the query files use both.',
       },
       {
-        do: 'Make `totalsQuery` take a year: replace the marked line with this function.',
-        code: C.TOTALS_QUERY_FN,
-        edits: [{ file: DATA, from: C.TOTALS_QUERY_CONST, to: C.TOTALS_QUERY_FN }],
-        errors: '1+',
-        see: 'A red line in `src/App.tsx`, and the page shows an error: `App` passes a function where query text goes. The next step fixes both.',
+        do: 'Make the cards\' query take a year. First, in `src/queries/overview/sales-totals.ts`, add this import on a new line above the marked one:',
+        code: C.IMPORT_FILTERS,
+        edits: [{ file: TOTALS_TS, from: TOTALS_DAX_IMPORT, to: `${C.IMPORT_FILTERS}\n${TOTALS_DAX_IMPORT}` }],
+        see: 'Nothing changes yet.',
+      },
+      {
+        do: 'Then replace the marked `salesTotals` with this version, which takes a year:',
+        code: C.TOTALS_FN_YEAR,
+        edits: [{ file: TOTALS_TS, from: C.TOTALS_FN_V1, to: C.TOTALS_FN_YEAR }],
+        see: 'Nothing changes: the page doesn\'t pass a year yet, so the file\'s query goes as it is.',
         why: 'No year: the file\'s query as it is. A year: the file\'s `ROW`, without its `EVALUATE`, inside `CALCULATETABLE` with the filter (`ROW` has no place for a filter of its own). The template\'s instructions allow small changes like this in code, as long as the query itself comes from the `.dax` file.',
       },
       {
-        do: 'In `src/App.tsx`, call it with the year: `totalsQuery(year)`.',
-        edits: [{ from: 'useDax(runDax, totalsQuery)', to: 'useDax(runDax, totalsQuery(year))' }],
-        see: 'The red line and the error go.',
+        do: 'In `src/App.tsx`, pass the year: `salesTotals(year)`.',
+        edits: [{ from: 'useDax(runDax, salesTotals())', to: 'useDax(runDax, salesTotals(year))' }],
+        see: 'Nothing changes yet: the slicer is on **All**.',
       },
       {
-        do: 'Same for the countries query: replace the marked `salesByCountryQuery` line with this function.',
-        code: C.COUNTRY_QUERY_FN,
-        edits: [{ file: DATA, from: C.COUNTRY_QUERY_CONST, to: C.COUNTRY_QUERY_FN }],
-        errors: '1+',
-        see: 'A red line in `src/App.tsx`, and the error, again.',
+        do: 'Same for the countries query. In `src/queries/overview/revenue-by-store-country.ts`, add this import on a new line above the marked one:',
+        code: C.IMPORT_FILTERS_BOTH,
+        edits: [{ file: COUNTRY_TS, from: COUNTRY_DAX_IMPORT, to: `${C.IMPORT_FILTERS_BOTH}\n${COUNTRY_DAX_IMPORT}` }],
+        see: 'Nothing changes yet.',
       },
       {
-        do: 'In `src/App.tsx`: `salesByCountryQuery(year)`.',
-        edits: [{ from: 'useDax(runDax, salesByCountryQuery)', to: 'useDax(runDax, salesByCountryQuery(year))' }],
-        see: 'The red line and the error go.',
+        do: 'Then replace the marked `revenueByStoreCountry` with this version:',
+        code: C.COUNTRY_FN_YEAR,
+        edits: [{ file: COUNTRY_TS, from: C.COUNTRY_FN_V1, to: C.COUNTRY_FN_YEAR }],
+        see: 'Nothing changes yet.',
       },
       {
-        do: 'Mark where the year filter goes in the countries query: in `src/queries/revenue-by-store-country.dax`, type `/* filters */` **and a space** in front of the marked `"Revenue", [Revenue]`.',
+        do: 'In `src/App.tsx`, pass the year: `revenueByStoreCountry(year)`.',
+        edits: [{ from: 'useDax(runDax, revenueByStoreCountry())', to: 'useDax(runDax, revenueByStoreCountry(year))' }],
+        see: 'Nothing changes yet.',
+      },
+      {
+        do: 'Mark where the year filter goes in the countries query: in `src/queries/overview/revenue-by-store-country.dax`, type `/* filters */` **and a space** in front of the marked `"Revenue", [Revenue]`.',
         code: '/* filters */ "Revenue", [Revenue]',
         file: COUNTRY_DAX,
         find: '"Revenue", [Revenue]',
@@ -1196,8 +1200,8 @@ export const lessons = [
         why: 'A distinct count. That is why the cards ask the model for their totals.',
       },
       {
-        do: 'Look at the list at the end of `useDax`, in `src/data.ts`.',
-        file: DATA,
+        do: 'Look at the list at the end of `useDax`, in `src/hooks/use-dax.ts`.',
+        file: HOOK,
         find: '}, [runDax, query]);',
         see: '`[runDax, query]`, marked in pink.',
         why: '`useDax` runs its query again whenever something in this [[dependency list|dependency-list]] changes. A new year means new query text, so it runs again.',
@@ -1224,8 +1228,8 @@ export const lessons = [
     steps: [
       {
         do: 'The slip on purpose, in two parts. First, in `src/App.tsx`, add this import under the marked line:',
-        code: "import { rayfinClient } from './services/rayfinClient';",
-        edits: [{ from: "import { useState } from 'react';\n", to: "import { useState } from 'react';\nimport { rayfinClient } from './services/rayfinClient';\n" }],
+        code: "import { rayfinClient } from './lib/rayfin-client';",
+        edits: [{ from: "import { useState } from 'react';\n", to: "import { useState } from 'react';\nimport { rayfinClient } from './lib/rayfin-client';\n" }],
         see: 'Nothing changes yet.',
       },
       {
@@ -1233,7 +1237,7 @@ export const lessons = [
         code: LOCAL_RUNDAX.trim(),
         edits: [{ from: YEAR_STATE, to: YEAR_STATE + LOCAL_RUNDAX }],
         see: 'No red line. The page looks fine, for a moment.',
-        why: 'Inside `App`, our `runDax` is used instead of the one imported from `src/data.ts`.',
+        why: 'Inside `App`, our `runDax` is used instead of the one imported from `src/hooks/use-dax.ts`.',
       },
       {
         do: 'Watch the count next to **Running**, above the preview.',
@@ -1248,10 +1252,10 @@ export const lessons = [
         why: 'The query text is the same on every draw, but a function made inside `App` is a new one on every draw. So: answer, redraw, new `runDax`, query again, and round it goes.',
       },
       {
-        do: 'Fix it: delete that line, and the import we added (**Do it for me** does both). The `runDax` from `src/data.ts`, made once outside any page, is used again.',
+        do: 'Fix it: delete that line, and the import we added (**Do it for me** does both). The `runDax` from `src/hooks/use-dax.ts`, made once outside any page, is used again.',
         edits: [
           { from: LOCAL_RUNDAX, to: '' },
-          { from: "import { rayfinClient } from './services/rayfinClient';\n", to: '' },
+          { from: "import { rayfinClient } from './lib/rayfin-client';\n", to: '' },
         ],
         done: { file: APP, absent: 'const runDax' },
         point: 'status',
@@ -1283,43 +1287,36 @@ export const lessons = [
     idea: 'We add a category chart in place of About, then let a click on a country filter the cards and the categories.',
     steps: [
       {
-        do: 'In `src/data.ts`, let the filters take a store country too: replace the marked `filters` function with this.',
+        do: 'In `src/lib/filters.ts`, let the filters take a store country too: replace the marked `filters` function with this.',
         code: C.FILTERS_BOTH_FN,
-        edits: [{ file: DATA, from: C.FILTERS_YEAR_FN, to: C.FILTERS_BOTH_FN }],
+        edits: [{ file: FILTERS, from: C.FILTERS_YEAR_FN, to: C.FILTERS_BOTH_FN }],
         see: 'Nothing changes yet.',
       },
       {
-        do: 'Let `totalsQuery` take a country and pass it on: two small changes, `(year?: number, country?: string)` and `filters(year, country)`. **Do it for me** makes both.',
+        do: 'Let the cards\' query take a country and pass it on: in `src/queries/overview/sales-totals.ts`, two small changes, `(year?: number, country?: string)` and `filters(year, country)`. **Do it for me** makes both.',
         edits: [
-          { file: DATA, from: 'export function totalsQuery(year?: number) {', to: 'export function totalsQuery(year?: number, country?: string) {' },
-          { file: DATA, from: '  const f = filters(year);', to: '  const f = filters(year, country);' },
+          { file: TOTALS_TS, from: 'export function salesTotals(year?: number) {', to: 'export function salesTotals(year?: number, country?: string) {' },
+          { file: TOTALS_TS, from: '  const f = filters(year);', to: '  const f = filters(year, country);' },
         ],
         see: 'Nothing changes yet.',
       },
-      newQueryFile(CATEGORY_DAX, 'The category chart gets a query file: '),
-      {
-        do: 'Paste its query, with the `/* filters */` marker already in place:',
-        code: C.CATEGORY_DAX,
-        edits: [{ file: CATEGORY_DAX, from: '', to: C.CATEGORY_DAX }],
+      newFile(CATEGORY_DAX, 'The category chart gets a query file: '),
+      paste(CATEGORY_DAX, C.CATEGORY_DAX, 'Paste its query, with the `/* filters */` marker already in place:', { see: 'Nothing changes yet.' }),
+      newFile(CATEGORY_TS, 'And its small `.ts` file: '),
+      paste(CATEGORY_TS, C.CATEGORY_TS, 'Paste this into it:', {
         see: 'Nothing changes yet.',
-      },
-      importQuery(C.IMPORT_CATEGORY, C.IMPORT_MARGIN),
+        why: 'It takes the year and the country from the start: both go where the `.dax` file has `/* filters */`.',
+      }),
       {
-        do: 'Add a categories query, under the marked end of `salesByCountryQuery`:',
-        code: C.CATEGORY_QUERY_FN.trimStart(),
-        edits: [{ file: DATA, from: C.COUNTRY_QUERY_FN, to: C.COUNTRY_QUERY_FN + C.CATEGORY_QUERY_FN }],
-        see: 'Nothing changes yet.',
-      },
-      {
-        do: 'In `src/App.tsx`, replace the marked import from `./data` with:',
-        code: DATA_IMPORT_4,
-        edits: [{ from: DATA_IMPORT_3, to: DATA_IMPORT_4 }],
+        do: 'Load it into the page: in `src/App.tsx`, add this import on a new line under the marked one.',
+        code: IMP_Q_CATEGORY.trim(),
+        edits: [{ from: IMP_Q_MARGIN, to: IMP_Q_MARGIN + IMP_Q_CATEGORY }],
         see: 'Nothing changes yet.',
       },
       {
         do: 'Run it: add this line under the marked `const marginResult = …` line.',
-        code: 'const categoriesResult = useDax(runDax, salesByCategoryQuery(year));',
-        edits: [{ from: MARGIN_LINE, to: `${MARGIN_LINE}  const categoriesResult = useDax(runDax, salesByCategoryQuery(year));\n` }],
+        code: 'const categoriesResult = useDax(runDax, revenueByCategory(year));',
+        edits: [{ from: MARGIN_LINE, to: `${MARGIN_LINE}  const categoriesResult = useDax(runDax, revenueByCategory(year));\n` }],
         see: 'A new query in the Log.',
       },
       {
@@ -1357,10 +1354,10 @@ export const lessons = [
         visual: 'bar',
       },
       {
-        do: 'Pass the country to the cards\' and the categories\' queries: `totalsQuery(year, country)` and `salesByCategoryQuery(year, country)`. **Do it for me** makes both.',
+        do: 'Pass the country to the cards\' and the categories\' queries: `salesTotals(year, country)` and `revenueByCategory(year, country)`. **Do it for me** makes both.',
         edits: [
-          { from: 'totalsQuery(year)', to: 'totalsQuery(year, country)' },
-          { from: 'salesByCategoryQuery(year)', to: 'salesByCategoryQuery(year, country)' },
+          { from: 'salesTotals(year)', to: 'salesTotals(year, country)' },
+          { from: 'revenueByCategory(year)', to: 'revenueByCategory(year, country)' },
         ],
         see: 'Nothing changes until something is clicked.',
       },
@@ -1409,29 +1406,20 @@ export const lessons = [
         see: 'A red line under `PAGES`. Hover: `years` is missing.',
         why: '`Record<PageId, …>` means one entry for every page id.',
       },
-      newQueryFile(YEARS_DAX, 'The page needs a query, in a file of its own: ', { errors: 1, see: `An empty \`${YEARS_DAX}\`, open in the editor. The red line stays.` }),
-      {
-        do: 'Paste its query:',
-        code: C.YEARS_DAX,
-        edits: [{ file: YEARS_DAX, from: '', to: C.YEARS_DAX }],
+      newFile(YEARS_DAX, 'The page needs a query. A new page gets its own folder in `src/queries`: ', {
         errors: 1,
-        see: 'The red line stays.',
-        why: 'With several pages, the template\'s instructions group query files in a folder per page. We keep one folder, so the paths stay short.',
-      },
-      importQuery(C.IMPORT_YEARS, C.IMPORT_CATEGORY, { errors: 1, see: 'The red line stays.' }),
+        see: 'A new folder, `src/queries/years`, with an empty `revenue-by-year.dax` in it. The red line stays.',
+        why: 'The template groups query files by page: `overview` for the first page, `years` for this one.',
+      }),
+      paste(YEARS_DAX, C.YEARS_DAX, 'Paste its query:', { errors: 1, see: 'The red line stays.' }),
+      newFile(YEARS_TS, 'And its small `.ts` file: ', { errors: 1, see: `An empty \`${YEARS_TS}\`. The red line stays.` }),
+      paste(YEARS_TS, C.YEARS_TS, 'Paste this into it:', { errors: 1, see: 'The red line stays.' }),
       {
-        do: 'In `src/data.ts`, add the query under the marked end of `salesByCategoryQuery`:',
-        code: C.YEARS_QUERY.trimStart(),
-        edits: [{ file: DATA, from: C.CATEGORY_QUERY_FN.trimStart(), to: C.CATEGORY_QUERY_FN.trimStart() + C.YEARS_QUERY }],
-        errors: 1,
-        see: 'The red line stays.',
-      },
-      {
-        do: 'Write the page, above the marked `the report` line in `src/App.tsx`. **Do it for me** also adds `salesByYearQuery` to the import from `./data`.',
+        do: 'Write the page, above the marked `the report` line in `src/App.tsx`. **Do it for me** also adds the import of `revenueByYear`.',
         code: C.YEARS_PAGE.trim(),
         edits: [
           { from: '// ------------------------------------------------------------ the report\n', to: `${C.YEARS_PAGE}// ------------------------------------------------------------ the report\n` },
-          { from: 'salesByCountryQuery, toBars,', to: 'salesByCountryQuery, salesByYearQuery, toBars,' },
+          { from: IMP_Q_CATEGORY, to: IMP_Q_CATEGORY + IMP_Q_YEARS },
         ],
         errors: 1,
         see: 'The red line stays: `PAGES` has no entry for it yet.',
@@ -1719,7 +1707,7 @@ export const lessons = [
     idea: 'The same three places as for `contoso` in **Wire the client**: the schema type, `configs` and the [[runtime]]. We leave the runtime out at first, on purpose, to see what that looks like.',
     steps: [
       {
-        do: 'In `src/services/rayfinClient.ts`, add this import on a new line under the marked `contoso` import:',
+        do: 'In `src/lib/rayfin-client.ts`, add this import on a new line under the marked `contoso` import:',
         code: PARETO_CLIENT_IMPORT.trim(),
         edits: [{ file: CLIENT, from: CONTOSO_CLIENT_IMPORT, to: CONTOSO_CLIENT_IMPORT + PARETO_CLIENT_IMPORT }],
         see: 'Nothing changes, except the new line (it greys out until it\'s used).',
@@ -1741,35 +1729,27 @@ export const lessons = [
         why: 'TypeScript checks `configs` against the schema, but not `runtime`: it takes any names, or none.',
       },
       {
-        do: 'In `src/data.ts`, add `export` in front of the marked `function filters(`, and in front of `function withFilters(` under it. **Do it for me** makes both.',
-        find: 'function filters(year?: number, country?: string): string[] {',
-        edits: [
-          { file: DATA, from: '\nfunction filters(year?: number, country?: string): string[] {', to: '\nexport function filters(year?: number, country?: string): string[] {' },
-          { file: DATA, from: '\nfunction withFilters(dax: string, list: string[]): string {', to: '\nexport function withFilters(dax: string, list: string[]): string {' },
-        ],
-        see: 'Nothing changes.',
-        why: '`export` lets other files use them: `src/pareto.ts`, soon, will import both. The Pareto model is built on the same tables, so the same filter text works there: `\'date\'[Year]` is in both. A filter is only DAX text: it works in any model that has that column.',
-      },
-      newQueryFile(PARETO_HEADLINE_DAX, 'The second model\'s first query gets a file, like the others: '),
-      {
-        do: 'Paste the query. It names two measures from the Pareto model:',
-        code: C.PARETO_HEADLINE_DAX,
-        edits: [{ file: PARETO_HEADLINE_DAX, from: '', to: C.PARETO_HEADLINE_DAX }],
-        see: 'Nothing changes yet.',
-      },
-      {
-        do: 'Click **+ New file**, at the top of the file list, and type `pareto.ts` after the `src/` already there.',
-        edits: [{ file: PARETO_TS, from: '', to: '' }],
-        point: 'files',
-        see: 'A new, empty `src/pareto.ts`, open in the editor.',
-      },
-      {
-        do: 'Paste this into `src/pareto.ts`: its [[runner]], and the headline query from its file.',
-        code: C.PARETO_V1,
-        edits: [{ file: PARETO_TS, from: '', to: C.PARETO_V1 }],
-        find: 'rayfinClient.connectors.pareto.executeQuery',
-        see: 'No red lines. `withFilters` in the imports is greyed out: nothing uses it until **Two models, one page**.',
+        do: 'Give the second model a [[runner]]: in `src/hooks/use-dax.ts`, add these lines under the marked `runDax`.',
+        code: C.RUN_PARETO.trim(),
+        file: HOOK,
+        edits: [{ file: HOOK, from: C.RUN_DAX_LINE, to: C.RUN_DAX_LINE + C.RUN_PARETO }],
+        see: 'No red lines.',
         why: '`runPareto` is a runner: the function a page passes to `useDax`, which picks the connector, and so the model. It has the same type as `runDax`, and is made once, outside any page, for the reason in **The redraw trap**. Only the connector differs.',
+      },
+      newFile(PARETO_HEADLINE_DAX, 'The second model\'s first query gets a file, in a folder for its page: ', {
+        see: 'A new folder, `src/queries/categories`, with an empty `pareto-headline.dax` in it.',
+      }),
+      paste(PARETO_HEADLINE_DAX, C.PARETO_HEADLINE_DAX, 'Paste the query. It names two measures from the Pareto model:', { see: 'Nothing changes yet.' }),
+      newFile(PARETO_HEADLINE_TS, 'And its small `.ts` file: '),
+      paste(PARETO_HEADLINE_TS, C.PARETO_HEADLINE_TS, 'Paste this into it:', {
+        see: 'No red lines.',
+        why: 'With a year, its `ROW` goes inside `CALCULATETABLE`, as for the cards. The Pareto model is built on the same tables, so the same filter text works there: `\'date\'[Year]` is in both. A filter is only DAX text: it works in any model that has that column.',
+      }),
+      {
+        do: 'At the end of `src/lib/conversions.ts`, add the headline\'s conversion:',
+        code: C.HEADLINE_CONV.trimStart(),
+        edits: [{ file: CONV, from: PERCENT_END, to: PERCENT_END + C.HEADLINE_CONV }],
+        see: 'No red lines.',
       },
       {
         do: 'Add the page as **Categories**: **Do it for me** writes `src/ParetoPage.tsx` (a year slicer and the headline) and adds the page to the report (page id, import and `PAGES` entry); this is the line it adds to `PAGES`:',
@@ -1818,10 +1798,10 @@ export const lessons = [
         see: '**It takes 4 of 8 categories to reach 80% of revenue**.',
       },
       {
-        do: 'A slip on purpose: in `src/pareto.ts`, change the marked `connectors.pareto` to `connectors.Pareto`.',
-        file: PARETO_TS,
+        do: 'A slip on purpose: in `src/hooks/use-dax.ts`, change the marked `connectors.pareto` to `connectors.Pareto`.',
+        file: HOOK,
         find: 'connectors.pareto',
-        edits: [{ file: PARETO_TS, from: 'rayfinClient.connectors.pareto.executeQuery', to: 'rayfinClient.connectors.Pareto.executeQuery' }],
+        edits: [{ file: HOOK, from: 'rayfinClient.connectors.pareto.executeQuery', to: 'rayfinClient.connectors.Pareto.executeQuery' }],
         errors: 1,
         see: 'A red line: `Property \'Pareto\' does not exist on type …`, ending `Did you mean \'pareto\'?`',
       },
@@ -1834,7 +1814,7 @@ export const lessons = [
       },
       {
         do: UNDO,
-        edits: [{ file: PARETO_TS, from: 'rayfinClient.connectors.Pareto.executeQuery', to: 'rayfinClient.connectors.pareto.executeQuery' }],
+        edits: [{ file: HOOK, from: 'rayfinClient.connectors.Pareto.executeQuery', to: 'rayfinClient.connectors.pareto.executeQuery' }],
         see: 'The red line goes.',
       },
     ],
@@ -1858,16 +1838,25 @@ export const lessons = [
     idea: 'We grow **Categories** into a Pareto page: bars with the running share, the vital few starred, and two Revenue cards, one per model. Then we check the two Revenue measures properly.',
     steps: [
       {
-        do: '**Do it for me** writes the query file for the bars, `src/queries/pareto-by-category.dax`:',
+        do: '**Do it for me** writes the query file for the bars, `src/queries/categories/pareto-by-category.dax`:',
         code: C.PARETO_BY_CATEGORY_DAX,
         copy: false,
         edits: [{ file: PARETO_BY_CATEGORY_DAX, from: '', to: C.PARETO_BY_CATEGORY_DAX }],
         point: 'files',
-        see: 'A new file in `src/queries`, open in the editor.',
+        see: 'A new file in `src/queries/categories`, open in the editor.',
         why: 'It names the model\'s own measures (`[Revenue Share %]`, `[Revenue Cumulative %]`): the running share stays in the model, as **Measure or query** advised. The year goes where `/* filters */` is.',
       },
       {
-        do: '**Do it for me** writes the query file for the two Revenue cards too, `src/queries/revenue-card.dax`:',
+        do: '**Do it for me** writes its `.ts` file, `src/queries/categories/pareto-by-category.ts`:',
+        code: C.PARETO_BY_CATEGORY_TS,
+        copy: false,
+        edits: [{ file: PARETO_BY_CATEGORY_TS, from: '', to: C.PARETO_BY_CATEGORY_TS }],
+        point: 'files',
+        see: 'No red lines.',
+        why: 'The year goes into the file\'s marker, as for the countries chart.',
+      },
+      {
+        do: '**Do it for me** writes the query file for the two Revenue cards, `src/queries/categories/revenue-card.dax`:',
         code: C.REVENUE_CARD_DAX,
         copy: false,
         edits: [{ file: REVENUE_CARD_DAX, from: '', to: C.REVENUE_CARD_DAX }],
@@ -1875,17 +1864,19 @@ export const lessons = [
         see: 'One measure, by name. The page sends this same text to both models.',
       },
       {
-        do: 'Load both files into `src/pareto.ts`: add these two imports on new lines under the marked one.',
-        code: C.IMPORT_PARETO_MORE,
-        edits: [{ file: PARETO_TS, from: `${C.IMPORT_PARETO_HEADLINE}\n`, to: `${C.IMPORT_PARETO_HEADLINE}\n${C.IMPORT_PARETO_MORE}\n` }],
-        see: 'Nothing changes yet.',
+        do: '**Do it for me** writes its `.ts` file too, `src/queries/categories/revenue-card.ts`:',
+        code: C.REVENUE_CARD_TS,
+        copy: false,
+        edits: [{ file: REVENUE_CARD_TS, from: '', to: C.REVENUE_CARD_TS }],
+        point: 'files',
+        see: 'No red lines.',
+        why: 'With a year, its `ROW` goes inside `CALCULATETABLE`, as for the cards.',
       },
       {
-        do: 'At the end of `src/pareto.ts`, add the other queries and conversions:',
-        code: C.PARETO_MORE.trimStart(),
-        edits: [{ file: PARETO_TS, from: C.PARETO_V1.slice(C.PARETO_V1.indexOf('\n// Runs a DAX query')), to: C.PARETO_V1.slice(C.PARETO_V1.indexOf('\n// Runs a DAX query')) + C.PARETO_MORE }],
+        do: 'At the end of `src/lib/conversions.ts`, add the page\'s two conversions:',
+        code: C.PARETO_CONV.trimStart(),
+        edits: [{ file: CONV, from: HEADLINE_END, to: HEADLINE_END + C.PARETO_CONV }],
         see: 'No red lines.',
-        why: '`paretoQuery` puts the year into its file\'s marker, as `salesByCountryQuery` does; `revenueQuery` wraps its file\'s `ROW`, as `totalsQuery` does.',
       },
       {
         do: '**Do it for me** replaces `src/ParetoPage.tsx` with the full page.',
@@ -1902,7 +1893,7 @@ export const lessons = [
       {
         do: 'Look at the four `useDax` lines, from the marked one down.',
         file: PARETO_PAGE,
-        find: 'const paretoResult = useDax(runPareto, paretoQuery(year));',
+        find: 'const paretoResult = useDax(runPareto, paretoByCategory(year));',
         see: 'Three use `runPareto`, one uses `runDax`. All four take the same `year`.',
         why: '`useDax` doesn\'t care which model answers: the runner decides. One slicer state feeds both models, like a slicer on two visuals.',
       },
@@ -1915,8 +1906,8 @@ export const lessons = [
       {
         do: 'A slip on purpose: in the marked line, change `runPareto` to `runDax`.',
         file: PARETO_PAGE,
-        find: 'useDax(runPareto, paretoQuery(year))',
-        edits: [{ file: PARETO_PAGE, from: 'useDax(runPareto, paretoQuery(year))', to: 'useDax(runDax, paretoQuery(year))' }],
+        find: 'useDax(runPareto, paretoByCategory(year))',
+        edits: [{ file: PARETO_PAGE, from: 'useDax(runPareto, paretoByCategory(year))', to: 'useDax(runDax, paretoByCategory(year))' }],
         queryFails: true,
         see: 'No red line. The page starts again on **Overview**.',
       },
@@ -1928,7 +1919,7 @@ export const lessons = [
       },
       {
         do: UNDO,
-        edits: [{ file: PARETO_PAGE, from: 'useDax(runDax, paretoQuery(year))', to: 'useDax(runPareto, paretoQuery(year))' }],
+        edits: [{ file: PARETO_PAGE, from: 'useDax(runDax, paretoByCategory(year))', to: 'useDax(runPareto, paretoByCategory(year))' }],
         see: 'The page starts again on **Overview**.',
       },
       {
@@ -2129,7 +2120,7 @@ export const lessons = [
     idea: 'We register `lake` in the client, write a small hook that waits for a promise, and add an **Order lines** page.',
     steps: [
       {
-        do: 'In `src/services/rayfinClient.ts`, add this import on a new line under the marked `pareto` import:',
+        do: 'In `src/lib/rayfin-client.ts`, add this import on a new line under the marked `pareto` import:',
         code: LAKE_CLIENT_IMPORT.trim(),
         edits: [{ file: CLIENT, from: PARETO_CLIENT_IMPORT, to: PARETO_CLIENT_IMPORT + LAKE_CLIENT_IMPORT }],
         see: 'Nothing changes.',
@@ -2151,10 +2142,10 @@ export const lessons = [
         why: 'No `runtime` entry this time: `runtime` is for function-style connectors such as the semantic model, whose `fabricSemanticModel()` decodes the answer. An entity connector, such as a lakehouse, needs its configuration only.',
       },
       {
-        do: 'Click **+ New file**, at the top of the file list, and type `lake.ts` after the `src/` already there.',
+        do: 'Click **+ New file**, at the top of the file list, and type `lib/lake.ts` after the `src/` already there.',
         edits: [{ file: LAKE_TS, from: '', to: '' }],
         point: 'files',
-        see: 'A new, empty `src/lake.ts`, open in the editor.',
+        see: 'A new, empty `src/lib/lake.ts`, open in the editor.',
       },
       {
         do: 'Paste a hook that waits for any promise into it:',
@@ -2171,7 +2162,7 @@ export const lessons = [
         why: '`Loaded<T>` is the three states from **Failure** for any kind of value. `live` ignores an answer that arrives after the page has moved on (React runs the returned function when `key` changes or the page closes).',
       },
       {
-        do: 'At the end of `src/lake.ts`, add the two queries:',
+        do: 'At the end of `src/lib/lake.ts`, add the two queries:',
         code: C.LAKE_QUERIES.trimStart(),
         edits: [{ file: LAKE_TS, from: C.LAKE_HOOK, to: C.LAKE_HOOK + C.LAKE_QUERIES }],
         see: 'No red lines.',
@@ -2207,7 +2198,7 @@ export const lessons = [
         see: 'The red line goes.',
       },
       {
-        do: 'Another slip on purpose: in `src/lake.ts`, delete the marked `.select([\'storeKey\'])` line in `storeKeysIn`.',
+        do: 'Another slip on purpose: in `src/lib/lake.ts`, delete the marked `.select([\'storeKey\'])` line in `storeKeysIn`.',
         file: LAKE_TS,
         edits: [{ file: LAKE_TS, from: "    .select(['storeKey'])\n", to: '' }],
         see: 'No red line. The page starts again on **Overview**: open **Order lines**, and it shows its error panel: **A read requires an explicit .select([...]).**',
@@ -2246,7 +2237,7 @@ export const lessons = [
     idea: 'We try to get France\'s 2023 revenue from the lakehouse rows, and compare it with the model\'s `[Revenue]`. A slip on purpose, the kind an agent makes.',
     steps: [
       {
-        do: 'A slip on purpose: at the end of `src/lake.ts`, add a revenue total over the lines:',
+        do: 'A slip on purpose: at the end of `src/lib/lake.ts`, add a revenue total over the lines:',
         code: C.REVENUE_ONE_PAGE.trimStart(),
         edits: [{ file: LAKE_TS, from: LATEST_LINES_END, to: LATEST_LINES_END + C.REVENUE_ONE_PAGE }],
         see: 'No red lines.',
@@ -2255,8 +2246,8 @@ export const lessons = [
         do: 'Show it on the page: **Do it for me** adds a **Revenue (from lines)** card to `src/LinesPage.tsx` (two imports, the hook line, the card).',
         code: C.REVENUE_CARD.trim(),
         edits: [
-          { file: LINES, from: "import { ErrorPanel } from './components';", to: "import { ErrorPanel, KpiCard } from './components';" },
-          { file: LINES, from: "import { latestLines, storeKeysIn, useLoad } from './lake';", to: "import { latestLines, revenueFromLines, storeKeysIn, useLoad } from './lake';" },
+          { file: LINES, from: IMP_ERR, to: IMP_ERR + COMP_IMPORT },
+          { file: LINES, from: "import { latestLines, storeKeysIn, useLoad } from './lib/lake';", to: "import { latestLines, revenueFromLines, storeKeysIn, useLoad } from './lib/lake';" },
           { file: LINES, from: LINES_HOOK, to: LINES_HOOK + C.REVENUE_HOOK },
           { file: LINES, from: LINES_END, to: `      </section>\n${C.REVENUE_CARD}    </div>\n  );\n}\n` },
         ],
@@ -2285,8 +2276,8 @@ export const lessons = [
       {
         do: 'Keep totals in the model: **Do it for me** takes the card and `revenueFromLines` out again.',
         edits: [
-          { file: LINES, from: "import { ErrorPanel, KpiCard } from './components';", to: "import { ErrorPanel } from './components';" },
-          { file: LINES, from: "import { latestLines, revenueFromLines, storeKeysIn, useLoad } from './lake';", to: "import { latestLines, storeKeysIn, useLoad } from './lake';" },
+          { file: LINES, from: IMP_ERR + COMP_IMPORT, to: IMP_ERR },
+          { file: LINES, from: "import { latestLines, revenueFromLines, storeKeysIn, useLoad } from './lib/lake';", to: "import { latestLines, storeKeysIn, useLoad } from './lib/lake';" },
           { file: LINES, from: LINES_HOOK + C.REVENUE_HOOK, to: LINES_HOOK },
           { file: LINES, from: `      </section>\n${C.REVENUE_CARD}    </div>\n  );\n}\n`, to: LINES_END },
           { file: LAKE_TS, from: C.REVENUE_PAGED, to: '' },
@@ -2336,7 +2327,7 @@ export const lessons = [
         why: 'The playground prints this line; a real app doesn\'t. `connector add` and `inspect` ran as you, the developer: discovery and the running app use different identities.',
       },
       {
-        do: 'A slip on purpose: at the end of `src/lake.ts`, add a write:',
+        do: 'A slip on purpose: at the end of `src/lib/lake.ts`, add a write:',
         code: C.ADD_LINE.trimStart(),
         edits: [{ file: LAKE_TS, from: LATEST_LINES_END, to: LATEST_LINES_END + C.ADD_LINE }],
         errors: 1,
@@ -2353,7 +2344,7 @@ export const lessons = [
         run: LAKE_READD,
         errors: 6,
         point: 'terminal',
-        see: '`type: delegated` for `lake` in `rayfin.yml`, and red lines in `src/services/rayfinClient.ts`, `src/lake.ts` and `src/LinesPage.tsx`: `schema.ts` is a placeholder again.',
+        see: '`type: delegated` for `lake` in `rayfin.yml`, and red lines in `src/lib/rayfin-client.ts`, `src/lib/lake.ts` and `src/LinesPage.tsx`: `schema.ts` is a placeholder again.',
         why: 'Re-adding keeps the entity files, but `--yes` replaces a hand-written `schema.ts` with a fresh placeholder. Without `--auth`, re-adding would also have set `auth` back to `application`.',
       },
       {
@@ -2599,7 +2590,7 @@ export const lessons = [
     idea: 'We register the data service in the client, read the targets with the query chain from **Rows on a page**, and add a **Targets** page that can add and change them.',
     steps: [
       {
-        do: 'In `src/services/rayfinClient.ts`, add these imports on new lines under the marked `lake` import:',
+        do: 'In `src/lib/rayfin-client.ts`, add these imports on new lines under the marked `lake` import:',
         code: C.CLIENT_DATA_IMPORTS.trim(),
         edits: [{ file: CLIENT, from: LAKE_CLIENT_IMPORT, to: LAKE_CLIENT_IMPORT + C.CLIENT_DATA_IMPORTS }],
         see: 'Nothing changes.',
@@ -2612,10 +2603,10 @@ export const lessons = [
         why: 'The client has only the services we register: until now, connectors. `<AppSchema>` gives it our entities\' types.',
       },
       {
-        do: 'Click **+ New file**, at the top of the file list, and type `targets.ts` after the `src/` already there.',
+        do: 'Click **+ New file**, at the top of the file list, and type `lib/targets.ts` after the `src/` already there.',
         edits: [{ file: TARGETS_TS, from: '', to: '' }],
         point: 'files',
-        see: 'A new, empty `src/targets.ts`, open in the editor.',
+        see: 'A new, empty `src/lib/targets.ts`, open in the editor.',
       },
       {
         do: 'Paste a read into it:',
@@ -2636,7 +2627,7 @@ export const lessons = [
         see: 'Click **Targets** in the page list: "No targets for 2026 yet." The Log shows the read, and who it ran as.',
       },
       {
-        do: 'At the end of `src/targets.ts`, add the writes:',
+        do: 'At the end of `src/lib/targets.ts`, add the writes:',
         code: C.TARGETS_WRITES.trimStart(),
         edits: [{ file: TARGETS_TS, from: C.TARGETS_LOAD, to: C.TARGETS_LOAD + C.TARGETS_WRITES }],
         see: 'No red lines.',
@@ -2662,7 +2653,7 @@ export const lessons = [
         see: 'The row appears: Germany, 3,000,000. The **Data** tab shows one row, and the **Log** the create.',
       },
       {
-        do: 'A slip on purpose: in `src/targets.ts`, delete `\'amount\', ` from the marked `select` list.',
+        do: 'A slip on purpose: in `src/lib/targets.ts`, delete `\'amount\', ` from the marked `select` list.',
         file: TARGETS_TS,
         find: "    .select(['id', 'country', 'year', 'amount'])",
         edits: [{ file: TARGETS_TS, from: "    .select(['id', 'country', 'year', 'amount'])", to: "    .select(['id', 'country', 'year'])" }],
@@ -2732,7 +2723,7 @@ export const lessons = [
         file: TARGET,
         edits: [{ file: TARGET, from: AMOUNT_FIELD, to: AMOUNT_RENAMED }],
         errors: '1+',
-        see: 'Red lines in `src/targets.ts` and `src/TargetsPage.tsx` wherever `amount` is used, and a few that follow from them.',
+        see: 'Red lines in `src/lib/targets.ts` and `src/TargetsPage.tsx` wherever `amount` is used, and a few that follow from them.',
         why: 'TypeScript finds every place the old name is used. The database is another matter.',
       },
       {
@@ -2777,10 +2768,10 @@ export const lessons = [
         why: 'Simulated. On Fabric, people sign in with Microsoft Entra ID through Fabric, and nobody can switch to someone else.',
       },
       {
-        do: 'Click **+ New file**, at the top of the file list, and type `session.ts` after the `src/` already there.',
+        do: 'Click **+ New file**, at the top of the file list, and type `lib/session.ts` after the `src/` already there.',
         edits: [{ file: SESSION_TS, from: '', to: '' }],
         point: 'files',
-        see: 'A new, empty `src/session.ts`, open in the editor.',
+        see: 'A new, empty `src/lib/session.ts`, open in the editor.',
       },
       {
         do: 'Paste this into it:',
@@ -2792,7 +2783,7 @@ export const lessons = [
       {
         do: 'Show it: **Do it for me** adds `Signed in as {signedInEmail()}` above the page list in `App.tsx`, with its import.',
         edits: [
-          { from: SESSION_ANCHOR_IMPORT, to: SESSION_ANCHOR_IMPORT + "import { signedInEmail } from './session';\n" },
+          { from: SESSION_ANCHOR_IMPORT, to: SESSION_ANCHOR_IMPORT + "import { signedInEmail } from './lib/session';\n" },
           { from: NAV_OPEN, to: NAV_OPEN + C.SIGNED_IN_ONCE },
         ],
         see: '"Signed in as alice@contoso.example".',
@@ -2804,7 +2795,7 @@ export const lessons = [
         why: 'The page read the session once, when it drew, and didn\'t hear about the change. We need [[state]] that listens, as **State as a slicer** taught.',
       },
       {
-        do: 'At the end of `src/session.ts`, add a hook:',
+        do: 'At the end of `src/lib/session.ts`, add a hook:',
         code: C.USE_SESSION.trimStart(),
         edits: [{ file: SESSION_TS, from: C.SESSION_READ, to: C.SESSION_READ + C.USE_SESSION }],
         see: 'No red lines.',
@@ -2813,7 +2804,7 @@ export const lessons = [
       {
         do: 'Use it: **Do it for me** makes the page list use `useSession()`, and takes out `signedInEmail`, which nothing uses any more.',
         edits: [
-          { from: "import { signedInEmail } from './session';\n", to: "import { useSession } from './session';\n" },
+          { from: "import { signedInEmail } from './lib/session';\n", to: "import { useSession } from './lib/session';\n" },
           { from: APP_PAGE_STATE, to: `${APP_PAGE_STATE}  const session = useSession();\n${C.SIGNED_IN_STATE}` },
           { from: C.SIGNED_IN_ONCE, to: C.SIGNED_IN_LIVE },
           { file: SESSION_TS, from: SESSION_ONCE_FN, to: '' },
@@ -2863,7 +2854,7 @@ export const lessons = [
         file: TARGET,
         edits: [{ file: TARGET, from: UPDATED_FIELD, to: UPDATED_FIELD + C.OWNER_FIELD }],
         errors: 1,
-        see: 'A red line in `src/targets.ts`: `create` is missing `owner_id`.',
+        see: 'A red line in `src/lib/targets.ts`: `create` is missing `owner_id`.',
         why: 'The field is required, and TypeScript checks every create.',
       },
       {
@@ -3126,7 +3117,7 @@ export const lessons = [
         do: 'Make **Targets** load again when someone else signs in: **Do it for me** adds `useSession()` to the page and puts the user\'s id in the load key.',
         file: TARGETS_PAGE,
         edits: [
-          { file: TARGETS_PAGE, from: "import { addTarget, changeTarget, loadTargets } from './targets';\n", to: "import { useSession } from './session';\nimport { addTarget, changeTarget, loadTargets } from './targets';\n" },
+          { file: TARGETS_PAGE, from: "import { addTarget, changeTarget, loadTargets } from './lib/targets';\n", to: "import { useSession } from './lib/session';\nimport { addTarget, changeTarget, loadTargets } from './lib/targets';\n" },
           { file: TARGETS_PAGE, from: TARGETS_STATE_END, to: `${TARGETS_STATE_END}  const session = useSession();\n` },
           { file: TARGETS_PAGE, from: C.TARGETS_KEY, to: C.TARGETS_KEY_SESSION },
         ],
@@ -3181,7 +3172,7 @@ export const lessons = [
         see: 'The director\'s rule is back. Bob sees both rows at the page\'s next read: switch to Alice and back to Bob.',
       },
       {
-        do: 'Hide **Add** from people who can\'t use it. At the end of `src/session.ts`, add:',
+        do: 'Hide **Add** from people who can\'t use it. At the end of `src/lib/session.ts`, add:',
         code: C.IS_DIRECTOR.trimStart(),
         edits: [{ file: SESSION_TS, from: C.USE_SESSION, to: C.USE_SESSION + C.IS_DIRECTOR }],
         see: 'No red lines.',
@@ -3192,7 +3183,7 @@ export const lessons = [
         file: TARGETS_PAGE,
         edits: [
           { file: TARGETS_PAGE, from: "import { Fragment, useState } from 'react';\n", to: "import { Fragment, useEffect, useState } from 'react';\n" },
-          { file: TARGETS_PAGE, from: "import { useSession } from './session';\n", to: "import { isDirector, useSession } from './session';\n" },
+          { file: TARGETS_PAGE, from: "import { useSession } from './lib/session';\n", to: "import { isDirector, useSession } from './lib/session';\n" },
           { file: TARGETS_PAGE, from: '  const session = useSession();\n', to: `  const session = useSession();\n${C.DIRECTOR_STATE}` },
           { file: TARGETS_PAGE, from: C.TARGETS_ADD_BUTTON, to: C.TARGETS_ADD_BUTTON_DIRECTOR },
         ],

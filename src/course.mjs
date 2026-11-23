@@ -213,7 +213,7 @@ export const modules = [
         answer: 1,
         why: 'To TypeScript, the DAX is just text. Only the model knows its measures, and our page showed 0% until it checked `status`.',
         lesson: 'measure-or-query',
-        step: 14,
+        step: 16,
       },
       {
         q: 'The network is down, and the page checks `status`. What does the page show?',
@@ -221,7 +221,7 @@ export const modules = [
         answer: 1,
         why: 'The call throws; `.catch` in `useDax` turns that into an error result, and the status check shows its message on the page.',
         lesson: 'failure',
-        step: 10,
+        step: 11,
       },
     ],
   },
@@ -237,7 +237,7 @@ export const modules = [
         answer: 2,
         why: 'Apart from the first draw, only a change in its list `[runDax, query]` runs it again. A redraw alone doesn\'t, unless it makes a new `runDax`.',
         lesson: 'slicer',
-        step: 14,
+        step: 18,
       },
       {
         q: '`runDax` is made inside the page component. What happens?',
@@ -318,7 +318,7 @@ export const modules = [
         answer: 2,
         why: 'Without its runtime, `executeQuery` returns the raw payload, with no `status: \'success\'` or `\'error\'` to read, and TypeScript doesn\'t check `runtime`.',
         lesson: 'second-client',
-        step: 10,
+        step: 11,
       },
       {
         q: 'The Pareto query is sent with `runDax` instead of `runPareto`. What reports it?',
@@ -326,7 +326,7 @@ export const modules = [
         answer: 0,
         why: 'Both runners have the same type and the DAX is text, so only the model can see that it lacks those measures.',
         lesson: 'two-models-page',
-        step: 10,
+        step: 11,
       },
       {
         q: 'Two models both have `[Revenue]`, and the numbers match today. When is it the same measure?',
@@ -334,7 +334,7 @@ export const modules = [
         answer: 1,
         why: 'Same name isn\'t proof of same meaning, and matching numbers can be luck. Check the definitions where the models are built.',
         lesson: 'two-models-page',
-        step: 16,
+        step: 17,
       },
     ],
   },

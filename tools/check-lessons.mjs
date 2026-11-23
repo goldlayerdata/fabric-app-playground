@@ -281,7 +281,7 @@ function queriesOf(project) {
       ownConnector[path] ??= m[2].toLowerCase();
     }
   }
-  // Which runners send each query function: `useDax(runPareto, paretoQuery(year))`, `runDax(totalsQuery(…))`.
+  // Which runners send each query function: `useDax(runPareto, paretoByCategory(year))`, `runDax(salesTotals(…))`.
   const sentBy = new Map();
   for (const [, text] of code) {
     for (const m of text.matchAll(/\b(\w+)\(\s*(\w+)\s*,\s*(\w+)\(/g)) if (m[1] === 'useDax' && runners.has(m[2])) sentBy.set(m[3], new Set([...(sentBy.get(m[3]) ?? []), runners.get(m[2])]));
@@ -290,31 +290,18 @@ function queriesOf(project) {
   for (const [path, text] of code) {
     for (const m of text.matchAll(QUERY_STRING)) if (!m[1].includes('${')) found.push({ connector: ownConnector[path] ?? 'contoso', query: m[1], from: path });
   }
-  // Query files (.dax), sent as they are by the file that imports them. One with a `/* filters */` marker
-  // is only ever sent through its query function, with the marker replaced (found below).
-  for (const [path, text] of code) {
-    for (const m of text.matchAll(/^import \w+ from '(\.[^']+\.dax)\?raw';$/gm)) {
-      const parts = path.split('/').slice(0, -1);
-      for (const part of m[1].split('/')) {
-        if (part === '..') parts.pop();
-        else if (part !== '.') parts.push(part);
-      }
-      const dax = parts.join('/');
-      const query = project.files[dax];
-      if (query?.trim() && !query.includes('/* filters */')) found.push({ connector: ownConnector[path] ?? 'contoso', query, from: dax });
-    }
-  }
-  // Query functions (exported, named …Query): run the file and call them with every choice. One that
-  // no page sends yet goes to its own file's runner.
-  const load = loader(project, { react: { useState() {}, useEffect() {} }, './services/rayfinClient': { rayfinClient: {} } });
-  for (const [path, text] of code) {
-    if (!/export function \w+Query\(/.test(text)) continue;
+  // The query files (src/queries/<page>/<name>.ts): each exports a function that hands out its .dax text, with
+  // the filters put in. Run each one a page sends, with every choice its parameters allow, for each runner
+  // that sends it. One no page sends yet sends nothing.
+  const load = loader(project, { react: { useState() {}, useEffect() {} } });
+  for (const [path] of code) {
+    if (!/^src\/queries\/.+\.ts$/.test(path)) continue;
     for (const [name, fn] of Object.entries(load(path))) {
-      if (typeof fn !== 'function' || !/Query$/.test(name)) continue;
+      if (typeof fn !== 'function') continue;
       const years = [undefined, ...catalog.years];
       const countries = [undefined, ...catalog.countries];
       const calls = fn.length === 0 ? [[]] : fn.length === 1 ? years.map((y) => [y]) : years.flatMap((y) => countries.map((c) => [y, c]));
-      for (const connector of sentBy.get(name) ?? [ownConnector[path] ?? 'contoso']) {
+      for (const connector of sentBy.get(name) ?? []) {
         for (const args of calls) found.push({ connector, query: fn(...args), from: `${connector}: ${name}(${args.map(String).join(', ')})` });
       }
     }
@@ -440,7 +427,7 @@ console.log('\ncontrols');
 // Wire the client: a mistyped connector name in configs must get a red line.
 {
   const p = after.client;
-  const file = 'src/services/rayfinClient.ts';
+  const file = 'src/lib/rayfin-client.ts';
   const bad = p.files[file].replace('configs: { contoso: contosoConfig }', 'configs: { contosso: contosoConfig }');
   const d = typeCheck({ ...p, files: { ...p.files, [file]: bad } });
   console.log(`   ${numOf(byId.get('client'))} mistyped connector name: ${d[0] ?? 'no error'}`.slice(0, 140));
@@ -470,7 +457,7 @@ console.log('\ncontrols');
 
 // The client, run as the preview runs it: `connectorsService` follows Rayfin 2.0's rules (src/connectors-sim.mjs),
 // and a semantic model connector answers from its own model's saved results, or with the raw payload
-// when it has no runtime under its exact name. Returns the project's src/pareto.ts and src/data.ts.
+// when it has no runtime under its exact name. Returns the project's runners, conversions and Categories query files.
 const RUNTIME = Symbol('fabricSemanticModel');
 function runApp(project) {
   const asked = [];
@@ -489,7 +476,17 @@ function runApp(project) {
     '@microsoft/rayfin-connectors': { connectorsService: (options) => () => createConnectorsApi(options.configs, options.runtime, make) },
     '@microsoft/rayfin-connector-fabric-semanticmodel': { fabricSemanticModel: () => ({ [RUNTIME]: true }) },
   });
-  return { pareto: load('src/pareto.ts'), data: load('src/data.ts'), asked };
+  const q = (name) => load(`src/queries/categories/${name}.ts`);
+  const files = { hooks: load('src/hooks/use-dax.ts'), conv: load('src/lib/conversions.ts') };
+  const present = (name) => project.files[`src/queries/categories/${name}.ts`] !== undefined;
+  return {
+    ...files.hooks,
+    ...files.conv,
+    ...(present('pareto-headline') ? q('pareto-headline') : {}),
+    ...(present('pareto-by-category') ? q('pareto-by-category') : {}),
+    ...(present('revenue-card') ? q('revenue-card') : {}),
+    asked,
+  };
 }
 {
   const lesson = byId.get('second-client');
@@ -501,8 +498,8 @@ function runApp(project) {
   };
   const headline = async (project) => {
     const app = runApp(project);
-    const r = await app.pareto.runPareto(app.pareto.headlineQuery());
-    return { r, text: app.pareto.toHeadline(r).text, asked: app.asked };
+    const r = await app.runPareto(app.paretoHeadline());
+    return { r, text: app.toHeadline(r).text, asked: app.asked };
   };
   const SENTENCE = snapshots['pareto-headline'].table.rows[0][1];
   const check = (ok, label) => {
@@ -512,7 +509,7 @@ function runApp(project) {
   // No runtime for pareto: 0 type errors, no status, an empty headline.
   const noRuntime = upTo((s) => s.edits?.some((e) => e.file === 'src/ParetoPage.tsx'));
   const a = await headline(noRuntime);
-  check(!/pareto: fabricSemanticModel|Pareto: fabricSemanticModel/.test(noRuntime.files['src/services/rayfinClient.ts']) && typeCheck(noRuntime).length === 0 && a.r instanceof ArrayBuffer && a.r.status === undefined && a.text === '',
+  check(!/pareto: fabricSemanticModel|Pareto: fabricSemanticModel/.test(noRuntime.files['src/lib/rayfin-client.ts']) && typeCheck(noRuntime).length === 0 && a.r instanceof ArrayBuffer && a.r.status === undefined && a.text === '',
     'no runtime entry: no red line, the raw payload (no status), an empty headline');
   // A runtime under `Pareto`: still found by nobody.
   const caseRuntime = upTo((s) => s.edits?.some((e) => e.to.includes('Pareto: fabricSemanticModel()')));
@@ -539,14 +536,14 @@ function runApp(project) {
 {
   const lesson = byId.get('two-models-page');
   const app = runApp(after['two-models-page']);
-  const fromContoso = await app.data.runDax(app.pareto.revenueQuery(2024));
-  const fromPareto = await app.pareto.runPareto(app.pareto.revenueQuery(2024));
-  const slip = await app.data.runDax(app.pareto.paretoQuery(2024));
+  const fromContoso = await app.runDax(app.revenueCard(2024));
+  const fromPareto = await app.runPareto(app.revenueCard(2024));
+  const slip = await app.runDax(app.paretoByCategory(2024));
   const [x, y, z] = app.asked;
   const ok =
     x.connector === 'contoso' && x.id === 'contoso-revenue-2024' && y.connector === 'pareto' && y.id === 'pareto-revenue-2024' &&
-    app.pareto.toRevenue(fromContoso) === app.pareto.toRevenue(fromPareto) && z.id === 'contoso-pareto-by-category-2024' && slip.status === 'error';
-  console.log(`   ${ok ? 'ok  ' : 'FAIL'} ${numOf(lesson)} per connector: ${x.id} and ${y.id} (${app.pareto.toRevenue(fromPareto)}); the Pareto query through runDax: ${z.id}`);
+    app.toRevenue(fromContoso) === app.toRevenue(fromPareto) && z.id === 'contoso-pareto-by-category-2024' && slip.status === 'error';
+  console.log(`   ${ok ? 'ok  ' : 'FAIL'} ${numOf(lesson)} per connector: ${x.id} and ${y.id} (${app.toRevenue(fromPareto)}); the Pareto query through runDax: ${z.id}`);
   if (!ok) fail(`${numOf(lesson)}: saved answers are not looked up per connector`);
   // The numbers the steps show.
   const pct = (n) => n.toLocaleString('en-US', { style: 'percent', maximumFractionDigits: 1 });
@@ -554,11 +551,11 @@ function runApp(project) {
   const text = JSON.stringify(lesson.steps);
   const shown = [];
   for (const y2 of [undefined, 2024]) {
-    const rows = app.pareto.toPareto(await app.pareto.runPareto(app.pareto.paretoQuery(y2)));
-    const count = app.pareto.toHeadline(await app.pareto.runPareto(app.pareto.headlineQuery(y2))).count;
+    const rows = app.toPareto(await app.runPareto(app.paretoByCategory(y2)));
+    const count = app.toHeadline(await app.runPareto(app.paretoHeadline(y2))).count;
     shown.push(...rows.slice(0, count).map((r) => (y2 ? pct(r.cumulative) : `★ ${r.label} (${pct(r.cumulative)})`)));
   }
-  for (const y2 of [undefined, ...catalog.years]) shown.push(compact(app.pareto.toRevenue(await app.pareto.runPareto(app.pareto.revenueQuery(y2)))));
+  for (const y2 of [undefined, ...catalog.years]) shown.push(compact(app.toRevenue(await app.runPareto(app.revenueCard(y2)))));
   const missing = shown.filter((v) => !text.includes(v));
   console.log(`   ${missing.length ? 'FAIL' : 'ok  '} ${numOf(lesson)} the steps show the saved numbers: ${shown.join(', ')}`);
   if (missing.length) fail(`${numOf(lesson)}: the steps don't show ${missing.join(', ')}`);

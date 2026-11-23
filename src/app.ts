@@ -1077,7 +1077,7 @@ ts.typescriptDefaults.setCompilerOptions({
 });
 // The red lines come from the playground's own check (checkTypes, below), which asks the TypeScript
 // worker about every file after every change. Monaco's built-in check is off: it re-checks only the
-// file that changed, and a change in data.ts can break App.tsx.
+// file that changed, and a change in a query file can break App.tsx.
 ts.typescriptDefaults.setDiagnosticsOptions({ noSemanticValidation: true, noSyntaxValidation: true, noSuggestionDiagnostics: true });
 ts.typescriptDefaults.setEagerModelSync(true);
 for (const [path, text] of Object.entries(editorLibs.always)) ts.typescriptDefaults.addExtraLib(text, `file:///${path}`);
@@ -1513,11 +1513,11 @@ function deleteFile(path: string) {
 }
 
 function newFile() {
-  const path = window.prompt('New file, relative to the app folder (for example src/components.tsx):', 'src/');
+  const path = window.prompt('New file, relative to the app folder (for example src/components/kpi-card.tsx):', 'src/');
   if (!path) return;
   const clean = path.trim().replace(/^\.?\//, '');
   if (!/^[\w./-]+\.(tsx?|css|json|dax)$/.test(clean) || clean.includes('..')) {
-    flash('Use a path like src/components.tsx.');
+    flash('Use a path like src/components/kpi-card.tsx.');
     return;
   }
   if (project.files[clean] === undefined) project.files[clean] = '';

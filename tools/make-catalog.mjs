@@ -127,7 +127,7 @@ ORDER BY [Revenue] DESC`,
 };
 
 // "Two semantic models": the second model, Pareto, and the same measure name asked of both. The text is
-// the one the lesson's code builds (src/pareto.ts in the course), joined the way it joins it.
+// the one the lessons' query files build (src/queries/categories/*.ts), joined the way they join it.
 export const pq = {
   // Categories with their share and running share, largest first: the Pareto bars.
   paretoByCategory: (year) => `EVALUATE

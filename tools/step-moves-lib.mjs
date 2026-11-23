@@ -9,11 +9,19 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-/** The lessons of src/lesson-list.mjs at a commit. Its own imports (course-code.mjs, project.mjs) come from today's src. */
+/**
+ * The lessons of src/lesson-list.mjs at a commit. course-code.mjs comes from the same commit (it imports nothing,
+ * and its constants change when lessons do); project.mjs comes from today's src.
+ */
 export async function lessonsAt(rev) {
-  let text = execFileSync('git', ['show', `${rev}:src/lesson-list.mjs`], { cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  const show = (f) => execFileSync('git', ['show', `${rev}:src/${f}`], { cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  let text = show('lesson-list.mjs');
   // only the file's own import lines: lesson code quotes imports too
-  text = text.replace(/^(import [^\n]* from )'\.\/([\w.-]+)';/gm, (_, head, f) => `${head}'${pathToFileURL(join(root, 'src', f)).href}';`);
+  text = text.replace(/^(import [^\n]* from )'\.\/([\w.-]+)';/gm, (_, head, f) =>
+    f === 'course-code.mjs'
+      ? `${head}'data:text/javascript,${encodeURIComponent(show(f)).replace(/'/g, '%27')}';`
+      : `${head}'${pathToFileURL(join(root, 'src', f)).href}';`,
+  );
   return (await import(`data:text/javascript,${encodeURIComponent(text)}`)).lessons;
 }
 

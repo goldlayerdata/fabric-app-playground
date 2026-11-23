@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { lessons } from '../src/lesson-list.mjs';
 import { lessonsAt, movesFor } from './step-moves-lib.mjs';
 
-export const FROM = 'f3be589';
+export const FROM = 'c99672a';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const moves = movesFor(await lessonsAt(FROM), lessons);
 const rows = Object.entries(moves).map(([id, m]) => `  '${id}': [${m.join(', ')}],`);
@@ -20,7 +20,7 @@ writeFileSync(
 // one (index = old position: 0 the idea card, 1..n the steps, n + 1 the summary). The app moves saved
 // positions once, then sets STEPS_VERSION.
 export const STEPS_FROM = '${FROM}';
-export const STEPS_VERSION = '3';
+export const STEPS_VERSION = '4';
 export const stepMoves = {
 ${rows.join('\n')}
 };

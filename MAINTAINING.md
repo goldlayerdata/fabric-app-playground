@@ -89,7 +89,7 @@ visuals page: all checks passed
 | --- | --- |
 | A lesson's text, steps, summary, Fabric note | `src/lesson-list.mjs` (its header comment documents every field) |
 | Long code that steps paste | `src/course-code.mjs` |
-| The DAX in the lessons' query files (`src/queries/*.dax` in the learner's project) | `src/course-code.mjs`, the `*_DAX` constants; the file paths are at the top of `src/lesson-list.mjs` |
+| The DAX in the lessons' query files (`src/queries/<page>/*.dax` in the learner's project) and their `.ts` files | `src/course-code.mjs`, the `*_DAX` and `*_TS` constants; the file paths are at the top of `src/lesson-list.mjs` |
 | Which module a lesson is in, lesson order, knowledge checks | `src/course.mjs`, `modules` |
 | Chapters (live or "coming soon") | `src/course.mjs`, `chapters` |
 | Parts (groups of chapters) | `src/course.mjs`, `parts` |
@@ -176,8 +176,8 @@ Known limits:
      pbi: 'The idea in Power BI terms.',
      idea: 'What this lesson does.',
      steps: [
-       { do: 'Open `src/data.ts`.', file: 'src/data.ts', find: 'export function toBars' },
-       { do: 'Replace … with …', edits: [{ file: 'src/data.ts', from: '…', to: '…' }], see: '…', why: '…' },
+       { do: 'Open `src/lib/conversions.ts`.', file: 'src/lib/conversions.ts', find: 'export function toBars' },
+       { do: 'Replace … with …', edits: [{ file: 'src/lib/conversions.ts', from: '…', to: '…' }], see: '…', why: '…' },
      ],
      summary: ['First point.', 'Second point.'],          // 2 or 3 bullets
      fabric: { text: 'How this looks in a real Fabric app.', links: [learn.query] },
@@ -244,7 +244,7 @@ Answers come from two Contoso models in the public gold-layer-examples repositor
 1. **Add the query.** In `tools/make-catalog.mjs`, add an entry to `contosoQueries` or `twoModelQueries`, with `id`, `group`, `title` and the query text.
    - For the second model, add `connector: 'pareto'`.
    - A query that should fail on purpose gets `expectError: true`.
-   - For a lesson, the text its code sends must be the same; spacing and letter case are ignored. A lesson's query lives in a `.dax` file in the learner's project, and its code either sends the file as it is, fills in the file's `/* filters */` marker (`withFilters`), or wraps the file's `ROW` in `CALCULATETABLE`. Keep other comments out of these files, since a comment would become part of the text; the only one is the `/* filters */` marker, which the code replaces.
+   - For a lesson, the text its code sends must be the same; spacing and letter case are ignored. A lesson's query lives in a `.dax` file in the learner's project, and the `.ts` file next to it either hands out the file as it is, fills in its `/* filters */` marker (`withFilters`), or wraps its `ROW` in `CALCULATETABLE`. The checker runs every query function a page sends, with every year and country its parameters take. Keep other comments out of these files, since a comment would become part of the text; the only one is the `/* filters */` marker, which the code replaces.
    - For the Visuals page, the text must be the `.dax` file's text exactly (2.8).
 2. Run `npm run catalog`.
 3. **Open both models and find their ports.** Open each `.pbip` in its own Power BI Desktop window. Each window runs its own local Analysis Services on its own port. To list them:

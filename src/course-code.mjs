@@ -48,7 +48,7 @@ export const rayfinClient = RayfinClient.create({
 `;
 
 export const TEST_PAGE = `import { useEffect, useState } from 'react';
-import { rayfinClient } from './services/rayfinClient';
+import { rayfinClient } from './lib/rayfin-client';
 
 // A first test: one query, one number. The next module replaces it with a real page.
 export default function App() {
@@ -109,9 +109,10 @@ export function KpiCard({ title, value }: KpiCardProps) {
 `;
 
 // ---------------------------------------------------------------- Get data
-export const DATA_START = `import { useEffect, useState } from 'react';
+// src/hooks/use-dax.ts: the code that runs queries (one runner per model, made once) and the hook pages use.
+export const USE_DAX = `import { useEffect, useState } from 'react';
 import type { SemanticModelQueryResult } from '@microsoft/rayfin-connector-fabric-semanticmodel';
-import { rayfinClient } from './services/rayfinClient';
+import { rayfinClient } from '../lib/rayfin-client';
 
 // ------------------------------------------------------------ running queries
 export type RunDax = (query: string) => Promise<SemanticModelQueryResult>;
@@ -143,8 +144,15 @@ export function useDax(runDax: RunDax, query: string) {
   return result;
 }
 `;
+export const RUN_DAX_LINE = `export const runDax: RunDax = (query) => rayfinClient.connectors.contoso.executeQuery({ query });
+`;
+// Added under runDax in Register the second model.
+export const RUN_PARETO = `
+// Runs a DAX query against the second model. Made once, here, like runDax: only the connector differs.
+export const runPareto: RunDax = (query) => rayfinClient.connectors.pareto.executeQuery({ query });
+`;
 
-// ---------------------------------------------------------------- the query files (src/queries)
+// ---------------------------------------------------------------- the query files (src/queries/<page>/)
 // Each is a whole DAX query, as DAX query view in Power BI Desktop runs it. The playground answers a query
 // from the saved results by its text (ignoring spacing and letter case), so these texts are the ones
 // tools/make-catalog.mjs saved. No comments in them, except the /* filters */ marker, which the code replaces.
@@ -216,21 +224,97 @@ export const REVENUE_CARD_DAX = `EVALUATE
 ROW ( "Revenue", [Revenue] )
 `;
 
-// The imports that load them into src/data.ts and src/pareto.ts, as text (Vite's ?raw).
-export const IMPORT_COUNTRY = "import revenueByStoreCountryDax from './queries/revenue-by-store-country.dax?raw';";
-export const IMPORT_TOTALS = "import salesTotalsDax from './queries/sales-totals.dax?raw';";
-export const IMPORT_MARGIN = "import marginPctDax from './queries/margin-pct.dax?raw';";
-export const IMPORT_CATEGORY = "import revenueByCategoryDax from './queries/revenue-by-category.dax?raw';";
-export const IMPORT_YEARS = "import revenueByYearDax from './queries/revenue-by-year.dax?raw';";
-export const IMPORT_PARETO_HEADLINE = "import paretoHeadlineDax from './queries/pareto-headline.dax?raw';";
-export const IMPORT_PARETO_MORE = "import paretoByCategoryDax from './queries/pareto-by-category.dax?raw';\nimport revenueCardDax from './queries/revenue-card.dax?raw';";
+// Each .dax file has a small .ts file of the same name, as in the template (its AGENTS.md): a function named after
+// the file, in camelCase, that hands out the query text. The template's also return the chart spec.
+export const COUNTRY_TS = `import revenueByStoreCountryDax from './revenue-by-store-country.dax?raw';
 
-export const COUNTRY_QUERY = `
-// ------------------------------------------------------------ the queries
-// Each query's DAX is a .dax file in src/queries, imported at the top of this file as text.
-export const salesByCountryQuery = revenueByStoreCountryDax;
+// The countries chart's query, from its .dax file.
+export function revenueByStoreCountry() {
+  return revenueByStoreCountryDax;
+}
+`;
+export const COUNTRY_FN_V1 = `export function revenueByStoreCountry() {
+  return revenueByStoreCountryDax;
+}`;
+export const COUNTRY_FN_YEAR = `export function revenueByStoreCountry(year?: number) {
+  return withFilters(revenueByStoreCountryDax, filters(year));
+}`;
+export const TOTALS_TS = `import salesTotalsDax from './sales-totals.dax?raw';
 
-// ------------------------------------------------------------ reading results
+// The cards' query, from its .dax file: one row, three measures.
+export function salesTotals() {
+  return salesTotalsDax;
+}
+`;
+export const TOTALS_FN_V1 = `export function salesTotals() {
+  return salesTotalsDax;
+}`;
+export const TOTALS_FN_YEAR = `export function salesTotals(year?: number) {
+  const f = filters(year);
+  if (f.length === 0) return salesTotalsDax;
+  // ROW has no place for a filter: with one, it goes inside CALCULATETABLE.
+  const row = salesTotalsDax.replace('EVALUATE', '').trim();
+  return \`EVALUATE CALCULATETABLE ( \${row}, \${f.join(', ')} )\`;
+}`;
+export const MARGIN_TS = `import marginPctDax from './margin-pct.dax?raw';
+
+// The Margin % card's query, from its .dax file.
+export function marginPct() {
+  return marginPctDax;
+}
+`;
+export const CATEGORY_TS = `import { filters, withFilters } from '../../lib/filters';
+import revenueByCategoryDax from './revenue-by-category.dax?raw';
+
+// The category chart's query, from its .dax file, with the page's filters where it has /* filters */.
+export function revenueByCategory(year?: number, country?: string) {
+  return withFilters(revenueByCategoryDax, filters(year, country));
+}
+`;
+export const YEARS_TS = `import revenueByYearDax from './revenue-by-year.dax?raw';
+
+// The Years page's query, from its .dax file.
+export function revenueByYear() {
+  return revenueByYearDax;
+}
+`;
+export const PARETO_HEADLINE_TS = `import { filters } from '../../lib/filters';
+import paretoHeadlineDax from './pareto-headline.dax?raw';
+
+// The model's own count and sentence, for a headline card. A year: its ROW, inside CALCULATETABLE.
+export function paretoHeadline(year?: number) {
+  const f = filters(year);
+  if (f.length === 0) return paretoHeadlineDax;
+  const row = paretoHeadlineDax.replace('EVALUATE', '').trim();
+  return \`EVALUATE CALCULATETABLE ( \${row}, \${f.join(', ')} )\`;
+}
+`;
+export const PARETO_BY_CATEGORY_TS = `import { filters, withFilters } from '../../lib/filters';
+import paretoByCategoryDax from './pareto-by-category.dax?raw';
+
+// Categories, largest first, with the model's share and running share (its Pareto measures).
+export function paretoByCategory(year?: number) {
+  return withFilters(paretoByCategoryDax, filters(year));
+}
+`;
+export const REVENUE_CARD_TS = `import { filters } from '../../lib/filters';
+import revenueCardDax from './revenue-card.dax?raw';
+
+// One measure by name. Sent to both models, to compare their [Revenue].
+export function revenueCard(year?: number) {
+  const f = filters(year);
+  if (f.length === 0) return revenueCardDax;
+  const row = revenueCardDax.replace('EVALUATE', '').trim();
+  return \`EVALUATE CALCULATETABLE ( \${row}, \${f.join(', ')} )\`;
+}
+`;
+export const IMPORT_FILTERS = `import { filters } from '../../lib/filters';`;
+export const IMPORT_FILTERS_BOTH = `import { filters, withFilters } from '../../lib/filters';`;
+
+// ---------------------------------------------------------------- src/lib/conversions.ts: results into what visuals draw
+export const CONVERSIONS_V1 = `import type { SemanticModelQueryResult } from '@microsoft/rayfin-connector-fabric-semanticmodel';
+
+// Conversions: each turns a query's result into what a visual draws.
 export type Bar = { label: string; value: number };
 
 export function toBars(result: SemanticModelQueryResult): Bar[] {
@@ -238,12 +322,10 @@ export function toBars(result: SemanticModelQueryResult): Bar[] {
   return result.table.rows.map((row) => ({ label: String(row[0]), value: Number(row[1]) }));
 }
 `;
-
 export const TO_BARS_BY_POSITION = `export function toBars(result: SemanticModelQueryResult): Bar[] {
   if (result.status !== 'success') return [];
   return result.table.rows.map((row) => ({ label: String(row[0]), value: Number(row[1]) }));
 }`;
-
 export const TO_BARS_BY_NAME = `// Columns are looked up by name, so a change in the DAX can't shift them.
 export function toBars(result: SemanticModelQueryResult, labelColumn: string, valueColumn: string): Bar[] {
   if (result.status !== 'success') return [];
@@ -252,8 +334,58 @@ export function toBars(result: SemanticModelQueryResult, labelColumn: string, va
   const v = columns.findIndex((c) => c.name === valueColumn);
   return rows.map((row) => ({ label: String(row[l]), value: Number(row[v]) }));
 }`;
+export const TOTALS_CONV = `
 
-export const BAR_LIST = `
+export type Totals = { revenue: number; orders: number; customers: number };
+
+export function toTotals(result: SemanticModelQueryResult): Totals {
+  if (result.status !== 'success' || result.table.rows.length === 0) return { revenue: 0, orders: 0, customers: 0 };
+  const { columns, rows } = result.table;
+  const at = (name: string) => columns.findIndex((c) => c.name === name);
+  const row = rows[0];
+  return { revenue: Number(row[at('[Revenue]')]), orders: Number(row[at('[Orders]')]), customers: Number(row[at('[Customers]')]) };
+}`;
+export const PERCENT_CONV = `
+
+export function toPercent(result: SemanticModelQueryResult): number {
+  if (result.status !== 'success' || result.table.rows.length === 0) return 0;
+  const at = result.table.columns.findIndex((c) => c.name === '[Margin %]');
+  return Number(result.table.rows[0][at]);
+}`;
+// Added in Register the second model, and in Two models, one page.
+export const HEADLINE_CONV = `
+
+export type Headline = { count: number; text: string };
+
+export function toHeadline(result: SemanticModelQueryResult): Headline {
+  if (result.status !== 'success' || result.table.rows.length === 0) return { count: 0, text: '' };
+  const { columns, rows } = result.table;
+  const at = (name: string) => columns.findIndex((c) => c.name === name);
+  return { count: Number(rows[0][at('[Categories to 80%]')]), text: String(rows[0][at('[Headline]')]) };
+}`;
+export const PARETO_CONV = `
+
+export type ParetoRow = { label: string; value: number; cumulative: number };
+
+export function toPareto(result: SemanticModelQueryResult): ParetoRow[] {
+  if (result.status !== 'success') return [];
+  const { columns, rows } = result.table;
+  const at = (name: string) => columns.findIndex((c) => c.name === name);
+  const l = at('product[CategoryName]');
+  const v = at('[Revenue]');
+  const c = at('[Cumulative %]');
+  return rows.map((row) => ({ label: String(row[l]), value: Number(row[v]), cumulative: Number(row[c]) }));
+}
+
+export function toRevenue(result: SemanticModelQueryResult): number {
+  if (result.status !== 'success' || result.table.rows.length === 0) return 0;
+  const at = result.table.columns.findIndex((c) => c.name === '[Revenue]');
+  return Number(result.table.rows[0][at]);
+}`;
+
+// ---------------------------------------------------------------- src/components/: one visual per file
+export const BAR_LIST_FILE = `import type { Bar } from '../lib/conversions';
+
 type BarListProps = {
   rows: Bar[];
   selected?: string;
@@ -285,34 +417,7 @@ export function BarList({ rows, selected, onSelect }: BarListProps) {
   );
 }
 `;
-
-export const TOTALS = `
-
-export const totalsQuery = salesTotalsDax;
-
-export type Totals = { revenue: number; orders: number; customers: number };
-
-export function toTotals(result: SemanticModelQueryResult): Totals {
-  if (result.status !== 'success' || result.table.rows.length === 0) return { revenue: 0, orders: 0, customers: 0 };
-  const { columns, rows } = result.table;
-  const at = (name: string) => columns.findIndex((c) => c.name === name);
-  const row = rows[0];
-  return { revenue: Number(row[at('[Revenue]')]), orders: Number(row[at('[Orders]')]), customers: Number(row[at('[Customers]')]) };
-}`;
-
-export const MARGIN_IN_QUERY = `
-
-// The Margin % card's query: src/queries/margin-pct.dax.
-export const marginQuery = marginPctDax;
-
-export function toPercent(result: SemanticModelQueryResult): number {
-  if (result.status !== 'success' || result.table.rows.length === 0) return 0;
-  const at = result.table.columns.findIndex((c) => c.name === '[Margin %]');
-  return Number(result.table.rows[0][at]);
-}`;
-
-export const ERROR_PANEL = `
-// What a visual shows when its query fails: the model's own message.
+export const ERROR_PANEL_FILE = `// What a visual shows when its query fails: the model's own message.
 export function ErrorPanel({ message }: { message: string }) {
   return (
     <div className="m-4 rounded-lg border border-red-300 bg-red-50 p-4 text-red-800">
@@ -324,8 +429,7 @@ export function ErrorPanel({ message }: { message: string }) {
 `;
 
 // ---------------------------------------------------------------- Make it interactive
-export const YEAR_SLICER = `
-// A slicer: it shows the selected year and reports clicks. It does not keep the year itself.
+export const YEAR_SLICER_FILE = `// A slicer: it shows the selected year and reports clicks. It does not keep the year itself.
 type YearSlicerProps = {
   value: number | undefined;
   onChange: (year: number | undefined) => void;
@@ -349,10 +453,9 @@ export function YearSlicer({ value, onChange }: YearSlicerProps) {
   );
 }
 `;
-
-export const FILTERS_YEAR = `
-// One DAX filter per choice made on the page, like a slicer's filter on a visual.
-function filters(year?: number): string[] {
+// src/lib/filters.ts: both exported, since the query files import them.
+export const FILTERS_FILE = `// One DAX filter per choice made on the page, like a slicer's filter on a visual.
+export function filters(year?: number): string[] {
   const list: string[] = [];
   if (year !== undefined) list.push(\`TREATAS ( { \${year} }, 'date'[Year] )\`);
   return list;
@@ -360,50 +463,21 @@ function filters(year?: number): string[] {
 
 // Puts the filters where a query file has its /* filters */ marker. DAX reads /* … */ as a comment,
 // so the file still runs as it is, in DAX query view for example.
-function withFilters(dax: string, list: string[]): string {
+export function withFilters(dax: string, list: string[]): string {
   return dax.replace('/* filters */ ', list.map((f) => \`\${f}, \`).join(''));
 }
 `;
-
-export const TOTALS_QUERY_CONST = 'export const totalsQuery = salesTotalsDax;';
-
-export const TOTALS_QUERY_FN = `// No filter: the file's query as it is. Filters: its ROW, inside CALCULATETABLE with them.
-export function totalsQuery(year?: number) {
-  const f = filters(year);
-  if (f.length === 0) return salesTotalsDax;
-  const row = salesTotalsDax.replace('EVALUATE', '').trim();
-  return \`EVALUATE CALCULATETABLE ( \${row}, \${f.join(', ')} )\`;
-}`;
-
-export const COUNTRY_QUERY_CONST = 'export const salesByCountryQuery = revenueByStoreCountryDax;';
-
-export const COUNTRY_QUERY_FN = `export function salesByCountryQuery(year?: number) {
-  return withFilters(revenueByStoreCountryDax, filters(year));
-}`;
-
-export const FILTERS_YEAR_FN = `function filters(year?: number): string[] {
+export const FILTERS_YEAR_FN = `export function filters(year?: number): string[] {
   const list: string[] = [];
   if (year !== undefined) list.push(\`TREATAS ( { \${year} }, 'date'[Year] )\`);
   return list;
 }`;
-
-export const FILTERS_BOTH_FN = `function filters(year?: number, country?: string): string[] {
+export const FILTERS_BOTH_FN = `export function filters(year?: number, country?: string): string[] {
   const list: string[] = [];
   if (year !== undefined) list.push(\`TREATAS ( { \${year} }, 'date'[Year] )\`);
   if (country !== undefined) list.push(\`TREATAS ( { "\${country}" }, 'store'[CountryName] )\`);
   return list;
 }`;
-
-export const CATEGORY_QUERY_FN = `
-
-export function salesByCategoryQuery(year?: number, country?: string) {
-  return withFilters(revenueByCategoryDax, filters(year, country));
-}`;
-
-export const YEARS_QUERY = `
-
-export const salesByYearQuery = revenueByYearDax;`;
-
 export const REPORT = `
 // ------------------------------------------------------------ the report
 type PageId = 'overview';
@@ -440,7 +514,7 @@ export default function App() {
 
 export const YEARS_PAGE = `// A second page: sales by year.
 function YearsPage() {
-  const result = useDax(runDax, salesByYearQuery);
+  const result = useDax(runDax, revenueByYear());
 
   if (!result) return <p className="p-4">Loading…</p>;
   if (result.status === 'error') return <ErrorPanel message={result.error.message} />;
@@ -465,7 +539,7 @@ function YearsPage() {
 // Written the way an agent writes a page from one prompt, with four problems from earlier lessons.
 export const AGENT_PAGE = `import { useEffect, useState } from 'react';
 import type { SemanticModelQueryResult } from '@microsoft/rayfin-connector-fabric-semanticmodel';
-import { rayfinClient } from './services/rayfinClient';
+import { rayfinClient } from './lib/rayfin-client';
 
 // Added by an agent, from one prompt:
 //   "A sales overview: revenue, orders, customers, margin %, and revenue by store country."
@@ -647,45 +721,18 @@ ROW ( "Margin %", [App Margin %] )
 
 // ================================================================== Chapter 2: Two semantic models
 
-// src/pareto.ts, first version: its runner and the model's own headline (Register the second model).
-export const PARETO_V1 = `import type { SemanticModelQueryResult } from '@microsoft/rayfin-connector-fabric-semanticmodel';
-import { rayfinClient } from './services/rayfinClient';
-import { filters, withFilters, type RunDax } from './data';
-import paretoHeadlineDax from './queries/pareto-headline.dax?raw';
-
-// Runs a DAX query against the second model. Made once, here, like runDax: only the connector differs.
-export const runPareto: RunDax = (query) => rayfinClient.connectors.pareto.executeQuery({ query });
-
-// ------------------------------------------------------------ the queries
-// The model's own count and sentence, for a headline card. A year: its ROW, inside CALCULATETABLE.
-export function headlineQuery(year?: number) {
-  const f = filters(year);
-  if (f.length === 0) return paretoHeadlineDax;
-  const row = paretoHeadlineDax.replace('EVALUATE', '').trim();
-  return \`EVALUATE CALCULATETABLE ( \${row}, \${f.join(', ')} )\`;
-}
-
-// ------------------------------------------------------------ reading results
-export type Headline = { count: number; text: string };
-
-export function toHeadline(result: SemanticModelQueryResult): Headline {
-  if (result.status !== 'success' || result.table.rows.length === 0) return { count: 0, text: '' };
-  const { columns, rows } = result.table;
-  const at = (name: string) => columns.findIndex((c) => c.name === name);
-  return { count: Number(rows[0][at('[Categories to 80%]')]), text: String(rows[0][at('[Headline]')]) };
-}
-`;
-
 // The first Categories page: a year slicer and the headline.
 export const PARETO_PAGE_V1 = `import { useState } from 'react';
-import { ErrorPanel, YearSlicer } from './components';
-import { useDax } from './data';
-import { headlineQuery, runPareto, toHeadline } from './pareto';
+import { ErrorPanel } from './components/error-panel';
+import { YearSlicer } from './components/year-slicer';
+import { runPareto, useDax } from './hooks/use-dax';
+import { toHeadline } from './lib/conversions';
+import { paretoHeadline } from './queries/categories/pareto-headline';
 
 // A page on the second model: for now, its headline.
 export default function ParetoPage() {
   const [year, setYear] = useState<number | undefined>(undefined);
-  const headlineResult = useDax(runPareto, headlineQuery(year));
+  const headlineResult = useDax(runPareto, paretoHeadline(year));
 
   if (!headlineResult) return <p className="p-4">Loading…</p>;
   if (headlineResult.status === 'error') return <ErrorPanel message={headlineResult.error.message} />;
@@ -706,57 +753,27 @@ export default function ParetoPage() {
 }
 `;
 
-// Added at the end of src/pareto.ts (Two models, one page).
-export const PARETO_MORE = `
-// ------------------------------------------------------------ the page's other queries
-// Categories, largest first, with the model's share and running share (its Pareto measures).
-export function paretoQuery(year?: number) {
-  return withFilters(paretoByCategoryDax, filters(year));
-}
-
-// One measure by name. Sent to both models, to compare their [Revenue].
-export function revenueQuery(year?: number) {
-  const f = filters(year);
-  if (f.length === 0) return revenueCardDax;
-  const row = revenueCardDax.replace('EVALUATE', '').trim();
-  return \`EVALUATE CALCULATETABLE ( \${row}, \${f.join(', ')} )\`;
-}
-
-// ------------------------------------------------------------ reading them
-export type ParetoRow = { label: string; value: number; cumulative: number };
-
-export function toPareto(result: SemanticModelQueryResult): ParetoRow[] {
-  if (result.status !== 'success') return [];
-  const { columns, rows } = result.table;
-  const at = (name: string) => columns.findIndex((c) => c.name === name);
-  const l = at('product[CategoryName]');
-  const v = at('[Revenue]');
-  const c = at('[Cumulative %]');
-  return rows.map((row) => ({ label: String(row[l]), value: Number(row[v]), cumulative: Number(row[c]) }));
-}
-
-export function toRevenue(result: SemanticModelQueryResult): number {
-  if (result.status !== 'success' || result.table.rows.length === 0) return 0;
-  const at = result.table.columns.findIndex((c) => c.name === '[Revenue]');
-  return Number(result.table.rows[0][at]);
-}
-`;
-
 // The full Categories page: both Revenue cards, the headline and the bars, under one slicer.
 export const PARETO_PAGE = `import { useState } from 'react';
-import { BarList, ErrorPanel, KpiCard, YearSlicer } from './components';
-import { runDax, useDax } from './data';
-import { headlineQuery, paretoQuery, revenueQuery, runPareto, toHeadline, toPareto, toRevenue } from './pareto';
+import { BarList } from './components/bar-list';
+import { ErrorPanel } from './components/error-panel';
+import { KpiCard } from './components/kpi-card';
+import { YearSlicer } from './components/year-slicer';
+import { runDax, runPareto, useDax } from './hooks/use-dax';
+import { toHeadline, toPareto, toRevenue } from './lib/conversions';
+import { paretoByCategory } from './queries/categories/pareto-by-category';
+import { paretoHeadline } from './queries/categories/pareto-headline';
+import { revenueCard } from './queries/categories/revenue-card';
 
 const percent = (n: number) => n.toLocaleString('en-US', { style: 'percent', maximumFractionDigits: 1 });
 
 // A page on two models: the pareto model for the categories, both models for [Revenue].
 export default function ParetoPage() {
   const [year, setYear] = useState<number | undefined>(undefined);
-  const paretoResult = useDax(runPareto, paretoQuery(year));
-  const headlineResult = useDax(runPareto, headlineQuery(year));
-  const contosoRevenue = useDax(runDax, revenueQuery(year));
-  const paretoRevenue = useDax(runPareto, revenueQuery(year));
+  const paretoResult = useDax(runPareto, paretoByCategory(year));
+  const headlineResult = useDax(runPareto, paretoHeadline(year));
+  const contosoRevenue = useDax(runDax, revenueCard(year));
+  const paretoRevenue = useDax(runPareto, revenueCard(year));
 
   if (!paretoResult || !headlineResult || !contosoRevenue || !paretoRevenue) return <p className="p-4">Loading…</p>;
   for (const r of [paretoResult, headlineResult, contosoRevenue, paretoRevenue]) if (r.status === 'error') return <ErrorPanel message={r.error.message} />;
@@ -890,7 +907,7 @@ export function useLoad<T>(load: () => Promise<T>, key: string): Loaded<T> {
 
 export const LAKE_QUERIES = `
 // ------------------------------------------------------------ lakehouse queries
-import { rayfinClient } from './services/rayfinClient';
+import { rayfinClient } from './rayfin-client';
 
 export async function storeKeysIn(country: string) {
   const stores = await rayfinClient.connectors.lake.Store
@@ -913,8 +930,8 @@ export function latestLines(storeKeys: number[]) {
 export const LINES_DATE = "{new Date(line.orderDate).toLocaleDateString('en-US', { timeZone: 'UTC' })}";
 export const LINES_DATE_SLIP = "{line.orderDate.toLocaleDateString('en-US', { timeZone: 'UTC' })}";
 
-export const LINES_PAGE = `import { ErrorPanel } from './components';
-import { latestLines, storeKeysIn, useLoad } from './lake';
+export const LINES_PAGE = `import { ErrorPanel } from './components/error-panel';
+import { latestLines, storeKeysIn, useLoad } from './lib/lake';
 
 // The order lines behind a country's number: the latest 20, newest first.
 export default function LinesPage() {
@@ -1038,7 +1055,7 @@ export const CLIENT_DATA_IMPORTS = `import { dataService } from '@microsoft/rayf
 import type { AppSchema } from '../../rayfin/data/schema';
 `;
 
-export const TARGETS_LOAD = `import { rayfinClient } from './services/rayfinClient';
+export const TARGETS_LOAD = `import { rayfinClient } from './rayfin-client';
 
 // The targets of one year, from the app's own database.
 export function loadTargets(year: number) {
@@ -1071,9 +1088,10 @@ const TARGETS_HEAD = `      <header className="col-span-12 row-span-1 flex items
 `;
 
 export const TARGETS_PAGE = `import { useState } from 'react';
-import { ErrorPanel, YearSlicer } from './components';
-import { useLoad } from './lake';
-import { loadTargets } from './targets';
+import { ErrorPanel } from './components/error-panel';
+import { YearSlicer } from './components/year-slicer';
+import { useLoad } from './lib/lake';
+import { loadTargets } from './lib/targets';
 
 // Sales targets, one row per country and year, from the app's own database.
 export default function TargetsPage() {
@@ -1119,9 +1137,10 @@ export const TARGETS_ADD_BUTTON = `          <button type="button" className="ro
 `;
 
 export const TARGETS_PAGE_EDIT = `import { Fragment, useState } from 'react';
-import { ErrorPanel, YearSlicer } from './components';
-import { useLoad } from './lake';
-import { addTarget, changeTarget, loadTargets } from './targets';
+import { ErrorPanel } from './components/error-panel';
+import { YearSlicer } from './components/year-slicer';
+import { useLoad } from './lib/lake';
+import { addTarget, changeTarget, loadTargets } from './lib/targets';
 
 // Sales targets, one row per country and year, from the app's own database.
 export default function TargetsPage() {
@@ -1225,7 +1244,7 @@ export const NOTE_FIELD_SLIP = '  @text({ max: 500 }) note?: string;\n';
 // ================================================================== Chapter 5: Who is using it
 // ---------------------------------------------------------------- signed in as
 export const SESSION_READ = `import { useEffect, useState } from 'react';
-import { rayfinClient } from './services/rayfinClient';
+import { rayfinClient } from './rayfin-client';
 
 // Who is signed in, read once.
 export function signedInEmail(): string {
