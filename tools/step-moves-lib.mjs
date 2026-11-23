@@ -17,10 +17,22 @@ export async function lessonsAt(rev) {
   const show = (f) => execFileSync('git', ['show', `${rev}:src/${f}`], { cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
   let text = show('lesson-list.mjs');
   // only the file's own import lines: lesson code quotes imports too
+  const today = async (f) => import(pathToFileURL(join(root, 'src', f)).href);
+  const shims = {};
+  for (const m of text.matchAll(/^import \{([^}]*)\} from '\.\/([\w.-]+)';/gm)) {
+    if (m[2] === 'course-code.mjs') continue;
+    // Names today's module no longer exports become empty strings: they only shape old steps' keys.
+    const names = m[1].split(',').map((n) => n.trim()).filter(Boolean);
+    const mod = await today(m[2]);
+    const missing = names.filter((n) => !(n in mod));
+    if (missing.length) shims[m[2]] = `export * from '${pathToFileURL(join(root, 'src', m[2])).href}';\n${missing.map((n) => `export const ${n} = '';`).join('\n')}\n`;
+  }
   text = text.replace(/^(import [^\n]* from )'\.\/([\w.-]+)';/gm, (_, head, f) =>
     f === 'course-code.mjs'
       ? `${head}'data:text/javascript,${encodeURIComponent(show(f)).replace(/'/g, '%27')}';`
-      : `${head}'${pathToFileURL(join(root, 'src', f)).href}';`,
+      : shims[f]
+        ? `${head}'data:text/javascript,${encodeURIComponent(shims[f]).replace(/'/g, '%27')}';`
+        : `${head}'${pathToFileURL(join(root, 'src', f)).href}';`,
   );
   return (await import(`data:text/javascript,${encodeURIComponent(text)}`)).lessons;
 }
@@ -34,9 +46,11 @@ const createsEmpty = (s) => !!s.edits?.length && s.edits.every((e) => e.from ===
  * For one lesson, the new position of every old position (old.length + 2 entries). Steps with the same content
  * (same edits or command, or the same text for a step that only looks) are matched in order (longest common
  * subsequence); the idea card and the summary match each other. A step that has no match took the place after
- * the previous one. A matched step with new steps just before it moves to the first of them when they create
- * its file (the first half of "create the file, then paste"); otherwise those new steps are the second half of
- * the previous step (such as "Then open Categories"), and it keeps its match.
+ * the previous one, when a new step is there to take it; when there is none (the step was removed, or merged
+ * into fewer steps), it lands on the next step that is still there, or on the summary. A matched step with new
+ * steps just before it moves to the first of them when they create its file (the first half of "create the file,
+ * then paste"); otherwise those new steps are the second half of the previous step (such as "Then open
+ * Categories"), and it keeps its match.
  */
 export function computeMoves(oldSteps, newSteps) {
   const a = oldSteps.map(stepKey);
@@ -55,7 +69,9 @@ export function computeMoves(oldSteps, newSteps) {
   for (let i = 0; i < a.length; i++) {
     const prev = moves[i];
     if (match[i] < 0) {
-      moves.push(prev + 1);
+      // the next step that is still there (or the summary): a removed step can't land past it
+      const nextKept = match.slice(i + 1).find((m) => m >= 0);
+      moves.push(Math.min(prev + 1, nextKept === undefined ? newSteps.length + 1 : nextKept + 1));
       continue;
     }
     const at = match[i] + 1;

@@ -1522,11 +1522,11 @@ function deleteFile(path: string) {
 }
 
 function newFile() {
-  const path = window.prompt('New file, relative to the app folder (for example src/components/kpi-card.tsx):', 'src/');
+  const path = window.prompt('New file, relative to the app folder (for example packages/frontend/src/components/kpi-card.tsx):', 'packages/frontend/src/');
   if (!path) return;
   const clean = path.trim().replace(/^\.?\//, '');
   if (!/^[\w./-]+\.(tsx?|css|json|dax)$/.test(clean) || clean.includes('..')) {
-    flash('Use a path like src/components/kpi-card.tsx.');
+    flash('Use a path like packages/frontend/src/components/kpi-card.tsx.');
     return;
   }
   if (project.files[clean] === undefined) project.files[clean] = '';
@@ -2316,7 +2316,7 @@ function renderAbout() {
     ),
     p(
       h('b', {}, 'Nothing here talks to Fabric or Power BI. '),
-      'The terminal simulates the Rayfin 2.0 commands the lessons use; what they write (rayfin.yml, the connector\'s schema file, package.json) follows the Rayfin docs and the data app template as installed by the Rayfin CLI 2.0.0, and lines we could not check against the real output start with Playground:. ',
+      'The terminal simulates the Rayfin 2.0 commands the lessons use; what they write (rayfin.yml, the connector\'s schema file, the generated connectors.ts, the package.json files) follows the Rayfin docs and the default template, the Universal App, as installed by the Rayfin CLI 2.0.0, and lines we could not check against the real output start with Playground:. ',
       'The Rayfin packages are simulated too: the editor checks your code against their real 2.0 signatures (a subset, MIT), and in the page, executeQuery matches the query text against saved results and returns them in the connector\'s result shape. Sign-in is skipped. Request ids starting with "simulated-" are made up. The real thing: ',
       a('https://learn.microsoft.com/fabric/apps/connectors', 'Connect Fabric Apps to Fabric data'),
       ' on Microsoft Learn, and ',
@@ -2333,7 +2333,7 @@ function renderAbout() {
     ),
     p(
       h('b', {}, 'The app\'s own data and sign-in. '),
-      'The app\'s database is simulated in this browser: `npx rayfin up db apply` reads every exported entity class in rayfin/data/, as the real CLI collects them (with a small parser of the decorators), compares them with what it applied last, and stops before the changes Rayfin\'s docs call potentially destructive; its output is the playground\'s wording. Each request from the page is checked against the entity\'s permission rules (`policy` with `.eq`, `.neq`, `.and`, `.or`; `include` and `exclude`) for the claims of the person on the Signed in as switch, here in the browser: on Fabric, the data API (Data API builder) checks them on the server. The people, ids and emails are made up; on Fabric, people sign in with Microsoft Entra ID and nobody switches. When rayfin.yml turns dynamic claims on, your claims function runs in the page\'s sandbox at each switch; on Fabric, the deployed function runs at sign-in and refresh, if the backend has dynamic claims for your workspace\'s region. Refusals and errors without documented wording start with Playground:. The Data tab shows every row, ignoring permissions: no real app has that view. The real thing: ',
+      'The app\'s database is simulated in this browser: `npx rayfin up db apply` reads every exported entity class in packages/data/src/, as the real CLI collects them (with a small parser of the decorators), compares them with what it applied last, and stops before the changes Rayfin\'s docs call potentially destructive; its output is the playground\'s wording. Each request from the page is checked against the entity\'s permission rules (`policy` with `.eq`, `.neq`, `.and`, `.or`; `include` and `exclude`) for the claims of the person on the Signed in as switch, here in the browser: on Fabric, the data API (Data API builder) checks them on the server. The people, ids and emails are made up; on Fabric, people sign in with Microsoft Entra ID and nobody switches. When rayfin.yml turns dynamic claims on, your claims function runs in the page\'s sandbox at each switch; on Fabric, the deployed function runs at sign-in and refresh, if the backend has dynamic claims for your workspace\'s region. Refusals and errors without documented wording start with Playground:. The Data tab shows every row, ignoring permissions: no real app has that view. The real thing: ',
       a('https://rayfin.ai/docs/data', 'Data'),
       ', ',
       a('https://rayfin.ai/docs/data/permissions', 'Permissions'),
@@ -2359,7 +2359,7 @@ function renderAbout() {
       h('b', {}, 'Versions. '),
       'Mirrors Rayfin 2.0. React 19.3.1 and its types. The editor\'s checking uses TypeScript ',
       monaco.typescript.typescriptVersion,
-      ' (built into Monaco 0.57.0); every lesson\'s code is also checked with TypeScript 6.0.3. (The data app template itself pins TypeScript ~5.7.) Tailwind CSS 4.3.4, in-browser build.',
+      ' (built into Monaco 0.57.0); every lesson\'s code is also checked with TypeScript 6.0.3. (The template itself pins TypeScript ~6.0.2.) Tailwind CSS 4.3.4, in-browser build.',
     ),
     p(
       h('b', {}, 'Your project and progress '),
@@ -2590,12 +2590,12 @@ function renderData() {
     ),
   );
   const names = [...new Set([...files.map((f) => f.name), ...Object.keys(db.tables)])];
-  if (!names.length) parts.push(h('p', {}, rich('No tables yet. Entities in `rayfin/data/` become tables once applied.')));
+  if (!names.length) parts.push(h('p', {}, rich('No tables yet. Entities in `packages/data/src/` become tables once applied.')));
   const unlimited = unlimitedText(db);
   for (const name of names) {
     const e = files.find((x) => x.name === name);
     const table = db.tables[name] as AppTable | undefined;
-    const typed = inAppSchema(project, name) ? '' : ' · not in DataAppSchema yet, so the client has no typed entity for it';
+    const typed = inAppSchema(project, name) ? '' : ' · not in UniversalAppSchema yet, so the client has no typed entity for it';
     const state = !table ? `not applied yet${e ? typed : ''}` : !e ? 'applied; no longer declared' : `applied${typed}`;
     const section = h('section', { class: 'data-entity' }, h('h3', {}, name, h('span', { class: 'muted' }, ` · ${state}`)));
     // Columns, from the decorators, marked where they differ from the applied table.

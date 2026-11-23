@@ -89,15 +89,18 @@ visuals page: all checks passed
 | --- | --- |
 | A lesson's text, steps, summary, Fabric note | `src/lesson-list.mjs` (its header comment documents every field) |
 | Long code that steps paste | `src/course-code.mjs` |
-| The DAX in the lessons' query files (`src/queries/<page>/*.dax` in the learner's project) and their `.ts` files | `src/course-code.mjs`, the `*_DAX` and `*_TS` constants; the file paths are at the top of `src/lesson-list.mjs` |
+| The DAX in the lessons' query files (`packages/frontend/src/queries/<page>/*.dax` in the learner's project) and their `.ts` files | `src/course-code.mjs`, the `*_DAX` and `*_TS` constants; the file paths are at the top of `src/lesson-list.mjs` |
 | Which module a lesson is in, lesson order, knowledge checks | `src/course.mjs`, `modules` |
 | Chapters (live or "coming soon") | `src/course.mjs`, `chapters` |
 | Parts (groups of chapters) | `src/course.mjs`, `parts` |
 | Glossary terms and the Help tab's troubleshooting rows | `src/terms.mjs`, `terms` and `help` |
 | What the simulated terminal does and writes | `src/project.mjs` |
-| The template's files written at `npm create`: verbatim ones, the editable client note, and the locked placeholders (`TEMPLATE_PLACEHOLDERS`, one or two lines each, starting `Playground:`; JSON ones as `{ "_playground": … }`) | `src/project.mjs` |
+| The template's files written at `npm create` (the Universal App): verbatim ones, the editable data and shared index files, the locked stand-ins for the client and the pack's query hook, and the locked placeholders (`TEMPLATE_PLACEHOLDERS`, one or two lines each, starting `Playground:`; JSON ones as `{ "_playground": … }`) | `src/project.mjs` |
 | The app's own database, permissions, claims | `src/app-data.mjs` |
 | How connector names resolve | `src/connectors-sim.mjs` |
+| The packs (`npm run pack:add -- connectors`, `-- analytics`) and what they copy | `src/project.mjs`, `PACKS` |
+| The wiring `connector add` writes into `connectors.ts` | `src/wiring-fixtures.mjs`, written by `node tools/wiring/write-fixtures.mjs` (needs the reference install, see 2.12) |
+| The workspace's package names and where they point | `src/workspace.mjs` |
 | The queries the models can answer | `tools/make-catalog.mjs`, which writes `data/catalog.json` |
 | The saved answers | `data/snapshots.json`, written by `tools/snapshot.ps1` |
 | The lakehouse rows (Chapter 3) | `data/lakehouse.json` (edited by hand: there is no generator) |
@@ -163,6 +166,7 @@ visuals page: all checks passed
 Known limits:
 - Links such as `#client/3` are never moved.
 - A learner who skipped a whole version gets only the newest table, so their saved step may be a card or two off.
+- A step that was removed, or merged into fewer steps, sends its saved position to the next step that is still there (or to the summary).
 
 ### 2.3 Add a lesson
 
@@ -177,8 +181,8 @@ Known limits:
      pbi: 'The idea in Power BI terms.',
      idea: 'What this lesson does.',
      steps: [
-       { do: 'Open `src/lib/conversions.ts`.', file: 'src/lib/conversions.ts', find: 'export function toBars' },
-       { do: 'Replace … with …', edits: [{ file: 'src/lib/conversions.ts', from: '…', to: '…' }], see: '…', why: '…' },
+       { do: 'Open `packages/frontend/src/lib/conversions.ts`.', file: 'packages/frontend/src/lib/conversions.ts', find: 'export function toBars' },
+       { do: 'Replace … with …', edits: [{ file: 'packages/frontend/src/lib/conversions.ts', from: '…', to: '…' }], see: '…', why: '…' },
      ],
      summary: ['First point.', 'Second point.'],          // 2 or 3 bullets
      fabric: { text: 'How this looks in a real Fabric app.', links: [learn.query] },
@@ -375,6 +379,24 @@ A pull request gets the same checks without publishing: the workflow "Check a pu
 
 ---
 
+### 2.12 Remake the generated wiring
+
+`npx rayfin connector add` rewrites `packages/frontend/src/lib/connectors.ts` below its marked line. The playground doesn't imitate that text: `src/wiring-fixtures.mjs` holds what the real CLI writes for each set of connectors the lessons add (`contoso`; `contoso` and `pareto`; all three with `lake`), plus the connectors pack's own `connectors.ts`.
+
+Remake it after a Rayfin upgrade, or when a lesson adds a connector set that isn't there yet (the simulated `connector add` then prints a `Playground:` line saying that set is not simulated).
+
+1. Install the Rayfin packages at the version the lessons use in the gitignored `reference/` folder (`reference/rayfin-2.0/`).
+2. For a new set, add a line for it in `tools/wiring/gen-wiring.mjs` (`plan(name, SchemaType, runtime)`, in `rayfin.yml` order; an entity connector such as a lakehouse has no runtime).
+3. Run, from the repository root:
+
+   ```powershell
+   node tools/wiring/gen-wiring.mjs > tools/wiring/wiring.json
+   node tools/wiring/write-fixtures.mjs
+   npm run check
+   ```
+
+4. Commit `tools/wiring/` and `src/wiring-fixtures.mjs` together.
+
 ## 3. Troubleshooting
 
 ### 3.1 `npm run check` failures
@@ -386,7 +408,7 @@ Each failure is one line starting with `FAIL`. Lesson messages start with the le
 | `src/step-moves.mjs is out of date: run node tools/make-step-moves.mjs` | Steps were added, removed, split or reordered since the commit in `FROM`, or a step's identity changed. | 2.2, steps 4–5. |
 | `step-moves <id>: old step N lands on step M, which is not that step or its first part` | The generated table maps an old step to unrelated content, usually after a large rewrite of one lesson. | Check the lesson's history. If the rewrite is right, move `FROM` to the live commit and raise `STEPS_VERSION` (2.2). |
 | `make-step-moves` fails with `does not provide an export named …` | The lesson list at `FROM` is loaded with today's `src/project.mjs`, which no longer exports a name the old list imports. | Keep that export for now, or move `FROM` to a newer published commit. |
-| `<where>: refers to a lesson by number ("lesson 4"); use its title`, or a chapter, module or `4.2`-style number | Text names a lesson, chapter or module by number. Numbers come from positions and move. | Use the title, for example "in **Wire the client**". |
+| `<where>: refers to a lesson by number ("lesson 4"); use its title`, or a chapter, module or `4.2`-style number | Text names a lesson, chapter or module by number. Numbers come from positions and move. | Use the title, for example "in **Read the wiring**". |
 | `<id> step N: expected X type error(s), got Y`, followed by the errors | An edit changed the code, or a package's types changed, so the red-line count differs from the step's `errors`. | Read the printed errors. Fix the edit, or set `errors` to the new count if the red line is intended. |
 | `<id> step N: an expected error is in no file of the project: …` | An expected red line is in a type file, which the learner can't open. | Change the step so the error is in the learner's code. |
 | `<id> step N: names <file>, which isn't in the project at this step` | The step's `file`, or its first edit's file, doesn't exist yet. | Create it in an earlier step (`from: ''`), or fix the path. |

@@ -292,7 +292,6 @@ export const TEMPLATE_PLACEHOLDERS = {
   LICENSE: 'Playground: the template\'s licence: MIT, Microsoft Corporation.\n',
   'SECURITY.md': 'Playground: the template\'s page on how to report a security issue to Microsoft.\n',
   'CODE_OF_CONDUCT.md': 'Playground: the template\'s pointer to the Microsoft Open Source Code of Conduct.\n',
-  'rayfin-template.yml': '# Playground: the template\'s catalog entry for the Rayfin tools: its name (universal-app) and how it is shown (Use default template).\n',
   'tsconfig.base.json': PG_JSON('the TypeScript settings every package shares.'),
   'tsconfig.json': PG_JSON('the root TypeScript project: it lists the three packages, for npm run typecheck.'),
   '.mcp.json': PG_JSON('added by the Rayfin CLI after creating the app: the Rayfin MCP server entry for coding agents (npx @microsoft/rayfin-mcp start). Not used here.'),
@@ -483,7 +482,7 @@ const PG = (s) => `Playground: ${s}`;
 const NO_PROJECT = [
   PG('There is no project yet, so there is nothing to open, list or install.'),
   PG('It is created in the lesson "Create the project", with:'),
-  '  npm create @microsoft/rayfin@latest contoso-app -- --template dataapp',
+  '  npm create @microsoft/rayfin@latest contoso-app -- --template blankapp',
 ];
 const SIMULATED = PG('Simulated. The real command prints more; these are the parts that matter here.');
 
@@ -505,7 +504,7 @@ export function runCommand(start, line, answer) {
   if (cmd === 'help') {
     return done(
       PG('Commands simulated here, as in a real Rayfin 2.0 project:'),
-      '  npm create @microsoft/rayfin@latest <app-name> -- --template dataapp',
+      '  npm create @microsoft/rayfin@latest <app-name> -- --template blankapp',
       '  cd <app-name>          npm install          npx rayfin login',
       '  npx rayfin connector add --type fabric-semanticmodel --workspace-id <id> --item-id <id> --name <name>',
       '  npx rayfin connector add --type fabric-sqlanalytics --workspace-id <id> --item-id <id> --name <name> --operations read',
@@ -541,12 +540,12 @@ export function runCommand(start, line, answer) {
     return fail(PG(`No folder named ${to} here. The project folder is ${p.appDir}.`));
   }
 
-  // npm create @microsoft/rayfin@latest <name> -- --template dataapp   (rayfin.ai Quickstart; Microsoft Learn)
+  // npm create @microsoft/rayfin@latest <name> -- --template blankapp   (rayfin-guide: cli/templates.md)
   if (cmd === 'npm' && (w[1] === 'create' || w[1] === 'init') && /^@microsoft\/rayfin(@latest)?$/.test(w[2] ?? '')) {
     const f = flags(w.slice(3));
     const name = f._[0];
     if (p.cwd) return fail(PG('Create the app from your starting folder: run `cd ..` first.'));
-    if (!name) return fail(PG('Give the app a folder name: npm create @microsoft/rayfin@latest <app-name> -- --template dataapp'));
+    if (!name) return fail(PG('Give the app a folder name: npm create @microsoft/rayfin@latest <app-name> -- --template blankapp'));
     if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(name)) return fail(PG('Use a lower-case name of letters, digits and single hyphens, such as contoso-app.'));
     if (p.appDir) return fail(PG(`This playground holds one app, and ${p.appDir} already exists. Restart the playground to start over.`));
     if (f.template === undefined) {
@@ -557,6 +556,7 @@ export function runCommand(start, line, answer) {
     }
     if (f.template !== 'blankapp') return fail(PG(`Only the default template, blankapp, is simulated here (you asked for ${f.template}).`));
     p.appDir = name;
+    for (const pkg of TEMPLATE_INSTALL) if (!p.packages.includes(pkg)) p.packages.push(pkg);
     p.files = {
       ...TEMPLATE_PLACEHOLDERS,
       'package.json': json({ name, ...ROOT_PACKAGE }),
@@ -578,7 +578,8 @@ export function runCommand(start, line, answer) {
       PG('packages/frontend/src/App.tsx starts empty: the lessons write it. The template\'s own App.tsx shows a welcome view.'),
       PG('Most of the template\'s other files are shown locked, as placeholders that say what the real file does.'),
       PG('Creating it does not sign you in.'),
-      PG(`Next: cd ${name}, then npm install.`),
+      PG('It also ran npm install for you, as the real command does (unless told to skip it).'),
+      PG(`Next: cd ${name}`),
     );
   }
 
@@ -590,7 +591,9 @@ export function runCommand(start, line, answer) {
     const workspace = wIdx > 0 ? w[wIdx + 1] : undefined;
     const named = w.slice(2).filter((a, i) => !a.startsWith('-') && i + 2 !== wIdx + 1);
     if (!named.length) {
-      for (const pkg of TEMPLATE_INSTALL) if (!p.packages.includes(pkg)) p.packages.push(pkg);
+      const missing = TEMPLATE_INSTALL.filter((pkg) => !p.packages.includes(pkg));
+      for (const pkg of missing) p.packages.push(pkg);
+      if (!missing.length) return done(SIMULATED, PG('Up to date: the packages of all three workspace packages are installed already (npm create ran npm install).'));
       return done(SIMULATED, PG('Installed the packages of all three workspace packages, React and the Rayfin client among them.'));
     }
     if (workspace !== undefined && !WORKSPACES[workspace]) return fail(PG(`No workspace named ${workspace}. This app's are ${Object.keys(WORKSPACES).join(', ')}.`));
@@ -683,10 +686,10 @@ function runDev(p, done) {
   return done(
     SIMULATED,
     PG('A real `rayfin dev` provisions (or reuses) the app\'s Fabric backend, writes RAYFIN_PUBLIC_* values to'),
-    PG('rayfin/.env and VITE_* values to .env.local, and serves the page on http://localhost:5173. It keeps'),
+    PG('rayfin/.env and VITE_* values to the frontend\'s .env.local, and serves the page on http://localhost:5173. It keeps'),
     PG('running, so real projects open a second terminal for the next commands.'),
-    PG('Two things differ in a real project: rayfin dev does not wire connectors (connector queries work'),
-    PG('once the app is deployed with `npx rayfin up`), and the dataapp template\'s README has you view the page through the Fabric portal (&devUri=http://localhost:5173).'),
+    PG('One thing differs in a real project: rayfin dev does not wire connectors (connector queries work'),
+    PG('once the app is deployed with `npx rayfin up`).'),
     PG('Here: the page runs in the preview on the right, its queries answered from saved results.'),
   );
 }
@@ -947,6 +950,16 @@ function wireConnectors(p) {
   const names = connectorNames(p);
   const wired = names.filter((n) => /^\s*export\s+const\s+connectorConfig\b/m.test(p.files[`rayfin/connectors/${n}/schema.ts`] ?? ''));
   const lines = [];
+  // A file without the CLI's marker, other than the pack's empty one, is the app's own: the CLI leaves it alone.
+  if (!current.includes('@generated by `rayfin connector add`') && current !== CONNECTORS_KIT) {
+    return [
+      `⚠️  ${file} has manual edits — not overwriting.`,
+      '   The app reads its connectors from that file. Until it lists this',
+      '   connector the app will render nothing, with no error.',
+      '   Apply this content (or merge the maps into your version):',
+      PG('The real CLI prints the generated file here; not shown.'),
+    ];
+  }
   const text = WIRING[wired.join(',')];
   if (text === undefined) {
     lines.push(PG(`The wiring for ${wired.join(', ')} is not simulated: the lessons wire contoso, then pareto, then lake.`));
@@ -1112,7 +1125,7 @@ function initRerun(p, fail) {
   if (p.files['rayfin/rayfin.yml'] === undefined) return fail(PG('Only a rerun of init is simulated here, in a project that has rayfin/rayfin.yml.'));
   return fail(
     PG('Not run here. Rayfin\'s docs: rerunning init in a project with rayfin/rayfin.yml "reruns configuration".'),
-    PG('What a rerun writes in a project made from the dataapp template isn\'t documented. In the Rayfin CLI 2.0.0\'s'),
+    PG('What a rerun writes in a project made from a template isn\'t documented. In the Rayfin CLI 2.0.0\'s'),
     PG('code, a rerun outside a template asks "rayfin.yml already exists. Do you want to overwrite it?", and a yes'),
     PG('writes a new rayfin.yml from defaults, without our connectors. So we make the change by hand.'),
   );

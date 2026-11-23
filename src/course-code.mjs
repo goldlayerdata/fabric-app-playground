@@ -1,62 +1,17 @@
 // The longer pieces of code the lessons paste, as text. lesson-list.mjs uses them in steps
 // (snippets and exact edits); tools/check-lessons.mjs type-checks the project after every step.
 
-// ---------------------------------------------------------------- Set up: the client
-export const CLIENT_IMPORTS = `import { RayfinClient } from '@microsoft/rayfin-client';
-import { browserSession } from '@microsoft/rayfin-auth';
-import { connectorsService } from '@microsoft/rayfin-connectors';
-import { fabricSemanticModel } from '@microsoft/rayfin-connector-fabric-semanticmodel';
-import { connectorConfig as contosoConfig, type ContosoSchema } from '../../rayfin/connectors/contoso/schema';
-`;
-
-export const CLIENT_SCHEMA = `
-// One entry per connector: the name from rayfin.yml, and its generated type.
-type AppConnectorsSchema = {
-  contoso: ContosoSchema;
-};
-`;
-
-export const CLIENT_CREATE = `
-export const rayfinClient = RayfinClient.create({
-  baseUrl: import.meta.env.VITE_RAYFIN_API_URL,
-  publishableKey: import.meta.env.VITE_RAYFIN_PUBLISHABLE_KEY,
-  auth: browserSession({ storage: true }),
-  services: {
-    connectors: connectorsService<AppConnectorsSchema>({
-      configs: { contoso: contosoConfig },
-      runtime: { contoso: fabricSemanticModel() },
-    }),
-  },
-});
-`;
-
-export const CLIENT_ENV_FROM = `export const rayfinClient = RayfinClient.create({
-  baseUrl: import.meta.env.VITE_RAYFIN_API_URL,
-  publishableKey: import.meta.env.VITE_RAYFIN_PUBLISHABLE_KEY,
-`;
-
-export const CLIENT_ENV_TO = `// rayfin dev writes these to .env.local. The template marks them as possibly missing, so check first.
-const apiUrl = import.meta.env.VITE_RAYFIN_API_URL;
-const publishableKey = import.meta.env.VITE_RAYFIN_PUBLISHABLE_KEY;
-if (!apiUrl || !publishableKey) {
-  throw new Error("Missing VITE_RAYFIN_API_URL or VITE_RAYFIN_PUBLISHABLE_KEY: run 'npm run dev'");
-}
-
-export const rayfinClient = RayfinClient.create({
-  baseUrl: apiUrl,
-  publishableKey,
-`;
-
+// ---------------------------------------------------------------- Set up: a first query
 export const TEST_PAGE = `import { useEffect, useState } from 'react';
-import { rayfinClient } from './lib/rayfin-client';
+import { getRayfinClient } from './lib/rayfin-client';
 
 // A first test: one query, one number. The next lesson replaces it with a real page.
 export default function App() {
   const [text, setText] = useState('Asking the model…');
 
   useEffect(() => {
-    rayfinClient.connectors.contoso
-      .executeQuery({ query: 'EVALUATE ROW ( "Revenue", [Revenue] )' })
+    getRayfinClient()
+      .then((client) => client.connectors.contoso.executeQuery({ query: 'EVALUATE ROW ( "Revenue", [Revenue] )' }))
       .then((r) => setText(r.status === 'success' ? \`Revenue: \${String(r.table.rows[0][0])}\` : r.error.message))
       .catch((e: unknown) => setText(String(e)));
   }, []);
@@ -109,49 +64,6 @@ export function KpiCard({ title, value }: KpiCardProps) {
 `;
 
 // ---------------------------------------------------------------- Get data
-// src/hooks/use-dax.ts: the code that runs queries (one runner per model, made once) and the hook pages use.
-export const USE_DAX = `import { useEffect, useState } from 'react';
-import type { SemanticModelQueryResult } from '@microsoft/rayfin-connector-fabric-semanticmodel';
-import { rayfinClient } from '../lib/rayfin-client';
-
-// ------------------------------------------------------------ running queries
-export type RunDax = (query: string) => Promise<SemanticModelQueryResult>;
-
-// Runs a DAX query against the model. Made once, here, outside any page.
-export const runDax: RunDax = (query) => rayfinClient.connectors.contoso.executeQuery({ query });
-
-// Runs a query when the page first draws, and again when the query text changes.
-// Like a visual loading its data: undefined while it loads, then the model's result.
-export function useDax(runDax: RunDax, query: string) {
-  const [result, setResult] = useState<SemanticModelQueryResult | undefined>();
-
-  useEffect(() => {
-    let cancelled = false;
-    runDax(query)
-      .then((r) => {
-        if (!cancelled) setResult(r);
-      })
-      .catch((e: unknown) => {
-        if (!cancelled) {
-          setResult({ status: 'error', error: { category: 'unknown', message: String(e) }, requestId: '' });
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [runDax, query]);
-
-  return result;
-}
-`;
-export const RUN_DAX_LINE = `export const runDax: RunDax = (query) => rayfinClient.connectors.contoso.executeQuery({ query });
-`;
-// Added under runDax in Register the second model.
-export const RUN_PARETO = `
-// Runs a DAX query against the second model. Made once, here, like runDax: only the connector differs.
-export const runPareto: RunDax = (query) => rayfinClient.connectors.pareto.executeQuery({ query });
-`;
-
 // ---------------------------------------------------------------- the query files (src/queries/<page>/)
 // Each is a whole DAX query, as DAX query view in Power BI Desktop runs it. The playground answers a query
 // from the saved results by its text (ignoring spacing and letter case), so these texts are the ones
@@ -224,44 +136,44 @@ export const REVENUE_CARD_DAX = `EVALUATE
 ROW ( "Revenue", [Revenue] )
 `;
 
-// Each .dax file has a small .ts file of the same name, as in the template (its AGENTS.md): a function named after
-// the file, in camelCase, that hands out the query text. The template's return an object, { connection, query,
-// columnMetadata, vegaLiteSpec }; ours return only the query text.
+// Each .dax file has a small .ts file of the same name, as the analytics skill keeps them: a function named after the
+// file, in camelCase, that returns what useSemanticModelQuery takes, { connection, query }. The skill's full factory also
+// returns columnMetadata and vegaLiteSpec, for the visuals pack's charts; our own components don't need them.
 export const COUNTRY_TS = `import revenueByStoreCountryDax from './revenue-by-store-country.dax?raw';
 
 // The countries chart's query, from its .dax file.
 export function revenueByStoreCountry() {
-  return revenueByStoreCountryDax;
+  return { connection: 'contoso', query: revenueByStoreCountryDax };
 }
 `;
 export const COUNTRY_FN_V1 = `export function revenueByStoreCountry() {
-  return revenueByStoreCountryDax;
+  return { connection: 'contoso', query: revenueByStoreCountryDax };
 }`;
 export const COUNTRY_FN_YEAR = `export function revenueByStoreCountry(year?: number) {
-  return withFilters(revenueByStoreCountryDax, filters(year));
+  return { connection: 'contoso', query: withFilters(revenueByStoreCountryDax, filters(year)) };
 }`;
 export const TOTALS_TS = `import salesTotalsDax from './sales-totals.dax?raw';
 
 // The cards' query, from its .dax file: one row, three measures.
 export function salesTotals() {
-  return salesTotalsDax;
+  return { connection: 'contoso', query: salesTotalsDax };
 }
 `;
 export const TOTALS_FN_V1 = `export function salesTotals() {
-  return salesTotalsDax;
+  return { connection: 'contoso', query: salesTotalsDax };
 }`;
 export const TOTALS_FN_YEAR = `export function salesTotals(year?: number) {
   const f = filters(year);
-  if (f.length === 0) return salesTotalsDax;
+  if (f.length === 0) return { connection: 'contoso', query: salesTotalsDax };
   // ROW has no place for a filter: with one, it goes inside CALCULATETABLE.
   const row = salesTotalsDax.replace('EVALUATE', '').trim();
-  return \`EVALUATE CALCULATETABLE ( \${row}, \${f.join(', ')} )\`;
+  return { connection: 'contoso', query: \`EVALUATE CALCULATETABLE ( \${row}, \${f.join(', ')} )\` };
 }`;
 export const MARGIN_TS = `import marginPctDax from './margin-pct.dax?raw';
 
 // The Margin % card's query, from its .dax file.
 export function marginPct() {
-  return marginPctDax;
+  return { connection: 'contoso', query: marginPctDax };
 }
 `;
 export const CATEGORY_TS = `import { filters, withFilters } from '../../lib/filters';
@@ -269,14 +181,14 @@ import revenueByCategoryDax from './revenue-by-category.dax?raw';
 
 // The category chart's query, from its .dax file, with the page's filters where it has /* filters */.
 export function revenueByCategory(year?: number, country?: string) {
-  return withFilters(revenueByCategoryDax, filters(year, country));
+  return { connection: 'contoso', query: withFilters(revenueByCategoryDax, filters(year, country)) };
 }
 `;
 export const YEARS_TS = `import revenueByYearDax from './revenue-by-year.dax?raw';
 
 // The Years page's query, from its .dax file.
 export function revenueByYear() {
-  return revenueByYearDax;
+  return { connection: 'contoso', query: revenueByYearDax };
 }
 `;
 export const PARETO_HEADLINE_TS = `import { filters } from '../../lib/filters';
@@ -285,9 +197,9 @@ import paretoHeadlineDax from './pareto-headline.dax?raw';
 // The model's own count and sentence, for a headline card. A year: its ROW, inside CALCULATETABLE.
 export function paretoHeadline(year?: number) {
   const f = filters(year);
-  if (f.length === 0) return paretoHeadlineDax;
+  if (f.length === 0) return { connection: 'pareto', query: paretoHeadlineDax };
   const row = paretoHeadlineDax.replace('EVALUATE', '').trim();
-  return \`EVALUATE CALCULATETABLE ( \${row}, \${f.join(', ')} )\`;
+  return { connection: 'pareto', query: \`EVALUATE CALCULATETABLE ( \${row}, \${f.join(', ')} )\` };
 }
 `;
 export const PARETO_BY_CATEGORY_TS = `import { filters, withFilters } from '../../lib/filters';
@@ -295,18 +207,18 @@ import paretoByCategoryDax from './pareto-by-category.dax?raw';
 
 // Categories, largest first, with the model's share and running share (its Pareto measures).
 export function paretoByCategory(year?: number) {
-  return withFilters(paretoByCategoryDax, filters(year));
+  return { connection: 'pareto', query: withFilters(paretoByCategoryDax, filters(year)) };
 }
 `;
 export const REVENUE_CARD_TS = `import { filters } from '../../lib/filters';
 import revenueCardDax from './revenue-card.dax?raw';
 
-// One measure by name. Sent to both models, to compare their [Revenue].
-export function revenueCard(year?: number) {
+// One measure by name, sent to the model you name: both, to compare their [Revenue].
+export function revenueCard(connection: 'contoso' | 'pareto', year?: number) {
   const f = filters(year);
-  if (f.length === 0) return revenueCardDax;
+  if (f.length === 0) return { connection, query: revenueCardDax };
   const row = revenueCardDax.replace('EVALUATE', '').trim();
-  return \`EVALUATE CALCULATETABLE ( \${row}, \${f.join(', ')} )\`;
+  return { connection, query: \`EVALUATE CALCULATETABLE ( \${row}, \${f.join(', ')} )\` };
 }
 `;
 // The index.ts files: each folder re-exports its query files, and src/queries/index.ts re-exports the folders
@@ -521,11 +433,12 @@ export default function App() {
 
 export const YEARS_PAGE = `// A second page: sales by year.
 function YearsPage() {
-  const result = useDax(runDax, revenueByYear());
+  const result = useSemanticModelQuery(revenueByYear());
 
-  if (!result) return <p className="p-4">Loading…</p>;
-  if (result.status === 'error') return <ErrorPanel message={result.error.message} />;
-  const years = toBars(result, 'date[Year]', '[Revenue]');
+  if (result.isLoading) return <p className="p-4">Loading…</p>;
+  if (result.error) return <ErrorPanel message={result.error.message} />;
+  if (result.data?.status === 'error') return <ErrorPanel message={result.data.error.message} />;
+  const years = result.data ? toBars(result.data, 'date[Year]', '[Revenue]') : [];
 
   return (
     <div className="mx-auto aspect-video w-full max-w-6xl grid grid-cols-12 grid-rows-6 gap-4 p-4">
@@ -546,7 +459,7 @@ function YearsPage() {
 // Written the way an agent writes a page from one prompt, with four problems from earlier lessons.
 export const AGENT_PAGE = `import { useEffect, useState } from 'react';
 import type { SemanticModelQueryResult } from '@microsoft/rayfin-connector-fabric-semanticmodel';
-import { rayfinClient } from './lib/rayfin-client';
+import { getRayfinClient } from './lib/rayfin-client';
 
 // Added by an agent, from one prompt:
 //   "A sales overview: revenue, orders, customers, margin %, and revenue by store country."
@@ -677,7 +590,7 @@ function ErrorPanel({ message }: { message: string }) {
 // ------------------------------------------------------------ 5. the page
 export default function SalesOverview() {
   // Runs a DAX query against the model.
-  const runDax: RunDax = (query) => rayfinClient.connectors.contoso.executeQuery({ query });
+  const runDax: RunDax = async (query) => (await getRayfinClient()).connectors.contoso.executeQuery({ query });
 
   const totalsResult = useDax(runDax, totalsQuery);
   const countriesResult = useDax(runDax, countriesQuery);
@@ -732,18 +645,19 @@ ROW ( "Margin %", [App Margin %] )
 export const PARETO_PAGE_V1 = `import { useState } from 'react';
 import { ErrorPanel } from './components/error-panel';
 import { YearSlicer } from './components/year-slicer';
-import { runPareto, useDax } from './hooks/use-dax';
+import { useSemanticModelQuery } from './hooks/use-semantic-model-query';
 import { toHeadline } from './lib/conversions';
 import { paretoHeadline } from './queries';
 
 // A page on the second model: for now, its headline.
 export default function ParetoPage() {
   const [year, setYear] = useState<number | undefined>(undefined);
-  const headlineResult = useDax(runPareto, paretoHeadline(year));
+  const headlineQuery = useSemanticModelQuery(paretoHeadline(year));
 
-  if (!headlineResult) return <p className="p-4">Loading…</p>;
-  if (headlineResult.status === 'error') return <ErrorPanel message={headlineResult.error.message} />;
-  const headline = toHeadline(headlineResult);
+  if (headlineQuery.isLoading) return <p className="p-4">Loading…</p>;
+  if (headlineQuery.error) return <ErrorPanel message={headlineQuery.error.message} />;
+  if (headlineQuery.data?.status === 'error') return <ErrorPanel message={headlineQuery.data.error.message} />;
+  const headline = headlineQuery.data ? toHeadline(headlineQuery.data) : { count: 0, text: '' };
 
   return (
     <div className="mx-auto aspect-video w-full max-w-6xl grid grid-cols-12 grid-rows-6 gap-4 p-4">
@@ -766,7 +680,7 @@ import { BarList } from './components/bar-list';
 import { ErrorPanel } from './components/error-panel';
 import { KpiCard } from './components/kpi-card';
 import { YearSlicer } from './components/year-slicer';
-import { runDax, runPareto, useDax } from './hooks/use-dax';
+import { useSemanticModelQuery } from './hooks/use-semantic-model-query';
 import { toHeadline, toPareto, toRevenue } from './lib/conversions';
 import { paretoByCategory, paretoHeadline, revenueCard } from './queries';
 
@@ -775,15 +689,17 @@ const percent = (n: number) => n.toLocaleString('en-US', { style: 'percent', max
 // A page on two models: the pareto model for the categories, both models for [Revenue].
 export default function ParetoPage() {
   const [year, setYear] = useState<number | undefined>(undefined);
-  const paretoResult = useDax(runPareto, paretoByCategory(year));
-  const headlineResult = useDax(runPareto, paretoHeadline(year));
-  const contosoRevenue = useDax(runDax, revenueCard(year));
-  const paretoRevenue = useDax(runPareto, revenueCard(year));
+  const paretoQuery = useSemanticModelQuery(paretoByCategory(year));
+  const headlineQuery = useSemanticModelQuery(paretoHeadline(year));
+  const contosoRevenue = useSemanticModelQuery(revenueCard('contoso', year));
+  const paretoRevenue = useSemanticModelQuery(revenueCard('pareto', year));
 
-  if (!paretoResult || !headlineResult || !contosoRevenue || !paretoRevenue) return <p className="p-4">Loading…</p>;
-  for (const r of [paretoResult, headlineResult, contosoRevenue, paretoRevenue]) if (r.status === 'error') return <ErrorPanel message={r.error.message} />;
-  const rows = toPareto(paretoResult);
-  const headline = toHeadline(headlineResult);
+  const all = [paretoQuery, headlineQuery, contosoRevenue, paretoRevenue];
+  if (all.some((q) => q.isLoading)) return <p className="p-4">Loading…</p>;
+  for (const q of all) if (q.error) return <ErrorPanel message={q.error.message} />;
+  for (const q of all) if (q.data?.status === 'error') return <ErrorPanel message={q.data.error.message} />;
+  const rows = paretoQuery.data ? toPareto(paretoQuery.data) : [];
+  const headline = headlineQuery.data ? toHeadline(headlineQuery.data) : { count: 0, text: '' };
   if (rows.length === 0) return <p className="p-4">No data for this page.</p>;
 
   return (
@@ -793,10 +709,10 @@ export default function ParetoPage() {
         <YearSlicer value={year} onChange={setYear} />
       </header>
       <div className="col-span-3 row-span-2">
-        <KpiCard title="Revenue, contoso model" value={toRevenue(contosoRevenue)} />
+        <KpiCard title="Revenue, contoso model" value={contosoRevenue.data ? toRevenue(contosoRevenue.data) : 0} />
       </div>
       <div className="col-span-3 row-span-2">
-        <KpiCard title="Revenue, pareto model" value={toRevenue(paretoRevenue)} />
+        <KpiCard title="Revenue, pareto model" value={paretoRevenue.data ? toRevenue(paretoRevenue.data) : 0} />
       </div>
       <section className="col-span-6 row-span-2 rounded-lg border border-gray-200 bg-white p-4">
         <p className="text-sm text-gray-500">From the pareto model</p>
@@ -894,7 +810,7 @@ export type Loaded<T> =
   | { status: 'success'; value: T }
   | { status: 'error'; message: string };
 
-// Runs \`load\` again only when \`key\` changes, like useDax with its query text.
+// Runs \`load\` again only when \`key\` changes, like the query hook with its query text.
 export function useLoad<T>(load: () => Promise<T>, key: string): Loaded<T> {
   const [state, setState] = useState<Loaded<T>>({ status: 'loading' });
   useEffect(() => {
@@ -912,18 +828,20 @@ export function useLoad<T>(load: () => Promise<T>, key: string): Loaded<T> {
 `;
 
 // src/lib/lake.ts: the lakehouse reads, plain functions the pages run through useLoad.
-export const LAKE_QUERIES = `import { rayfinClient } from './rayfin-client';
+export const LAKE_QUERIES = `import { getRayfinClient } from './rayfin-client';
 
 export async function storeKeysIn(country: string) {
-  const stores = await rayfinClient.connectors.lake.Store
+  const client = await getRayfinClient();
+  const stores = await client.connectors.lake.Store
     .select(['storeKey'])
     .where({ countryName: { eq: country } })
     .execute();
   return stores.map((s) => s.storeKey);
 }
 
-export function latestLines(storeKeys: number[]) {
-  return rayfinClient.connectors.lake.Sales
+export async function latestLines(storeKeys: number[]) {
+  const client = await getRayfinClient();
+  return client.connectors.lake.Sales
     .select(['orderKey', 'lineNumber', 'orderDate', 'quantity', 'netPrice'])
     .where({ storeKey: { in: storeKeys } })
     .orderBy({ orderDate: 'desc' })
@@ -985,7 +903,8 @@ export default function LinesPage() {
 // ---------------------------------------------------------------- rows or measures
 export const REVENUE_ONE_PAGE = `
 export async function revenueFromLines(storeKeys: number[]) {
-  const lines = await rayfinClient.connectors.lake.Sales
+  const client = await getRayfinClient();
+  const lines = await client.connectors.lake.Sales
     .select(['quantity', 'netPrice'])
     .where({ storeKey: { in: storeKeys } })
     .execute();
@@ -996,7 +915,8 @@ export async function revenueFromLines(storeKeys: number[]) {
 export const REVENUE_PAGED = `
 // Every matching line, page by page (execute() alone stops at one page), then the sum.
 export async function revenueFromLines(storeKeys: number[]) {
-  const query = rayfinClient.connectors.lake.Sales
+  const client = await getRayfinClient();
+  const query = client.connectors.lake.Sales
     .select(['quantity', 'netPrice'])
     .where({ storeKey: { in: storeKeys } })
     .orderBy({ orderKey: 'asc', lineNumber: 'asc' })
@@ -1021,8 +941,9 @@ export const REVENUE_CARD = `      <div className="col-span-4 row-span-2">
 // ---------------------------------------------------------------- who runs this query
 export const ADD_LINE = `
 // A slip on purpose: write a row through the lakehouse connector.
-export function addLine() {
-  return rayfinClient.connectors.lake.Sales.create({
+export async function addLine() {
+  const client = await getRayfinClient();
+  return client.connectors.lake.Sales.create({
     orderKey: 1, lineNumber: 0, orderDate: new Date(), storeKey: 120, quantity: 1, netPrice: 6.293,
   });
 }
@@ -1047,26 +968,43 @@ ${TARGET_RULE_ALL}export class SalesTarget {
 `;
 
 // ---------------------------------------------------------------- register and apply
-// rayfin/data/schema.ts, with SalesTarget in both lists. DataAppSchema is the template's name for the type.
-export const DATA_SCHEMA = `import { SalesTarget } from './SalesTarget.js';
+// packages/data/src/index.ts, with SalesTarget registered (the data-modeling pack's kit/data/schema.ts, shortened).
+export const DATA_SCHEMA = `// The app's data schema: its entities, registered in \`schema\`.
+import { SalesTarget } from './SalesTarget.js';
+import type { UniversalAppSchema } from '@rayfin-app/shared';
 
-export type DataAppSchema = {
-  SalesTarget: SalesTarget;
-};
+export type { UniversalAppSchema };
+export { SalesTarget };
 
 export const schema = [SalesTarget];
 `;
 
-// ---------------------------------------------------------------- read and write targets
-export const CLIENT_DATA_IMPORTS = `import { dataService } from '@microsoft/rayfin-data';
-import type { DataAppSchema } from '../../rayfin/data/schema';
-`;
+// packages/shared/src/index.ts: the record the browser's client is typed by, kept in step with the entity, with no
+// decorated class in it (the data-modeling pack's kit/shared/index.ts).
+export const SHARED_SCHEMA = `// The record types the data package and the browser share. Keep each in step with its entity.
+export interface SalesTargetRecord {
+  id: string;
+  country: string;
+  year: number;
+  amount: number;
+  updatedAt: Date;
+}
 
-export const TARGETS_LOAD = `import { rayfinClient } from './rayfin-client';
+export type UniversalAppSchema = {
+  SalesTarget: SalesTargetRecord;
+};
+`;
+export const SHARED_UPDATED = '  updatedAt: Date;\n';
+export const SHARED_OWNER = '  owner_id: string;\n';
+
+// ---------------------------------------------------------------- read and write targets
+
+export const TARGETS_LOAD = `import { getRayfinClient } from './rayfin-client';
 
 // The targets of one year, from the app's own database.
-export function loadTargets(year: number) {
-  return rayfinClient.data.SalesTarget
+export async function loadTargets(year: number) {
+  const client = await getRayfinClient();
+  return client.data.SalesTarget
     .select(['id', 'country', 'year', 'amount'])
     .where({ year: { eq: year } })
     .orderBy({ country: 'asc' })
@@ -1075,16 +1013,18 @@ export function loadTargets(year: number) {
 `;
 
 export const ADD_TARGET = `// A new target. The server makes its id; we send the fields.
-export function addTarget(country: string, year: number, amount: number) {
-  return rayfinClient.data.SalesTarget.create({ country, year, amount, updatedAt: new Date() });
+export async function addTarget(country: string, year: number, amount: number) {
+  const client = await getRayfinClient();
+  return client.data.SalesTarget.create({ country, year, amount, updatedAt: new Date() });
 }
 `;
 
 export const TARGETS_WRITES = `
 ${ADD_TARGET}
 // A new amount: a patch, found by id.
-export function changeTarget(id: string, amount: number) {
-  return rayfinClient.data.SalesTarget.update({ id }, { amount, updatedAt: new Date() });
+export async function changeTarget(id: string, amount: number) {
+  const client = await getRayfinClient();
+  return client.data.SalesTarget.update({ id }, { amount, updatedAt: new Date() });
 }
 `;
 
@@ -1250,23 +1190,36 @@ export const NOTE_FIELD_SLIP = '  @text({ max: 500 }) note?: string;\n';
 
 // ================================================================== Chapter 5: Who is using it
 // ---------------------------------------------------------------- signed in as
-export const SESSION_READ = `import { rayfinClient } from './rayfin-client';
+export const SESSION_READ = `import { getRayfinClient } from './rayfin-client';
 
 // Who is signed in, read once.
-export function signedInEmail(): string {
-  const session = rayfinClient.auth.getSession();
+export async function signedInEmail(): Promise<string> {
+  const session = (await getRayfinClient()).auth.getSession();
   return session.isAuthenticated && session.user ? session.user.email : 'Not signed in';
 }
 `;
 
 // src/hooks/use-session.ts
 export const USE_SESSION = `import { useEffect, useState } from 'react';
-import { rayfinClient } from '../lib/rayfin-client';
+import type { OpaqueSession } from '@microsoft/rayfin-auth';
+import { getRayfinClient } from '../lib/rayfin-client';
 
-// The session as state: the page draws again at each sign-in, sign-out or refresh.
+// The session as state: the page draws again at each sign-in, sign-out or refresh. Undefined until the client is ready.
 export function useSession() {
-  const [session, setSession] = useState(() => rayfinClient.auth.getSession());
-  useEffect(() => rayfinClient.auth.onSessionChange(() => setSession(rayfinClient.auth.getSession())), []);
+  const [session, setSession] = useState<OpaqueSession | undefined>(undefined);
+  useEffect(() => {
+    let live = true;
+    let stop: (() => void) | undefined;
+    getRayfinClient().then((client) => {
+      if (!live) return;
+      setSession(client.auth.getSession());
+      stop = client.auth.onSessionChange(() => setSession(client.auth.getSession()));
+    });
+    return () => {
+      live = false;
+      stop?.();
+    };
+  }, []);
   return session;
 }
 `;
@@ -1275,17 +1228,18 @@ export function useSession() {
 export const SIGNED_IN_ONCE =
   '        <p className="px-3 pb-2 text-xs text-gray-500 wrap-anywhere">Signed in as {signedInEmail()}</p>\n';
 export const SIGNED_IN_STATE =
-  "  const signedIn = session.isAuthenticated && session.user ? `Signed in as ${session.user.email}` : 'Not signed in';\n";
+  "  const signedIn = session?.isAuthenticated && session.user ? `Signed in as ${session.user.email}` : 'Not signed in';\n";
 export const SIGNED_IN_LIVE = '        <p className="px-3 pb-2 text-xs text-gray-500 wrap-anywhere">{signedIn}</p>\n';
 
 // ---------------------------------------------------------------- my rows only
 export const OWNER_FIELD = '  @text({ max: 128 }) owner_id!: string;\n';
 
 export const ADD_TARGET_STAMPED = `// A new target, stamped with who added it: the id policies compare as claims.sub.
-export function addTarget(country: string, year: number, amount: number) {
-  const session = rayfinClient.auth.getSession();
+export async function addTarget(country: string, year: number, amount: number) {
+  const client = await getRayfinClient();
+  const session = client.auth.getSession();
   if (!session.isAuthenticated || !session.user) throw new Error('Sign in before adding a target.');
-  return rayfinClient.data.SalesTarget.create({ country, year, amount, updatedAt: new Date(), owner_id: session.user.id });
+  return client.data.SalesTarget.create({ country, year, amount, updatedAt: new Date(), owner_id: session.user.id });
 }
 `;
 
@@ -1367,12 +1321,12 @@ export const COUNTRY_RULES = `${COUNTRY_READ_RULE}@authenticated(['create', 'upd
 export const IS_DIRECTOR = `
 // A hint for what to show. In the browser, claims come back as text; the policies on the server decide.
 export async function isDirector(): Promise<boolean> {
-  const claims = await rayfinClient.auth.getClaims();
+  const claims = await (await getRayfinClient()).auth.getClaims();
   return claims.salesRole === 'director';
 }
 `;
 
-export const TARGETS_KEY_SESSION = "`${year}:${saved}:${session.user?.id ?? ''}`";
+export const TARGETS_KEY_SESSION = "`${year}:${saved}:${session?.user?.id ?? ''}`";
 export const DIRECTOR_STATE = `  const [director, setDirector] = useState(false);
   useEffect(() => {
     isDirector().then(setDirector, () => setDirector(false));

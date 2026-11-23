@@ -1,4 +1,4 @@
-// Generates the exact src/lib/connectors.ts text `rayfin connector add` writes (Rayfin CLI 2.0.0,
+// Generates the exact packages/frontend/src/lib/connectors.ts text `rayfin connector add` writes (Rayfin CLI 2.0.0,
 // dist/services/connector-wiring.js: extractAppOwnedPrologue + renderAppWiring), starting from the connectors
 // pack's kit/connectors.ts, for the connector sets the lessons reach. Run from the repository root:
 //   node tools/wiring/gen-wiring.mjs > tools/wiring/wiring.json  (needs the local reference install)

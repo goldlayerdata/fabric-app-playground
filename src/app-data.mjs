@@ -3,7 +3,7 @@
 //
 // What is simulated, and how (rayfin.ai: Data, Permissions, Schema changes; Microsoft Learn: Define data
 // models, Define data permissions):
-// - Entities are every exported @entity() class in rayfin/data/*.ts, as the Rayfin CLI collects them (it doesn't
+// - Entities are every exported @entity() class in packages/data/src/*.ts, as the Rayfin CLI collects them (it doesn't
 //   need the `schema` array). The real CLI compiles them and reads their metadata; here a small parser reads the source.
 // - `db apply` compares the declared entities with the tables it applied last time. It blocks the changes
 //   Rayfin's docs call potentially destructive (dropping a column or table, narrowing or changing a type)
@@ -275,8 +275,10 @@ export function evalPolicy(tree, claims, item) {
 }
 
 // ---------------------------------------------------------------- the declared model
-export const DATA_DIR = 'rayfin/data';
-export const SCHEMA_FILE = `${DATA_DIR}/schema.ts`;
+export const DATA_DIR = 'packages/data/src';
+export const SCHEMA_FILE = `${DATA_DIR}/index.ts`;
+/** The shared package's index: UniversalAppSchema, the record types the browser's client is typed by. */
+export const SHARED_FILE = 'packages/shared/src/index.ts';
 
 /** Is the data service on in rayfin.yml, and with which dialect? */
 export function dataService(project) {
@@ -285,7 +287,7 @@ export function dataService(project) {
   return { enabled: /^ {4}enabled: true\s*$/m.test(block), dialect: block.match(/^ {4}dialect: (\S+)/m)?.[1] };
 }
 
-/** Every entity file in rayfin/data/, parsed. */
+/** Every entity file in packages/data/src/, parsed. */
 export function entityFiles(project) {
   return Object.keys(project.files)
     .filter((f) => f.startsWith(`${DATA_DIR}/`) && /\.ts$/.test(f) && f !== SCHEMA_FILE && !f.endsWith('.d.ts'))
@@ -295,8 +297,8 @@ export function entityFiles(project) {
 
 /**
  * The entities `db apply` applies. Like the Rayfin CLI 2.0.0 (rayfin-tools-common, services/data/node/dab-config.js:
- * findCompiledDataFiles, collectEntities), every exported @entity() class in rayfin/data/ counts, whether or not
- * rayfin/data/schema.ts lists it: the `schema` array and the type (the template's `DataAppSchema`; `AppSchema` in Rayfin's
+ * findCompiledDataFiles, collectEntities), every exported @entity() class in packages/data/src/ counts, whether or not
+ * packages/data/src/index.ts lists it: the `schema` array and the type (the template's `UniversalAppSchema`, in packages/shared; `AppSchema` in Rayfin's
  * docs) are the lists Rayfin's docs ask for.
  */
 export function declared(project) {
@@ -304,10 +306,10 @@ export function declared(project) {
   return { entities, problems: entities.flatMap((e) => e.problems) };
 }
 
-/** Is the entity in the schema type of rayfin/data/schema.ts, `DataAppSchema` (or `AppSchema`)? The client's types come from it. */
+/** Is the entity in `UniversalAppSchema`, in the shared package? The client's types come from it. */
 export function inAppSchema(project, name) {
-  const text = stripComments(project.files[SCHEMA_FILE] ?? '');
-  const type = text.match(/export\s+type\s+(?:Data)?AppSchema\s*=\s*\{([^}]*)\}/);
+  const text = stripComments(project.files[SHARED_FILE] ?? '');
+  const type = text.match(/export\s+type\s+UniversalAppSchema\s*=\s*\{([^}]*)\}/);
   return !!type && new RegExp(`\\b${name}\\s*:`).test(type[1]);
 }
 
@@ -523,7 +525,7 @@ export function handleRequest(db, req, identity, newId = () => crypto.randomUUID
   const table = db?.tables?.[req.entity];
   const fail = (error, rule) => ({ ok: false, error, rule, db });
   if (!table) {
-    return fail(`Playground: the app's database has no table for ${req.entity}. Register it in rayfin/data/schema.ts and run \`npx rayfin up db apply\`.`);
+    return fail(`Playground: the app's database has no table for ${req.entity}. Register it in packages/data/src/index.ts and run \`npx rayfin up db apply\`.`);
   }
   const unlimited = unlimitedText(db);
   // rayfin.ai (Field types, text length and MSSQL): a @text() without max can break the data API's schema.

@@ -26,7 +26,7 @@
 //           status (the query count, shown only on such a card), terminal, log, queries, help, run, reset,
 //           data, signin. A tab of the bottom panel (terminal, log, queries, data, help) also opens.
 //           One action per step: creating a file and pasting into it are two steps.
-//   edits   optional: the exact change, as [{ file?, from, to, all? }] (file defaults to src/App.tsx;
+//   edits   optional: the exact change, as [{ file?, from, to, all? }] (file defaults to packages/frontend/src/App.tsx;
 //           from: '' writes a new or empty file). An edit whose `to` starts with its `from` adds under
 //           that line, and "Show me in the code" puts the cursor there; one whose `to` ends with its
 //           `from` adds above it. Used by "Do it for me", by the done tick, and by
@@ -44,7 +44,7 @@
 // Text formatting: inline `code`, **bold**, and [[term]] or [[shown text|term-id]] for a word in the
 // glossary (terms.mjs). Nothing else.
 import * as C from './course-code.mjs';
-import { CLIENT_PLACEHOLDER, FUNCTION_APP, FUNCTION_APP_TEMPLATE, PLACEHOLDER, TEMPLATE_DATA_SCHEMA, sqlPlaceholder } from './project.mjs';
+import { FUNCTION_APP, FUNCTION_APP_TEMPLATE, PLACEHOLDER, TEMPLATE_DATA_INDEX, TEMPLATE_SHARED_INDEX, sqlPlaceholder } from './project.mjs';
 
 const LEARN = 'https://learn.microsoft.com/fabric/apps';
 const learn = {
@@ -107,46 +107,49 @@ const rayfin = {
   browserClaims: { href: 'https://rayfin.ai/docs/auth/dynamic-claims#read-claims-in-the-browser', label: 'Read claims in the browser (rayfin.ai)' },
 };
 
-const APP = 'src/App.tsx';
-const AGENT = 'src/SalesOverview.tsx';
-// The project's folders follow the data app template (its AGENTS.md, "Project Structure"): components/ for
-// visuals, hooks/ for React hooks, lib/ for the client and other shared code, queries/<page>/ for the DAX.
-const CLIENT = 'src/lib/rayfin-client.ts';
-const HOOK = 'src/hooks/use-dax.ts';
-const CONV = 'src/lib/conversions.ts';
-const FILTERS = 'src/lib/filters.ts';
-const KPI = 'src/components/kpi-card.tsx';
-const BAR = 'src/components/bar-list.tsx';
-const ERR = 'src/components/error-panel.tsx';
-const SLICER = 'src/components/year-slicer.tsx';
-const USE_LOAD = 'src/hooks/use-load.ts';
-const USE_SESSION = 'src/hooks/use-session.ts';
+const APP = 'packages/frontend/src/App.tsx';
+const AGENT = 'packages/frontend/src/SalesOverview.tsx';
+// The app is the default template, the Universal App: an npm workspace whose frontend is packages/frontend. Its src keeps
+// components/ for visuals, hooks/ for React hooks, lib/ for the client and other shared code, and queries/<page>/ for the
+// DAX (the analytics skill).
+const FE_SRC = 'packages/frontend/src/';
+const CLIENT = 'packages/frontend/src/lib/rayfin-client.ts';
+const HOOK = 'packages/frontend/src/hooks/use-semantic-model-query.ts';
+const CONNECTORS = 'packages/frontend/src/lib/connectors.ts';
+const CONV = 'packages/frontend/src/lib/conversions.ts';
+const FILTERS = 'packages/frontend/src/lib/filters.ts';
+const KPI = 'packages/frontend/src/components/kpi-card.tsx';
+const BAR = 'packages/frontend/src/components/bar-list.tsx';
+const ERR = 'packages/frontend/src/components/error-panel.tsx';
+const SLICER = 'packages/frontend/src/components/year-slicer.tsx';
+const USE_LOAD = 'packages/frontend/src/hooks/use-load.ts';
+const USE_SESSION = 'packages/frontend/src/hooks/use-session.ts';
 // Each query: a .dax file and a .ts file of the same name, in a folder per page.
-const COUNTRY_DAX = 'src/queries/overview/revenue-by-store-country.dax';
-const COUNTRY_TS = 'src/queries/overview/revenue-by-store-country.ts';
-const TOTALS_DAX = 'src/queries/overview/sales-totals.dax';
-const TOTALS_TS = 'src/queries/overview/sales-totals.ts';
-const MARGIN_DAX = 'src/queries/overview/margin-pct.dax';
-const MARGIN_TS = 'src/queries/overview/margin-pct.ts';
-const CATEGORY_DAX = 'src/queries/overview/revenue-by-category.dax';
-const CATEGORY_TS = 'src/queries/overview/revenue-by-category.ts';
-const YEARS_DAX = 'src/queries/years/revenue-by-year.dax';
-const YEARS_TS = 'src/queries/years/revenue-by-year.ts';
-const PARETO_HEADLINE_DAX = 'src/queries/categories/pareto-headline.dax';
-const PARETO_HEADLINE_TS = 'src/queries/categories/pareto-headline.ts';
-const PARETO_BY_CATEGORY_DAX = 'src/queries/categories/pareto-by-category.dax';
-const PARETO_BY_CATEGORY_TS = 'src/queries/categories/pareto-by-category.ts';
-const REVENUE_CARD_DAX = 'src/queries/categories/revenue-card.dax';
-const REVENUE_CARD_TS = 'src/queries/categories/revenue-card.ts';
+const COUNTRY_DAX = 'packages/frontend/src/queries/overview/revenue-by-store-country.dax';
+const COUNTRY_TS = 'packages/frontend/src/queries/overview/revenue-by-store-country.ts';
+const TOTALS_DAX = 'packages/frontend/src/queries/overview/sales-totals.dax';
+const TOTALS_TS = 'packages/frontend/src/queries/overview/sales-totals.ts';
+const MARGIN_DAX = 'packages/frontend/src/queries/overview/margin-pct.dax';
+const MARGIN_TS = 'packages/frontend/src/queries/overview/margin-pct.ts';
+const CATEGORY_DAX = 'packages/frontend/src/queries/overview/revenue-by-category.dax';
+const CATEGORY_TS = 'packages/frontend/src/queries/overview/revenue-by-category.ts';
+const YEARS_DAX = 'packages/frontend/src/queries/years/revenue-by-year.dax';
+const YEARS_TS = 'packages/frontend/src/queries/years/revenue-by-year.ts';
+const PARETO_HEADLINE_DAX = 'packages/frontend/src/queries/categories/pareto-headline.dax';
+const PARETO_HEADLINE_TS = 'packages/frontend/src/queries/categories/pareto-headline.ts';
+const PARETO_BY_CATEGORY_DAX = 'packages/frontend/src/queries/categories/pareto-by-category.dax';
+const PARETO_BY_CATEGORY_TS = 'packages/frontend/src/queries/categories/pareto-by-category.ts';
+const REVENUE_CARD_DAX = 'packages/frontend/src/queries/categories/revenue-card.dax';
+const REVENUE_CARD_TS = 'packages/frontend/src/queries/categories/revenue-card.ts';
 // The index.ts files that re-export them (the template's AGENTS.md, "Re-export via index.ts").
-const QUERIES_INDEX = 'src/queries/index.ts';
-const OVERVIEW_INDEX = 'src/queries/overview/index.ts';
-const YEARS_INDEX = 'src/queries/years/index.ts';
-const CATEGORIES_INDEX = 'src/queries/categories/index.ts';
+const QUERIES_INDEX = 'packages/frontend/src/queries/index.ts';
+const OVERVIEW_INDEX = 'packages/frontend/src/queries/overview/index.ts';
+const YEARS_INDEX = 'packages/frontend/src/queries/years/index.ts';
+const CATEGORIES_INDEX = 'packages/frontend/src/queries/categories/index.ts';
 const reExport = C.reExport;
 // A step that makes a new, empty file.
 const newFile = (file, lead, extra = {}) => ({
-  do: `${lead}click **+ New file** and type \`${file.slice(4)}\` after the \`src/\` already there.`,
+  do: `${lead}click **+ New file** and type \`${file.slice(FE_SRC.length)}\` after the \`${FE_SRC}\` already there.`,
   edits: [{ file, from: '', to: '' }],
   point: 'files',
   see: `An empty \`${file}\`, open in the editor.`,
@@ -161,7 +164,10 @@ const YML = 'rayfin/rayfin.yml';
 const UNDO = 'Undo: click in the editor and press Ctrl+Z (Cmd+Z on a Mac), or use **Do it for me**.';
 
 const ADD_CONNECTOR = `npx rayfin connector add --type fabric-semanticmodel --workspace-id ${PLACEHOLDER.workspaceId} --item-id ${PLACEHOLDER.itemId} --name contoso`;
-const INSTALL_CONNECTOR = 'npm install @microsoft/rayfin-connector-fabric-semanticmodel@2.0.0 @microsoft/rayfin-connectors@2.0.0';
+// The analytics skill: install the versions connector add prints into the frontend workspace, not at the root.
+const INSTALL_CONNECTOR = 'npm install -w @rayfin-app/frontend @microsoft/rayfin-connector-fabric-semanticmodel@2.0.0 @microsoft/rayfin-connectors@2.0.0';
+const PACK_CONNECTORS = 'npm run pack:add -- connectors';
+const PACK_ANALYTICS = 'npm run pack:add -- analytics';
 const INVOKE = 'npx rayfin connector invoke contoso executeQuery --input \'{"query":"EVALUATE ROW ( \\"Revenue\\", [Revenue] )"}\'';
 
 // Lines the lessons edit more than once.
@@ -175,7 +181,7 @@ const COMP_IMPORT = "import { KpiCard } from './components/kpi-card';\n";
 const IMP_BAR = "import { BarList } from './components/bar-list';\n";
 const IMP_ERR = "import { ErrorPanel } from './components/error-panel';\n";
 const IMP_SLICER = "import { YearSlicer } from './components/year-slicer';\n";
-const IMP_HOOK = "import { runDax, useDax } from './hooks/use-dax';\n";
+const IMP_HOOK = "import { useSemanticModelQuery } from './hooks/use-semantic-model-query';\n";
 const IMP_CONV_1 = "import { toBars } from './lib/conversions';";
 const IMP_CONV_2 = "import { toBars, toTotals } from './lib/conversions';";
 const IMP_CONV_3 = "import { toBars, toPercent, toTotals } from './lib/conversions';";
@@ -193,32 +199,35 @@ const COUNTRY_DAX_IMPORT = "import revenueByStoreCountryDax from './revenue-by-s
 // The ends of conversions, under which the next one goes.
 const PERCENT_END = '  return Number(result.table.rows[0][at]);\n}';
 const HEADLINE_END = "text: String(rows[0][at('[Headline]')]) };\n}";
-const COUNTRIES_LINES = '  const countriesResult = useDax(runDax, revenueByStoreCountry());\n  const countries = countriesResult ? toBars(countriesResult) : [];\n';
-const TOTALS_LINES = '  const totalsResult = useDax(runDax, salesTotals());\n  const totals = totalsResult ? toTotals(totalsResult) : { revenue: 0, orders: 0, customers: 0 };\n';
-const MARGIN_LINE = '  const marginResult = useDax(runDax, marginPct());\n';
-const LOADING = '  if (!countriesResult || !totalsResult || !marginResult) return <p className="p-4">Loading…</p>;\n';
-const ERRORS = "  for (const r of [countriesResult, totalsResult, marginResult]) if (r.status === 'error') return <ErrorPanel message={r.error.message} />;\n";
+// The page's queries, through the analytics pack's hook: each gives back { data, isLoading, error }.
+const COUNTRIES_LINES = '  const countriesQuery = useSemanticModelQuery(revenueByStoreCountry());\n  const countries = countriesQuery.data ? toBars(countriesQuery.data) : [];\n';
+const TOTALS_LINES = '  const totalsQuery = useSemanticModelQuery(salesTotals());\n  const totals = totalsQuery.data ? toTotals(totalsQuery.data) : { revenue: 0, orders: 0, customers: 0 };\n';
+const MARGIN_LINE = '  const marginQuery = useSemanticModelQuery(marginPct());\n';
+const LOADING = '  if (countriesQuery.isLoading || totalsQuery.isLoading || marginQuery.isLoading) return <p className="p-4">Loading…</p>;\n';
+// The pack's hook keeps two channels apart: the model's answer, which can be an error, and a call that threw.
+const MODEL_ERRORS = "  for (const q of [countriesQuery, totalsQuery, marginQuery]) if (q.data?.status === 'error') return <ErrorPanel message={q.data.error.message} />;\n";
+const THROWN_ERRORS = '  for (const q of [countriesQuery, totalsQuery, marginQuery]) if (q.error) return <ErrorPanel message={q.error.message} />;\n';
 const YEAR_STATE = '  const [year, setYear] = useState<number | undefined>(undefined);\n';
-const LOCAL_RUNDAX = '  const runDax = (query: string) => rayfinClient.connectors.contoso.executeQuery({ query });\n';
-const AGENT_RUNDAX_IN_PAGE = '  // Runs a DAX query against the model.\n  const runDax: RunDax = (query) => rayfinClient.connectors.contoso.executeQuery({ query });\n\n';
+// The redraw trap: an agent's own loader, made inside the page, in its effect's list.
+const TRAP_IMPORT = "import { getRayfinClient } from './lib/rayfin-client';\n";
+const TRAP_LINES = '  // An agent\'s own loader for the totals, made inside the page.\n  const loadTotals = () => getRayfinClient().then((c) => c.connectors.contoso.executeQuery({ query: salesTotals(year).query }));\n  const [agentTotals, setAgentTotals] = useState<unknown>();\n  useEffect(() => {\n    loadTotals().then(setAgentTotals);\n  }, [loadTotals]);\n';
+const AGENT_RUNDAX_IN_PAGE = '  // Runs a DAX query against the model.\n  const runDax: RunDax = async (query) => (await getRayfinClient()).connectors.contoso.executeQuery({ query });\n\n';
 
 // Chapter 2: the second semantic model.
-const PARETO_PAGE = 'src/ParetoPage.tsx';
+const PARETO_PAGE = 'packages/frontend/src/ParetoPage.tsx';
 const PARETO_SCHEMA_FILE = 'rayfin/connectors/pareto/schema.ts';
 const ADD_PARETO_AS_CONTOSO = `npx rayfin connector add --type fabric-semanticmodel --workspace-id ${PLACEHOLDER.workspaceId} --item-id ${PLACEHOLDER.paretoId} --name Contoso`;
 const ADD_PARETO = `npx rayfin connector add --type fabric-semanticmodel --workspace-id ${PLACEHOLDER.workspaceId} --item-id ${PLACEHOLDER.paretoId} --name pareto`;
 const INVOKE_HEADLINE_PARETO = 'npx rayfin connector invoke pareto executeQuery --input \'{"query":"EVALUATE ROW ( \\"Headline\\", [Cutoff Headline] )"}\'';
 const INVOKE_HEADLINE_CONTOSO = 'npx rayfin connector invoke contoso executeQuery --input \'{"query":"EVALUATE ROW ( \\"Headline\\", [Cutoff Headline] )"}\'';
-const RUNTIME_CASE_SLIP = 'runtime: { contoso: fabricSemanticModel(), Pareto: fabricSemanticModel() },';
-const RUNTIME_BOTH = 'runtime: { contoso: fabricSemanticModel(), pareto: fabricSemanticModel() },';
 const PAGES_AGENT = "  agent: { title: 'Agent page', Component: SalesOverview },\n";
 const PAGES_PARETO = "  pareto: { title: 'Categories', Component: ParetoPage },\n";
 const IMPORT_AGENT = "import SalesOverview from './SalesOverview';\n";
 const IMPORT_PARETO = "import ParetoPage from './ParetoPage';\n";
 
 // Chapter 3: the lakehouse.
-const LAKE_TS = 'src/lib/lake.ts';
-const LINES = 'src/LinesPage.tsx';
+const LAKE_TS = 'packages/frontend/src/lib/lake.ts';
+const LINES = 'packages/frontend/src/LinesPage.tsx';
 const LAKE_DIR = 'rayfin/connectors/lake';
 const LAKE_METADATA = `${LAKE_DIR}/metadata.json`;
 const LAKE_SCHEMA_FILE = `${LAKE_DIR}/schema.ts`;
@@ -229,19 +238,21 @@ const LAKE_ADD = `npx rayfin connector add --type fabric-sqlanalytics --workspac
 const LAKE_READD = `npx rayfin connector add --type fabric-sqlanalytics --workspace-id ${PLACEHOLDER.workspaceId} --item-id ${PLACEHOLDER.lakehouseId} --name lake --auth delegated --yes`;
 const LAKE_INSTALL = 'npm install @microsoft/rayfin-connector-fabric-graphql@2.0.0 @microsoft/rayfin-connectors@2.0.0';
 const LAKE_INSPECT = 'npx rayfin connector inspect --name lake --entity dbo.store --rows 1';
-const CONTOSO_CLIENT_IMPORT = "import { connectorConfig as contosoConfig, type ContosoSchema } from '../../rayfin/connectors/contoso/schema';\n";
-const PARETO_CLIENT_IMPORT = "import { connectorConfig as paretoConfig, type ParetoSchema } from '../../rayfin/connectors/pareto/schema';\n";
-const LAKE_CLIENT_IMPORT = "import { connectorConfig as lakeConfig, type LakeSchema } from '../../rayfin/connectors/lake/schema';\n";
+// Wiring the lakehouse by hand, after taking connectors.ts over (the connectors skill, Generate and wire Category A entities).
+const LAKE_MARKER = '// @generated by `rayfin connector add` — do not edit below this line.\n';
+const PARETO_WIRE_IMPORT = "import { connectorConfig as paretoConfig, type ParetoSchema as paretoSchema } from '../../../../rayfin/connectors/pareto/schema';\n";
+const LAKE_WIRE_IMPORT = "import { connectorConfig as lakeConfig, type LakeSchema as lakeSchema } from '../../../../rayfin/connectors/lake/schema';\n";
 const LATEST_LINES_END = '    .first(20)\n    .execute();\n}\n';
 const LINES_HOOK = '  const lines = useLoad(async () => latestLines(await storeKeysIn(country)), country);\n';
 const LINES_END = '      </section>\n    </div>\n  );\n}\n';
 
 // The app's own data, sign-in and claims.
-const TARGET = 'rayfin/data/SalesTarget.ts';
-const DATA_SCHEMA = 'rayfin/data/schema.ts';
-const TARGETS_TS = 'src/lib/targets.ts';
-const TARGETS_PAGE = 'src/TargetsPage.tsx';
-const SESSION_TS = 'src/lib/session.ts';
+const TARGET = 'packages/data/src/SalesTarget.ts';
+const DATA_SCHEMA = 'packages/data/src/index.ts';
+const SHARED_SCHEMA = 'packages/shared/src/index.ts';
+const TARGETS_TS = 'packages/frontend/src/lib/targets.ts';
+const TARGETS_PAGE = 'packages/frontend/src/TargetsPage.tsx';
+const SESSION_TS = 'packages/frontend/src/lib/session.ts';
 const DB_APPLY = 'npx rayfin up db apply';
 const DATA_OFF = '  data:\n    enabled: false\n';
 const DATA_ON = '  data:\n    enabled: true\n    dialect: mssql\n';
@@ -325,17 +336,17 @@ export const lessons = [
   {
     id: 'create',
     title: 'Create the project',
-    goal: 'create a Fabric app project from Microsoft\'s data app template',
+    goal: 'create a Fabric app project from Rayfin\'s default template',
     builds: ['tour'],
     pbi: 'Like File > New in Power BI Desktop, but for an app: one command makes a project folder from a template.',
-    idea: 'We use Microsoft\'s data app template, made for apps that query a semantic model. It is created by [[Rayfin]], the toolkit for Fabric apps.',
+    idea: 'We use Rayfin\'s default template, the Universal App: a small starting app that grows by adding capabilities. It is created by [[Rayfin]], the toolkit for Fabric apps.',
     steps: [
       {
         do: 'In the **Terminal**, create the project:',
-        run: 'npm create @microsoft/rayfin@latest contoso-app -- --template dataapp',
+        run: 'npm create @microsoft/rayfin@latest contoso-app -- --template blankapp',
         point: 'terminal',
-        see: 'A `contoso-app` folder, and its files in the file list. 🔒 means read-only here. Most locked files are placeholders that say what the real file does; `package.json` and `rayfin.yml` are real. Two template files stay open for editing because we rewrite them: `src/lib/rayfin-client.ts` and `rayfin/data/schema.ts`.',
-        why: '`npm` fetches and runs JavaScript packages; `npm create` runs a project creator, here Rayfin\'s (`@latest`: its newest version). The lone `--` passes `--template dataapp` on to Rayfin\'s creator. Without it, the real command asks which template to use. (In Windows PowerShell, some versions drop the lone `--`: Rayfin\'s docs say to use `npm.cmd` there.)',
+        see: 'A `contoso-app` folder, and its files in the file list. 🔒 means read-only here. Most locked files are placeholders that say what the real file does; the `package.json` files and `rayfin.yml` are real. Three template files stay open for editing because we change them: `packages/frontend/src/App.tsx`, and the `index.ts` of `packages/data` and `packages/shared`.',
+        why: '`npm` fetches and runs JavaScript packages; `npm create` runs a project creator, here Rayfin\'s (`@latest`: its newest version). The lone `--` passes `--template blankapp` on to Rayfin\'s creator. Without it, the real command asks which template to use, and its default, **Use default template**, is this one. (In Windows PowerShell, some versions drop the lone `--`: Rayfin\'s docs say to use `npm.cmd` there.)',
       },
       {
         do: 'Move into the new folder:',
@@ -345,28 +356,28 @@ export const lessons = [
       {
         do: 'Look at the file list: the folders, in Power BI terms.',
         point: 'files',
-        see: '`src` holds the pages. In it, `components` holds the visuals, `hooks` the code that runs a query and waits for it, and `lib` the connection and other shared code. `queries`, the DAX behind each visual, comes in **The first queries**. `rayfin` holds the app\'s settings (`rayfin.yml`) and, later, its own data.',
-        why: 'Everything else is the template\'s, and we never touch it: the settings files at the top, `.agents` (instructions for coding agents), `.playwright` and `scripts` (browser checks), `src/services` (sign-in) and `src/test` (tests). Some folders are folded: click one to open it.',
+        see: '`packages` holds three packages. `packages/frontend` is the app people see: its `src` holds the pages, `components` the visuals, `hooks` the code that runs a query and waits for it, and `lib` the connection and other shared code. `packages/data` and `packages/shared` hold the app\'s own data, later. `rayfin` holds the app\'s settings (`rayfin.yml`).',
+        why: 'Everything else is the template\'s, and we never touch it: the settings files at the top, `.agents` (instructions for coding agents), `scripts`, `packages/frontend/src/services` (sign-in) and `packages/frontend/src/test` (tests). Some folders are folded: click one to open it.',
       },
       {
         do: 'Install the packages the template lists:',
         run: 'npm install',
-        see: 'React, the Rayfin client and the rest are installed.',
-        why: 'A package is code someone else wrote, such as React.',
+        see: 'Up to date: `npm create` already installed them, for all three packages. Run it again after changing a `package.json`, or after fetching someone else\'s changes.',
+        why: 'A package is code someone else wrote, such as React. The project is an npm workspace: one `npm install`, at the top, serves every package in it.',
       },
       {
-        do: 'Open `package.json` in the file list.',
-        file: 'package.json',
+        do: 'Open `packages/frontend/package.json` in the file list.',
+        file: 'packages/frontend/package.json',
         find: '"dependencies": {',
-        see: 'Its `dependencies`: the packages `npm install` just fetched, React and the Rayfin ones among them.',
-        why: '`scripts` holds shortcuts: `npm run dev` runs the `dev` line, `rayfin dev`.',
+        see: 'Its `dependencies`: the packages the frontend uses, React and the Rayfin ones among them.',
+        why: 'The `package.json` at the top lists the workspace and its `scripts`, the shortcuts: `npm run dev` runs its `dev` line, `rayfin dev`.',
       },
       {
         do: 'Open `rayfin/rayfin.yml`.',
         file: YML,
         find: 'staticHosting:',
-        see: 'The app\'s settings, as `name: value` lines; indented lines belong to the line above. `auth` turns on Fabric sign-in; `staticHosting` says which built folder Fabric hosts, and how to build it.',
-        why: 'Read-only here, to keep the lessons on track. In a real project you can edit it; `connector add` writes its connector part for you.',
+        see: 'The app\'s settings, as `name: value` lines; indented lines belong to the line above. `auth` turns on Fabric sign-in; `staticHosting` says which package Fabric hosts (`packages/frontend`), and how to build it.',
+        why: 'Read-only here, to keep the lessons on track. In a real project you can edit it; the packs and `connector add` write their parts for you.',
       },
       {
         do: 'Sign in to Fabric:',
@@ -377,17 +388,17 @@ export const lessons = [
       {
         do: 'Start the dev loop:',
         run: 'npm run dev',
-        see: 'The preview says there is no page yet: `src/App.tsx` is empty.',
-        why: '`npm run dev` runs the `dev` script, which is `rayfin dev`. It keeps running and redraws the page as we edit. In a real project it holds that terminal (open a second one for the next commands) and serves the page at a local address. The data app template\'s README has us view it through the Fabric portal, by adding `&devUri=http://localhost:5173` to the app\'s address there.',
+        see: 'The preview says there is no page yet: `packages/frontend/src/App.tsx` is empty.',
+        why: '`npm run dev` runs the `dev` script, which is `rayfin dev`. It keeps running and redraws the page as we edit. In a real project it holds that terminal (open a second one for the next commands) and serves the page at a local address.',
       },
     ],
     summary: [
-      'One command creates the project from the data app template; `npm install` fetches its packages.',
-      '`package.json` lists packages and scripts; `rayfin.yml` holds the app\'s settings. `npm run dev` starts the loop: edit, and see the page.',
+      'One command creates the project from the default template, an npm workspace of three packages; `npm install` fetches the packages for all of them.',
+      'The `package.json` files list packages and scripts; `rayfin.yml` holds the app\'s settings. `npm run dev` starts the loop: edit, and see the page.',
     ],
     fabric: {
-      text: 'Microsoft\'s walkthrough starts with a similar `npm create … --template dataapp` (it also passes `--workspace`), then adds the connector. Most of the template\'s other files are in the file list as locked placeholders: its sign-in, a placeholder page, tests, agent files, and its own way to query a semantic model. These lessons use Rayfin\'s connector instead, as rayfin.ai documents it.',
-      links: [learn.template, rayfin.quickstart],
+      text: 'Rayfin\'s guide starts apps from this template, `blankapp`, shown as **Use default template**. Microsoft Learn\'s data app page uses `--template dataapp` instead: the same ideas, with a flat layout (`src/` there is `packages/frontend/src/` here). Most of the template\'s other files are in the file list as locked placeholders: its sign-in, its welcome page, tests and agent files.',
+      links: [rayfin.quickstart, learn.template],
     },
   },
 
@@ -397,14 +408,27 @@ export const lessons = [
     goal: 'connect the project to a semantic model with the Rayfin CLI',
     builds: ['create'],
     pbi: 'Like Get data > Power BI semantic models: the app gets a connection to one model. In a Fabric app that connection is a [[connector]].',
-    idea: 'One command adds the connector. We give it a name, `contoso`, and the ids of the workspace and the model. The ids here are made up: in a real project they come from `npx rayfin connector search` or the model\'s address in the Fabric portal.',
+    idea: 'First two capability packs, then one command adds the connector. We give it a name, `contoso`, and the ids of the workspace and the model. The ids here are made up: in a real project they come from `npx rayfin connector search` or the model\'s address in the Fabric portal.',
     steps: [
+      {
+        do: 'Add the connectors pack, which wires connectors into the app:',
+        run: PACK_CONNECTORS,
+        point: 'terminal',
+        see: '`> Scaffolding pack: connectors`, then `copied 2 file(s)`: an empty `packages/frontend/src/lib/connectors.ts`, and a new `rayfin-client.ts` that reads it.',
+        why: 'A pack adds one capability: its files, its packages, and the services it turns on in `rayfin.yml`. For a semantic model, the template\'s capability-router skill says: connectors, then analytics.',
+      },
+      {
+        do: 'Add the analytics pack, for semantic models:',
+        run: PACK_ANALYTICS,
+        point: 'terminal',
+        see: '`rayfin.yml: connectors.enabled = true`, and a new hook, `packages/frontend/src/hooks/use-semantic-model-query.ts`: the code our pages will use to run DAX.',
+        why: 'Both packs also add their packages to `packages/frontend/package.json` and install them.',
+      },
       {
         do: 'Add a semantic model connector named `contoso`:',
         run: ADD_CONNECTOR,
-        errors: 2,
         point: 'terminal',
-        see: '`rayfin.yml` changed, a new `rayfin/connectors/contoso/schema.ts` appears in the file list, and the terminal prints an install line to run next.',
+        see: '`rayfin.yml` changed, a new `rayfin/connectors/contoso/schema.ts`, `🔌 Wired 1 connector(s) into packages/frontend/src/lib/connectors.ts`, and an install line.',
         why: '`--type` says what kind of Fabric item, `--workspace-id` and `--item-id` say which one, and `--name` is the name our code will use.',
       },
       {
@@ -418,15 +442,14 @@ export const lessons = [
         do: 'Open `rayfin/connectors/contoso/schema.ts`.',
         file: 'rayfin/connectors/contoso/schema.ts',
         find: "export type ContosoSchema = FabricSemanticModel<'executeQuery'>;",
-        errors: 2,
-        see: 'A generated file, with red lines: its packages aren\'t installed yet. `ContosoSchema` describes what the connector can do: one operation, `executeQuery`.',
+        see: 'A generated file. `ContosoSchema` describes what the connector can do: one operation, `executeQuery`.',
         why: 'TypeScript uses it to check our calls. (A different "type" from `--type`, which is the kind of Fabric item.) The first line says not to edit it: to change the connector, we run `connector add` again.',
       },
       {
-        do: 'Run the install line the command printed:',
+        do: 'Install the versions it printed, into the frontend package: the analytics skill says to add `-w @rayfin-app/frontend`, never to install at the workspace root.',
         run: INSTALL_CONNECTOR,
-        see: 'Two connector packages added to `package.json`, and the red lines in `schema.ts` go.',
-        why: '`connector add` installs nothing itself. It prints the exact versions to install.',
+        see: 'Both packages pinned in `packages/frontend/package.json`.',
+        why: '`connector add` installs nothing itself: it prints the exact versions. The analytics pack had already added these two, so nothing new arrives.',
       },
       {
         do: 'Test the connector from the terminal, with one DAX query (copy it rather than type it):',
@@ -436,8 +459,8 @@ export const lessons = [
       },
     ],
     summary: [
-      '`npx rayfin connector add` writes the connector into `rayfin.yml` and generates its schema file.',
-      'It installs nothing: we run the `npm install` it prints.',
+      '`npm run pack:add` adds a capability to the app: for a semantic model, the connectors pack and then the analytics pack.',
+      '`npx rayfin connector add` writes the connector into `rayfin.yml`, generates its schema file and wires it into `connectors.ts`. It installs nothing: its install line goes into the frontend package.',
       '`npx rayfin connector invoke` tests a query before we write any app code.',
     ],
     fabric: {
@@ -448,79 +471,57 @@ export const lessons = [
 
   {
     id: 'client',
-    title: 'Wire the client',
-    goal: 'create the client the app uses to call the connector',
+    title: 'Read the wiring',
+    goal: 'read the connector wiring the CLI wrote, and the client the pack installed',
     builds: ['connector'],
-    pbi: 'The connector is like a connection in a report. The client is what lets the page use it: one object, created once, that every query goes through.',
-    idea: 'We write `src/lib/rayfin-client.ts` in three parts: what we import, the list of connectors, and the client itself. Then a first query from the page.',
+    pbi: 'The connector is like a connection in a report. The client is what lets the page use it: one object, made once, that every query goes through.',
+    idea: 'We don\'t write the client: the connectors pack installed it, and `connector add` wrote the wiring. We read both, then send a first query from the page.',
     steps: [
       {
-        do: 'Open `src/lib/rayfin-client.ts`, from the template, in the file list.',
-        file: CLIENT,
-        find: 'In a real data app project',
+        do: 'Open `packages/frontend/src/lib/connectors.ts`, in the file list.',
+        file: CONNECTORS,
+        find: '// @generated by `rayfin connector add` — do not edit below this line.',
         point: 'files',
-        see: 'A note, where a real project has the template\'s client.',
-        why: 'In a real project this file builds the client the template\'s sign-in uses (the sign-in itself is in `src/services`), and you add the connector to it. The playground starts with the note instead, so we write a small client of our own.',
+        see: 'A generated file. Everything under the marked line is written again by every `connector add` and `connector remove`.',
+        why: 'The part above it came with the pack and is kept as it is. To take the file over yourself, you delete the marked line: the CLI then prints the wiring instead of rewriting it. The analytics skill says not to hand-write these maps.',
       },
       {
-        do: 'Replace the note with these imports (select all with Ctrl+A, or Cmd+A on a Mac, then paste):',
-        code: C.CLIENT_IMPORTS,
-        edits: [{ file: CLIENT, from: CLIENT_PLACEHOLDER, to: C.CLIENT_IMPORTS }],
-        see: 'No red lines: every package it names is installed.',
-        why: '`import` brings in code from a package (`@microsoft/…`) or another project file. `{ … }` picks named parts; `../../` means two folders up (from `src/lib` to the app folder); `as contosoConfig` gives `connectorConfig` a clearer name here.',
+        do: 'Look at the marked `AppConnectorsSchema`.',
+        file: CONNECTORS,
+        find: 'export type AppConnectorsSchema = {',
+        see: 'One entry per connector, under its name in `rayfin.yml`: `contoso`, with the type from its `schema.ts`.',
+        why: '`type` declares a shape for TypeScript to check against; it never runs.',
       },
       {
-        do: 'Under the imports, add the list of connectors:',
-        code: C.CLIENT_SCHEMA.trimStart(),
-        edits: [{ file: CLIENT, from: C.CLIENT_IMPORTS, to: C.CLIENT_IMPORTS + C.CLIENT_SCHEMA }],
-        see: 'Nothing visible changes.',
-        why: '`type` declares a shape for TypeScript to check against; it never runs. One entry per connector, under its name in `rayfin.yml`: `contoso`.',
+        do: 'Look at the marked `connectorRuntimes`, and `connectorConfigs` just above it.',
+        file: CONNECTORS,
+        find: 'export const connectorRuntimes: ConnectorsRuntime = {',
+        see: '`connectorConfigs` tells the client each connector\'s type (the ids stay in `rayfin.yml`). `connectorRuntimes` gives `contoso` `fabricSemanticModel()`, which turns the model\'s answer into a result the page can read.',
+        why: 'The same name, `contoso`, in all three, written by the CLI in step with `rayfin.yml`.',
       },
       {
-        do: 'At the end of the file, create the client:',
-        code: C.CLIENT_CREATE.trimStart(),
-        edits: [{ file: CLIENT, from: C.CLIENT_SCHEMA, to: C.CLIENT_SCHEMA + C.CLIENT_CREATE }],
-        errors: '1+',
-        see: 'Red lines under `baseUrl` and `publishableKey`. The next two cards explain the code, then the red lines.',
-      },
-      {
-        do: 'Look at the marked `connectorsService`.',
+        do: 'Open `packages/frontend/src/lib/rayfin-client.ts` and look at the marked `connectorsService`.',
         file: CLIENT,
         find: 'connectorsService<AppConnectorsSchema>',
-        see: '`RayfinClient.create` makes the one client the app uses. `auth: browserSession(…)` handles the signed-in session. `connectorsService` registers our connectors: `configs` tells the client each connector\'s type (the ids stay in `rayfin.yml`), and `runtime: fabricSemanticModel()` turns the model\'s answer into a result the page can read.',
-        why: 'All three use the name `contoso`. `export` lets other files use `rayfinClient`; `baseUrl` and `publishableKey` say which app backend to talk to.',
+        see: 'The client the connectors pack installed, shown shortened and locked: `RayfinClient.create` makes the one client, `auth: browserSession(…)` handles the signed-in session, and `connectorsService` takes the maps from `connectors.ts`.',
+        why: 'In this template, `getRayfinClient()` is async: it hands the client over once it is ready, so code waits for it (`await`, or `.then`).',
       },
       {
-        do: 'Open `src/vite-env.d.ts`, from the template.',
-        file: 'src/vite-env.d.ts',
-        find: 'readonly VITE_RAYFIN_API_URL?: string;',
-        see: 'The `?` marks `VITE_RAYFIN_API_URL` as possibly missing. So its type is `string | undefined`: text, or nothing at all.',
-        why: 'That is the red line: the client needs text for `baseUrl`. `import.meta.env` holds the values `rayfin dev` writes for us.',
-      },
-      {
-        do: 'Back in `src/lib/rayfin-client.ts`, check the values first: replace the marked lines with these.',
-        code: C.CLIENT_ENV_TO,
-        file: CLIENT,
-        edits: [{ file: CLIENT, from: C.CLIENT_ENV_FROM, to: C.CLIENT_ENV_TO }],
-        see: 'The red lines go.',
-        why: '`!` means not, `||` means or: if either is missing, stop with a clear message (`throw`). After that, TypeScript knows they are text. `publishableKey,` is short for `publishableKey: publishableKey`.',
-      },
-      {
-        do: 'A first query from the page: paste this into `src/App.tsx`.',
+        do: 'A first query from the page: paste this into `packages/frontend/src/App.tsx`.',
         code: C.TEST_PAGE,
         edits: [{ file: APP, from: '', to: C.TEST_PAGE }],
-        find: 'rayfinClient.connectors.contoso',
+        find: 'client.connectors.contoso',
         see: 'The page shows **Revenue: 150632573.6073**, and the Log shows the query.',
-        why: 'Read only the marked call: it is the one line that talks to the model. The rest is replaced in the next lesson, and each part comes back later. (In a real project, Rayfin\'s docs say to test connector queries against a deployed app: `rayfin dev` doesn\'t wire connectors.)',
+        why: 'Read only the marked call: it is the one line that talks to the model. `.then` runs the next part once the one before has finished. The rest is replaced in the next lesson. (In a real project, Rayfin\'s docs say to test connector queries against a deployed app: `rayfin dev` doesn\'t wire connectors.)',
       },
     ],
     summary: [
-      'The client is created once, with the connector registered under its name: in the schema type, in `configs` and in `runtime`.',
-      '`fabricSemanticModel()` in `runtime` is what turns the model\'s answer into a result the page can read.',
-      '`executeQuery({ query })` sends DAX through the connector.',
+      '`connector add` writes the wiring: the connector\'s name in the schema type, in `connectorConfigs` and in `connectorRuntimes`.',
+      '`fabricSemanticModel()` in the runtimes is what turns the model\'s answer into a result the page can read.',
+      'The client comes from the template and the connectors pack: `await getRayfinClient()`, then `.connectors.contoso.executeQuery({ query })`.',
     ],
     fabric: {
-      text: 'This is Rayfin 2.0\'s way to register a semantic model connector: `connectorsService` with `fabricSemanticModel()` in its `runtime` map. In a real data app project, this file already exists and builds the client the template\'s sign-in uses: add the connector to that client instead of making a second one; that client is fetched with `await getRayfinClient()`. As of November 2026, Microsoft Learn\'s pages still show the 1.x client (`ConnectorsRayfinClient`), so an agent following them may write that; the 2.0 version is on rayfin.ai.',
+      text: 'This is Rayfin 2.0\'s way to register a semantic model connector: `connectorsService` with `fabricSemanticModel()` in its runtime map. In the default template the CLI writes that map for you (`src/lib/connectors.ts`), and the analytics skill says to keep it generated.',
       links: [rayfin.clientSetup, rayfin.semanticModels],
     },
   },
@@ -535,7 +536,7 @@ export const lessons = [
     idea: 'We replace the test with a real page layout. The numbers on it are typed in for now, like a mock-up; the model fills them in, in **Get data from the model**.',
     steps: [
       {
-        do: 'In `src/App.tsx`, replace everything with this page:',
+        do: 'In `packages/frontend/src/App.tsx`, replace everything with this page:',
         code: C.CANVAS,
         edits: [{ file: APP, from: C.TEST_PAGE, to: C.CANVAS }],
         see: 'A title, two cards, an empty chart box and an About box.',
@@ -580,8 +581,8 @@ export const lessons = [
       'Visuals flow in the order they are written, left to right, then down. `col-start-…` pins one to a column.',
     ],
     fabric: {
-      text: 'Words like `col-span-4` come from Tailwind CSS, a common styling kit. The data app template, as installed by the Rayfin CLI 2.0.0, has Tailwind CSS 4 in its `package.json`, so we will read the same words there. (The link is Microsoft\'s walkthrough of that template.)',
-      links: [learn.template],
+      text: 'Words like `col-span-4` come from Tailwind CSS, a common styling kit. The template, as installed by the Rayfin CLI 2.0.0, has Tailwind CSS 4 in `packages/frontend/package.json`, and its `AGENTS.md` asks agents to use Tailwind, so we will read the same words there.',
+      links: [rayfin.docs],
     },
   },
 
@@ -594,11 +595,11 @@ export const lessons = [
     idea: 'Our two cards repeat the same markup. We write a card component once, in its own file, and use it for every card.',
     steps: [
       {
-        do: 'Click **+ New file**, at the top of the file list, and type `components/kpi-card.tsx` after the `src/` already there.',
+        do: 'Click **+ New file**, at the top of the file list, and type `components/kpi-card.tsx` after the `packages/frontend/src/` already there.',
         edits: [{ file: KPI, from: '', to: '' }],
         point: 'files',
-        see: 'The template\'s `src/components` folder, with an empty `kpi-card.tsx` added to it, open in the editor.',
-        why: 'The data app template keeps its visuals in `src/components` (its `AGENTS.md`: cards, charts, banners). One visual per file is our choice: each is easy to find.',
+        see: 'The template\'s `packages/frontend/src/components` folder, with an empty `kpi-card.tsx` added to it, open in the editor.',
+        why: 'The template keeps its components in `packages/frontend/src/components`: it starts with one, the sign-in gate. One visual per file is our choice: each is easy to find.',
       },
       {
         do: 'Paste the card component into it:',
@@ -608,11 +609,11 @@ export const lessons = [
         why: '`export` lets other files use it.',
       },
       {
-        do: 'In `src/App.tsx`, add this line at the very top, above the marked line:',
+        do: 'In `packages/frontend/src/App.tsx`, add this line at the very top, above the marked line:',
         code: COMP_IMPORT.trim(),
         edits: [{ file: APP, from: 'export default function App() {', to: `${COMP_IMPORT}\nexport default function App() {` }],
         see: 'Nothing changes yet.',
-        why: '`./components/kpi-card` is our `src/components/kpi-card.tsx`; imports leave out the `.tsx`.',
+        why: '`./components/kpi-card` is our `packages/frontend/src/components/kpi-card.tsx`; imports leave out the `.tsx`.',
       },
       {
         do: 'Replace the marked Revenue card with the component:',
@@ -659,8 +660,8 @@ export const lessons = [
       'Components can live in their own file and be imported where they are used.',
     ],
     fabric: {
-      text: 'Microsoft\'s data app template comes with ready-made visual components for analytical apps, so in a real project much of the work is passing the right props to visuals someone else wrote.',
-      links: [learn.template],
+      text: 'The template\'s visuals pack (`npm run pack:add -- visuals`) adds ready-made visual components, `VegaVisual` and `DataGrid` from Microsoft\'s Fabric visuals packages, so in a real project much of the work is passing the right props to visuals someone else wrote. The **Visuals** page shows them.',
+      links: [rayfin.docs],
     },
   },
 
@@ -705,7 +706,7 @@ export const lessons = [
         do: 'Hover over the marked `KpiCard`.',
         file: APP,
         find: 'KpiCard title="Revenue (USD)"',
-        see: 'Its props and their types, read from `src/components/kpi-card.tsx`.',
+        see: 'Its props and their types, read from `packages/frontend/src/components/kpi-card.tsx`.',
         why: 'TypeScript checks across files. It can\'t see the model, though: a wrong column or a wrong number in a query still passes. That comes next.',
       },
     ],
@@ -715,7 +716,7 @@ export const lessons = [
       'It can\'t see the model, so a wrong column or a wrong number still passes.',
     ],
     fabric: {
-      text: 'Fabric apps are built with Microsoft\'s [[Rayfin]] toolkit, made for TypeScript, so red lines like these are everyday work there. They don\'t stop a build either: in the data app template as installed by the Rayfin CLI 2.0.0, the build script runs `tsc --noCheck`. Microsoft\'s Copilot walkthrough still asks for the build and type-check commands to be run, and their errors fixed.',
+      text: 'Fabric apps are built with Microsoft\'s [[Rayfin]] toolkit, made for TypeScript, so red lines like these are everyday work there. They don\'t stop a build either: in the template as installed by the Rayfin CLI 2.0.0, the frontend\'s build script runs `tsc -b --noCheck`, and its `AGENTS.md` says the build "does not prove type safety": run `npm run typecheck` too. Microsoft\'s Copilot walkthrough still asks for the build and type-check commands to be run, and their errors fixed.',
       links: [rayfin.docs, learn.copilotReview],
     },
   },
@@ -729,51 +730,38 @@ export const lessons = [
     pbi: 'Binding fields to visuals: each visual asks the model a [[query]] and draws the [[result]].',
     idea: 'A data app sorts its files a bit like a report project: `components` holds the visuals, `queries/<page>` the DAX behind each visual, page by page, `hooks` the code that runs a query and waits for it, and `lib` the connection and other shared code. Pages stay in `src`. A query goes: its `.dax` file → its `.ts` file → a [[hook]] runs it → a conversion → the visual. We build that for the chart, then for the cards.',
     steps: [
-      newFile(HOOK, 'First, the code that runs queries. It is a hook, and the template keeps hooks in a folder of their own: ', {
-        see: 'The template\'s `src/hooks` folder, with an empty `use-dax.ts` added beside its locked hooks.',
-        why: 'One of those is the template\'s own query hook, `use-semantic-model-query.ts`, for its second data path. Microsoft\'s walkthrough says to use the connector client instead, so we write our own hook on it.',
-      }),
-      paste(HOOK, C.USE_DAX, 'Paste the code that runs queries into it:', {
-        see: 'Nothing on the page changes yet.',
-        why: 'We don\'t need every line of it. Two parts matter, and the next two cards mark them.',
-      }),
       {
-        do: 'Look at the marked `runDax`.',
+        do: 'Open the hook the analytics pack added, `packages/frontend/src/hooks/use-semantic-model-query.ts`, and look at the marked line.',
         file: HOOK,
-        find: 'export const runDax',
-        see: 'One line: it sends a DAX query through our client, the same call as the test page.',
-      },
-      {
-        do: 'Look at the marked `useDax`.',
-        file: HOOK,
-        find: 'export function useDax',
-        see: 'Like a visual loading: `undefined` while it waits, then the model\'s result.',
-        why: 'The `cancelled` lines drop an answer that arrives after the page has moved on. It takes `runDax` as an input; **The redraw trap** shows why that matters.',
+        find: 'export function useSemanticModelQuery',
+        point: 'files',
+        see: 'It takes a `connection`, the connector\'s name in `rayfin.yml`, and a DAX `query`. It gives back `data` (the model\'s answer), `isLoading` and `error`.',
+        why: 'Like a visual loading: `isLoading` while it waits, then the answer in `data`. The file is the pack\'s, shown shortened and locked; the analytics skill says pages run their DAX through it.',
       },
       newFile(COUNTRY_DAX, 'Now the first query. It gets a file of its own: ', {
-        see: 'New folders, `src/queries/overview`, with an empty `revenue-by-store-country.dax` in them, open in the editor.',
-        why: 'Microsoft\'s data app template asks the same of coding agents, in its `AGENTS.md`: every DAX query in a `.dax` file of its own, under `src/queries`, named after the visual it feeds, with a folder per page (or topic) once there are several. More pages are coming, so we start with `overview`.',
+        see: 'New folders, `packages/frontend/src/queries/overview`, with an empty `revenue-by-store-country.dax` in them, open in the editor.',
+        why: 'The template\'s analytics skill asks the same of coding agents: each DAX query in a `.dax` file of its own, under `packages/frontend/src/queries`, named after the visual it feeds, grouped by page or topic. More pages are coming, so we start with `overview`.',
       }),
       paste(COUNTRY_DAX, C.COUNTRY_DAX, 'Paste the query into it:', {
         why: 'Only DAX, nothing else: on the same model, it runs as it is in DAX query view in Power BI Desktop. It names the model\'s own measure, `[Revenue]`, as a report visual does.',
       }),
       newFile(COUNTRY_TS, 'Next to it, a small file that hands the query to the page: '),
       paste(COUNTRY_TS, C.COUNTRY_TS, 'Paste this into it:', {
-        why: '`?raw` means "the file\'s text, as a string": `revenueByStoreCountryDax` holds the DAX exactly as the file has it. The function is named after the file, as in the template. It only hands out the text for now, and the file still earns its place: the template has one per visual, and it is where a slicer\'s filter goes (in **State as a slicer**). The template\'s version returns an object, `{ connection, query, columnMetadata, vegaLiteSpec }`: the query and what its chart needs. Ours returns only the query text, with no `.json` chart spec and no `columnMetadata`, because our visuals are our own components (`BarList`, `KpiCard`), not the template\'s `VegaVisual` and `DataGrid`.',
+        why: '`?raw` means "the file\'s text, as a string": `revenueByStoreCountryDax` holds the DAX exactly as the file has it. The function returns what the hook takes: the `connection` that runs it, `contoso`, and the `query`. It is named after the file, as in the analytics skill. It only hands out the text for now, and the file still earns its place: the template has one per visual, and it is where a slicer\'s filter goes (in **State as a slicer**). The template\'s version returns an object, `{ connection, query, columnMetadata, vegaLiteSpec }`: the query and what its chart needs. Ours returns only the query text, with no `.json` chart spec and no `columnMetadata`, because our visuals are our own components (`BarList`, `KpiCard`), not the template\'s `VegaVisual` and `DataGrid`.',
       }),
       newFile(OVERVIEW_INDEX, 'The template lists each query folder\'s files in an `index.ts`, so that pages import every query from one place: '),
       paste(OVERVIEW_INDEX, C.OVERVIEW_INDEX_V1, 'Paste this line into it:', {
         why: '`export *` passes on everything the file exports, here `revenueByStoreCountry`. Each new query file gets a line like it.',
       }),
-      writeFile(QUERIES_INDEX, C.QUERIES_INDEX_V1, '**Do it for me** writes one more `index.ts`, `src/queries/index.ts`, which passes on the whole `overview` folder:', {
+      writeFile(QUERIES_INDEX, C.QUERIES_INDEX_V1, '**Do it for me** writes one more `index.ts`, `packages/frontend/src/queries/index.ts`, which passes on the whole `overview` folder:', {
         why: 'So a page imports any query from `./queries`, whichever folder it is in.',
       }),
-      newFile(CONV, 'The chart needs bars, not rows. The code that turns one into the other is shared by the pages, so it goes in `src/lib`: '),
+      newFile(CONV, 'The chart needs bars, not rows. The code that turns one into the other is shared by the pages, so it goes in `packages/frontend/src/lib`: '),
       paste(CONV, C.CONVERSIONS_V1, 'Paste the first conversion into it:', {
         why: '`.map` makes one bar for each row. `toBars` reads `row[0]` as the label and `row[1]` as the value: positions, counted from 0. Keep that in mind.',
       }),
       {
-        do: 'The page needs the hook, the conversion and the query. In `src/App.tsx`, add these imports under the last import, the marked `KpiCard` one:',
+        do: 'The page needs the hook, the conversion and the query. In `packages/frontend/src/App.tsx`, add these imports under the last import, the marked `KpiCard` one:',
         code: FIRST_IMPORTS.trimEnd(),
         edits: [{ file: APP, from: COMP_IMPORT, to: COMP_IMPORT + FIRST_IMPORTS }],
         see: 'Nothing on the page yet.',
@@ -784,14 +772,14 @@ export const lessons = [
         code: COUNTRIES_LINES.replace(/^ {2}/gm, ''),
         edits: [{ from: 'export default function App() {\n', to: `export default function App() {\n${COUNTRIES_LINES}\n` }],
         see: 'In the Log, the query and what came back: a `status`, `columns` (their names) and `rows` (lists of values).',
-        why: '`a ? b : c` works like `IF(a, b, c)`: no result yet, no bars.',
+        why: '`a ? b : c` works like `IF(a, b, c)`: no answer yet, no bars.',
       },
-      newFile(BAR, 'Now the chart. It is a visual, so it goes in `src/components`: '),
+      newFile(BAR, 'Now the chart. It is a visual, so it goes in `packages/frontend/src/components`: '),
       paste(BAR, C.BAR_LIST_FILE, 'Paste the bar chart into it:', {
         why: '`import type` brings in only a type, here the shape of one bar.',
       }),
       {
-        do: 'Load the chart into the page: in `src/App.tsx`, add this import on a new line under the last import (marked).',
+        do: 'Load the chart into the page: in `packages/frontend/src/App.tsx`, add this import on a new line under the last import (marked).',
         code: IMP_BAR.trim(),
         edits: [{ file: APP, from: IMP_Q_1, to: IMP_Q_1 + IMP_BAR }],
         see: 'Nothing changes yet.',
@@ -810,18 +798,18 @@ export const lessons = [
       },
       newFile(TOTALS_DAX, 'Now the cards. Their query gets a file too: '),
       paste(TOTALS_DAX, C.TOTALS_DAX, 'Paste the totals query into it:', { why: 'One row with three measures: one for each card.' }),
-      writeFile(TOTALS_TS, C.TOTALS_TS, '**Do it for me** writes its small `.ts` file, `src/queries/overview/sales-totals.ts`, like the countries one, and lists it in the folder\'s `index.ts`:', { see: '`src/queries/overview/index.ts` gains `export * from \'./sales-totals\';`.' }, [
+      writeFile(TOTALS_TS, C.TOTALS_TS, '**Do it for me** writes its small `.ts` file, `packages/frontend/src/queries/overview/sales-totals.ts`, like the countries one, and lists it in the folder\'s `index.ts`:', { see: '`packages/frontend/src/queries/overview/index.ts` gains `export * from \'./sales-totals\';`.' }, [
         { file: OVERVIEW_INDEX, from: reExport('revenue-by-store-country'), to: reExport('revenue-by-store-country') + reExport('sales-totals') },
       ]),
       {
-        do: 'At the end of `src/lib/conversions.ts`, add the cards\' conversion:',
+        do: 'At the end of `packages/frontend/src/lib/conversions.ts`, add the cards\' conversion:',
         code: C.TOTALS_CONV.trimStart(),
         edits: [{ file: CONV, from: C.TO_BARS_BY_POSITION, to: C.TO_BARS_BY_POSITION + C.TOTALS_CONV }],
         see: 'Nothing on the page yet.',
         why: '`toTotals` finds each column by its name, such as `[Orders]`.',
       },
       {
-        do: 'Load both into the page. In `src/App.tsx`, add `toTotals` to the marked import: `import { toBars, toTotals } from \'./lib/conversions\';`',
+        do: 'Load both into the page. In `packages/frontend/src/App.tsx`, add `toTotals` to the marked import: `import { toBars, toTotals } from \'./lib/conversions\';`',
         edits: [{ from: IMP_CONV_1, to: IMP_CONV_2 }],
         see: 'Nothing changes yet.',
       },
@@ -833,7 +821,7 @@ export const lessons = [
       {
         do: 'Run the totals query: add these lines under the marked `const countries = …` line.',
         code: TOTALS_LINES.replace(/^ {2}/gm, ''),
-        edits: [{ from: '  const countries = countriesResult ? toBars(countriesResult) : [];\n', to: `  const countries = countriesResult ? toBars(countriesResult) : [];\n${TOTALS_LINES}` }],
+        edits: [{ from: '  const countries = countriesQuery.data ? toBars(countriesQuery.data) : [];\n', to: `  const countries = countriesQuery.data ? toBars(countriesQuery.data) : [];\n${TOTALS_LINES}` }],
         see: 'In the Log: a second query.',
       },
       {
@@ -848,13 +836,13 @@ export const lessons = [
       },
     ],
     summary: [
-      'A query is DAX text, kept in a `.dax` file, with a small `.ts` file of the same name that hands it to the page; `useDax` runs it and keeps the result while the page draws.',
+      'A query is DAX text, kept in a `.dax` file, with a small `.ts` file of the same name that hands it to the page; the pack\'s hook runs it and keeps the answer while the page draws.',
       'A conversion (`toBars`, `toTotals`) turns the result\'s rows into what a visual draws.',
       'The queries name the model\'s measures, such as `[Revenue]` and `[# Orders]`, as a report visual does.',
     ],
     fabric: {
-      text: 'The real connector returns this same result shape: `columns`, each with a name and a data type, and `rows` as lists of values in column order. The `.dax` files follow the data app template. Its scaffold includes instructions for coding agents, and those (its `AGENTS.md`) keep all DAX in `.dax` files under `src/queries`, imported as text with `?raw`, and put visuals in `src/components`, hooks in `src/hooks` and shared code in `src/lib`, as here.',
-      links: [rayfin.semanticModels, learn.templateAgent],
+      text: 'The real connector returns this same result shape: `columns`, each with a name and a data type, and `rows` as lists of values in column order. The `.dax` files follow the template\'s analytics skill, written for coding agents: DAX in `.dax` files under `packages/frontend/src/queries`, imported as text with `?raw` by a small `.ts` factory (ours returns `{ connection, query }`; the skill\'s also return a chart spec and column metadata, for the visuals pack), and the pack\'s hook in `packages/frontend/src/hooks`, as here.',
+      links: [rayfin.semanticModels],
     },
   },
 
@@ -867,7 +855,7 @@ export const lessons = [
     idea: '`toBars` reads `row[1]` as the value. That holds only while the DAX keeps its columns in that order. Let\'s change the DAX, the way an agent might.',
     steps: [
       {
-        do: 'Change the DAX the way an agent might (we take it out again at the end): in `src/queries/overview/revenue-by-store-country.dax`, add an Orders column above the marked `"Revenue", [Revenue]` line.',
+        do: 'Change the DAX the way an agent might (we take it out again at the end): in `packages/frontend/src/queries/overview/revenue-by-store-country.dax`, add an Orders column above the marked `"Revenue", [Revenue]` line.',
         code: '"Orders", [# Orders],',
         find: '"Revenue", [Revenue]',
         edits: [{ file: COUNTRY_DAX, from: COUNTRY_ROW, to: COUNTRY_ROW_ORDERS }],
@@ -880,21 +868,21 @@ export const lessons = [
         why: 'So `row[1]`, the second column, is now Orders.',
       },
       {
-        do: 'Look columns up by name instead. In `src/lib/conversions.ts`, replace the marked `toBars` with this:',
+        do: 'Look columns up by name instead. In `packages/frontend/src/lib/conversions.ts`, replace the marked `toBars` with this:',
         code: C.TO_BARS_BY_NAME,
         edits: [{ file: CONV, from: C.TO_BARS_BY_POSITION, to: C.TO_BARS_BY_NAME }],
         errors: 1,
-        see: 'A red line in `src/App.tsx`: `toBars` now needs two more inputs (arguments). Until we give them, the bars break.',
+        see: 'A red line in `packages/frontend/src/App.tsx`: `toBars` now needs two more inputs (arguments). Until we give them, the bars break.',
         why: '`findIndex((c) => c.name === …)` finds the column with that name (`===` means "equals"). The red line shows where to follow up.',
       },
       {
-        do: "In `src/App.tsx`, give `toBars` the two column names: `toBars(countriesResult, 'store[CountryName]', '[Revenue]')`.",
-        edits: [{ from: 'toBars(countriesResult)', to: "toBars(countriesResult, 'store[CountryName]', '[Revenue]')" }],
+        do: "In `packages/frontend/src/App.tsx`, give `toBars` the two column names: `toBars(countriesQuery.data, 'store[CountryName]', '[Revenue]')`.",
+        edits: [{ from: 'toBars(countriesQuery.data)', to: "toBars(countriesQuery.data, 'store[CountryName]', '[Revenue]')" }],
         see: 'United States 60,466,772 again, even with the Orders column in the query.',
         why: 'In the result, the model names the column `store[CountryName]`, without the quotes the DAX uses. Copy names from the Log.',
       },
       {
-        do: 'We don\'t need orders by country: in `src/queries/overview/revenue-by-store-country.dax`, remove the `"Orders", [# Orders],` line again.',
+        do: 'We don\'t need orders by country: in `packages/frontend/src/queries/overview/revenue-by-store-country.dax`, remove the `"Orders", [# Orders],` line again.',
         edits: [{ file: COUNTRY_DAX, from: COUNTRY_ROW_ORDERS, to: COUNTRY_ROW }],
         see: 'Nothing changes on the page. That is the point.',
       },
@@ -922,17 +910,17 @@ export const lessons = [
       paste(MARGIN_DAX, C.MARGIN_IN_QUERY_DAX, 'Paste this query into it. It has the formula written in, as an agent often writes it:', {
         why: '`DEFINE MEASURE` adds a measure for this one query. The model never stores it, and no report can see it.',
       }),
-      writeFile(MARGIN_TS, C.MARGIN_TS, '**Do it for me** writes its small `.ts` file, `src/queries/overview/margin-pct.ts`, like the others, and lists it in the folder\'s `index.ts`:', { see: '`src/queries/overview/index.ts` gains `export * from \'./margin-pct\';`.' }, [
+      writeFile(MARGIN_TS, C.MARGIN_TS, '**Do it for me** writes its small `.ts` file, `packages/frontend/src/queries/overview/margin-pct.ts`, like the others, and lists it in the folder\'s `index.ts`:', { see: '`packages/frontend/src/queries/overview/index.ts` gains `export * from \'./margin-pct\';`.' }, [
         { file: OVERVIEW_INDEX, from: reExport('sales-totals'), to: reExport('sales-totals') + reExport('margin-pct') },
       ]),
       {
-        do: 'At the end of `src/lib/conversions.ts`, add the card\'s conversion:',
+        do: 'At the end of `packages/frontend/src/lib/conversions.ts`, add the card\'s conversion:',
         code: C.PERCENT_CONV.trimStart(),
         edits: [{ file: CONV, from: "Number(row[at('[Customers]')]) };\n}", to: `Number(row[at('[Customers]')]) };\n}${C.PERCENT_CONV}` }],
         see: 'Nothing on the page yet.',
       },
       {
-        do: 'Cards need to show a percent too. In `src/components/kpi-card.tsx`, add this line under the marked `value: number;`:',
+        do: 'Cards need to show a percent too. In `packages/frontend/src/components/kpi-card.tsx`, add this line under the marked `value: number;`:',
         code: "format?: 'compact' | 'percent';",
         edits: [{ file: KPI, from: '  value: number;\n', to: "  value: number;\n  format?: 'compact' | 'percent';\n" }],
         see: 'Nothing changes yet.',
@@ -950,7 +938,7 @@ export const lessons = [
         see: 'The other cards are unchanged: they leave `format` out.',
       },
       {
-        do: 'Load them into the page. In `src/App.tsx`, add `toPercent` to the marked import: `import { toBars, toPercent, toTotals } from \'./lib/conversions\';`',
+        do: 'Load them into the page. In `packages/frontend/src/App.tsx`, add `toPercent` to the marked import: `import { toBars, toPercent, toTotals } from \'./lib/conversions\';`',
         edits: [{ from: IMP_CONV_2, to: IMP_CONV_3 }],
         see: 'Nothing changes yet.',
       },
@@ -964,25 +952,25 @@ export const lessons = [
         code: MARGIN_LINE.trim(),
         edits: [
           {
-            from: '  const totals = totalsResult ? toTotals(totalsResult) : { revenue: 0, orders: 0, customers: 0 };\n',
-            to: `  const totals = totalsResult ? toTotals(totalsResult) : { revenue: 0, orders: 0, customers: 0 };\n${MARGIN_LINE}`,
+            from: '  const totals = totalsQuery.data ? toTotals(totalsQuery.data) : { revenue: 0, orders: 0, customers: 0 };\n',
+            to: `  const totals = totalsQuery.data ? toTotals(totalsQuery.data) : { revenue: 0, orders: 0, customers: 0 };\n${MARGIN_LINE}`,
           },
         ],
         see: 'A third query in the Log.',
       },
       {
         do: 'Add the card, under the marked `</div>` of the Customers card:',
-        code: '<div className="col-span-2 row-span-2">\n  <KpiCard title="Margin %" value={marginResult ? toPercent(marginResult) : 0} format="percent" />\n</div>',
+        code: '<div className="col-span-2 row-span-2">\n  <KpiCard title="Margin %" value={marginQuery.data ? toPercent(marginQuery.data) : 0} format="percent" />\n</div>',
         edits: [
           {
             from: '        <KpiCard title="Customers" value={totals.customers} />\n      </div>\n',
-            to: '        <KpiCard title="Customers" value={totals.customers} />\n      </div>\n      <div className="col-span-2 row-span-2">\n        <KpiCard title="Margin %" value={marginResult ? toPercent(marginResult) : 0} format="percent" />\n      </div>\n',
+            to: '        <KpiCard title="Customers" value={totals.customers} />\n      </div>\n      <div className="col-span-2 row-span-2">\n        <KpiCard title="Margin %" value={marginQuery.data ? toPercent(marginQuery.data) : 0} format="percent" />\n      </div>\n',
           },
         ],
         see: 'Margin %: 55.9%. The four cards fill the row.',
       },
       {
-        do: 'A slip on purpose, the kind that is easy to make: in `src/queries/overview/margin-pct.dax`, in the first `SUMX`, change `sales[NetPrice]` to `sales[UnitPrice]`.',
+        do: 'A slip on purpose, the kind that is easy to make: in `packages/frontend/src/queries/overview/margin-pct.dax`, in the first `SUMX`, change `sales[NetPrice]` to `sales[UnitPrice]`.',
         edits: [{ file: MARGIN_DAX, from: 'sales[Quantity] * ( sales[NetPrice] - sales[UnitCost] )', to: 'sales[Quantity] * ( sales[UnitPrice] - sales[UnitCost] )' }],
         see: 'Margin % shows 62.1%. No red line, no error.',
         why: 'Only the top of the fraction moved to list price; the bottom is still net revenue. A believable number that means nothing.',
@@ -993,7 +981,7 @@ export const lessons = [
         see: 'Back to 55.9%.',
       },
       {
-        do: 'The model already has this measure. Replace the whole of `src/queries/overview/margin-pct.dax` with a query that names it (select all with Ctrl+A, or Cmd+A on a Mac, then paste):',
+        do: 'The model already has this measure. Replace the whole of `packages/frontend/src/queries/overview/margin-pct.dax` with a query that names it (select all with Ctrl+A, or Cmd+A on a Mac, then paste):',
         code: C.MARGIN_FROM_MODEL_DAX,
         edits: [{ file: MARGIN_DAX, from: C.MARGIN_IN_QUERY_DAX, to: C.MARGIN_FROM_MODEL_DAX }],
         see: 'Still 55.9%. The formula now lives in one place: the model.',
@@ -1031,7 +1019,7 @@ export const lessons = [
     idea: 'Our conversions turn a failed result into zeros and empty lists, and the page never checks. Let\'s make a slip on purpose, and see.',
     steps: [
       {
-        do: "A slip on purpose: in `src/queries/overview/revenue-by-store-country.dax`, mistype a column: change `'store'[CountryName]` to `'store'[Country]`.",
+        do: "A slip on purpose: in `packages/frontend/src/queries/overview/revenue-by-store-country.dax`, mistype a column: change `'store'[CountryName]` to `'store'[Country]`.",
         edits: [{ file: COUNTRY_DAX, from: COUNTRY_ROW, to: "    'store'[Country],\n    \"Revenue\", [Revenue]" }],
         queryFails: true,
         see: 'The bars are gone. No message.',
@@ -1042,40 +1030,40 @@ export const lessons = [
         see: 'The model\'s error: it can\'t find the column `Country`.',
         why: 'The page never showed it: on a failed result, `toBars` returns an empty list.',
       },
-      newFile(ERR, 'The page needs an error panel: a visual for a failed query, so it gets a file in `src/components` too: ', { queryFails: true }),
+      newFile(ERR, 'The page needs an error panel: a visual for a failed query, so it gets a file in `packages/frontend/src/components` too: ', { queryFails: true }),
       paste(ERR, C.ERROR_PANEL_FILE, 'Paste the error panel into it:', { queryFails: true, see: 'Nothing changes yet.' }),
       {
-        do: 'Load it into the page: in `src/App.tsx`, add this import on a new line under the last import (marked).',
+        do: 'Load it into the page: in `packages/frontend/src/App.tsx`, add this import on a new line under the last import (marked).',
         code: IMP_ERR.trim(),
         edits: [{ from: IMP_BAR, to: IMP_BAR + IMP_ERR }],
         queryFails: true,
         see: 'Nothing changes yet.',
       },
       {
-        do: 'Wait for the results before drawing: add this line under the marked `const marginResult = …` line.',
+        do: 'Wait for the answers before drawing: add this line under the marked `const marginQuery = …` line.',
         code: LOADING.trim(),
         edits: [{ from: MARGIN_LINE, to: `${MARGIN_LINE}\n${LOADING}` }],
         queryFails: true,
         see: 'A short "Loading…" when the page starts.',
-        why: '`!` means "not", `||` means "or": until every result is back, the page says so instead of showing zeros.',
+        why: '`||` means "or": while any query is still loading, the page says so instead of showing zeros.',
       },
       {
         do: 'Then check each result\'s [[status]]: add this line under the marked Loading line.',
-        code: ERRORS.trim(),
-        edits: [{ from: LOADING, to: LOADING + ERRORS }],
+        code: MODEL_ERRORS.trim(),
+        edits: [{ from: LOADING, to: LOADING + MODEL_ERRORS }],
         queryFails: true,
         see: '**This page could not load its data**, with the model\'s message about `Country`.',
-        why: '`for (const r of [a, b, c])` runs the check once for each result; the first one that failed shows its message.',
+        why: '`q.data?.status`: `?.` reads `status` only when there is data. `for (const q of [a, b, c])` runs the check once for each query; the first one the model rejected shows its message.',
       },
       {
-        do: "Fix the slip: in `src/queries/overview/revenue-by-store-country.dax`, change it back to `'store'[CountryName]`.",
+        do: "Fix the slip: in `packages/frontend/src/queries/overview/revenue-by-store-country.dax`, change it back to `'store'[CountryName]`.",
         edits: [{ file: COUNTRY_DAX, from: "    'store'[Country],\n    \"Revenue\", [Revenue]", to: COUNTRY_ROW }],
         see: 'The page is back.',
       },
       {
         do: 'Add an empty state too, under the marked line that checks the status:',
         code: 'if (countries.length === 0) return <p className="p-4">No data for this page.</p>;',
-        edits: [{ from: ERRORS, to: `${ERRORS}  if (countries.length === 0) return <p className="p-4">No data for this page.</p>;\n` }],
+        edits: [{ from: MODEL_ERRORS, to: `${MODEL_ERRORS}  if (countries.length === 0) return <p className="p-4">No data for this page.</p>;\n` }],
         see: 'Nothing changes: it is for a query that works but returns no rows.',
       },
       {
@@ -1086,15 +1074,15 @@ export const lessons = [
       {
         do: 'Press **Run**, above the page.',
         point: 'run',
-        see: 'The error panel shows a network error. In the Log, the query is marked "threw".',
-        why: 'This time there is no result at all: the call "throws". In a real browser app, that is what a request that can\'t reach the app\'s backend does.',
+        see: '**No data for this page**: the empty state, not an error. In the Log, the queries are marked "threw".',
+        why: 'This time there is no answer at all: the call "throws". In a real browser app, that is what a request that can\'t reach the app\'s backend does. The hook puts it in `error`, not in `data`, and our page doesn\'t check `error` yet.',
       },
       {
-        do: 'Look at the marked `.catch` in `useDax`, in `src/hooks/use-dax.ts`.',
-        file: HOOK,
-        find: '.catch(',
-        see: 'It turns a thrown call into an error result, so our status check shows it. Without it, the page would stay on "Loading…".',
-        why: 'So a page needs both: the `status` check for a query the model rejects, and `.catch` for a call that never gets an answer (offline, signed out, connector not deployed).',
+        do: 'Check the other channel too: add this line under the marked status line.',
+        code: THROWN_ERRORS.trim(),
+        edits: [{ from: MODEL_ERRORS, to: MODEL_ERRORS + THROWN_ERRORS }],
+        see: 'The error panel shows the network error.',
+        why: 'The pack\'s hook keeps two channels apart, as its own comments say: `data.status` is `error` when the model rejects the query, and `error` is set when the call itself fails (offline, signed out, connector not deployed). A page that checks only one shows nothing for half its failures.',
       },
       {
         do: 'In the **Queries** tab, pick **Answer normally** again.',
@@ -1109,8 +1097,8 @@ export const lessons = [
     ],
     summary: [
       'Three ways to end up with no data: the query failed, the call failed, or no rows came back. Each one should say so on the page.',
-      'Check `status` before reading a result, and show the error\'s message.',
-      'A query the model rejects comes back as an error result; a call that can\'t get through throws. Handle both: check `status`, and `.catch`.',
+      'Check the answer\'s `status` before reading it, and show the error\'s message.',
+      'A query the model rejects comes back in `data`, with `status: \'error\'`; a call that can\'t get through ends up in `error`. The pack\'s hook keeps them apart: check both.',
     ],
     fabric: {
       text: 'Microsoft Learn\'s example checks the returned status first and logs the error\'s category and message. Rayfin\'s own table example shows them on the page, as we do here. In Rayfin 2.0, a browser app\'s failed request throws; from the terminal, `connector invoke` reports the same failure as an error result with category `network`.',
@@ -1137,7 +1125,7 @@ export const lessons = [
         visual: 'slicer',
       },
       {
-        do: 'In `src/App.tsx`, add this line at the very top, above the marked line:',
+        do: 'In `packages/frontend/src/App.tsx`, add this line at the very top, above the marked line:',
         code: "import { useState } from 'react';",
         edits: [{ from: COMP_IMPORT, to: `import { useState } from 'react';\n${COMP_IMPORT}` }],
         see: 'Nothing changes yet.',
@@ -1166,7 +1154,7 @@ export const lessons = [
         ],
         see: 'The slicer, on the right of the title. Clicks move the highlight, but nothing uses the year yet.',
       },
-      newFile(FILTERS, 'The filters are shared code too, so they get a file in `src/lib`: '),
+      newFile(FILTERS, 'The filters are shared code too, so they get a file in `packages/frontend/src/lib`: '),
       {
         do: 'Paste the two filter functions into it:',
         code: C.FILTERS_FILE,
@@ -1175,11 +1163,11 @@ export const lessons = [
         why: 'For a picked year, `filters` makes one DAX filter, `TREATAS ( { 2024 }, \'date\'[Year] )`: the kind of filter Power BI writes for a slicer selection (copy a visual\'s query from Performance analyzer to see one). `withFilters` puts filters into a query file\'s text, where the file has a `/* filters */` marker. `export` lets the query files use both.',
       },
       {
-        do: 'Make the cards\' query take a year. First, in `src/queries/overview/sales-totals.ts`, add this import on a new line above the marked one:',
+        do: 'Make the cards\' query take a year. First, in `packages/frontend/src/queries/overview/sales-totals.ts`, add this import on a new line above the marked one:',
         code: C.IMPORT_FILTERS,
         edits: [{ file: TOTALS_TS, from: TOTALS_DAX_IMPORT, to: `${C.IMPORT_FILTERS}\n${TOTALS_DAX_IMPORT}` }],
         see: 'Nothing changes yet.',
-        why: '`../../` climbs two folders, from `src/queries/overview` up to `src`. The template would write `@/lib/filters`: its `tsconfig.json` and `vite.config.ts` set `@` to `src/`. The playground\'s editor follows relative paths only.',
+        why: '`../../` climbs two folders, from `packages/frontend/src/queries/overview` up to `src`. The template would write `@/lib/filters`: its `tsconfig.json` and `vite.config.ts` set `@` to `packages/frontend/src/`. The playground\'s editor follows relative paths only.',
       },
       {
         do: 'Then replace the marked `salesTotals` with this version, which takes a year:',
@@ -1189,12 +1177,12 @@ export const lessons = [
         why: 'No year: the file\'s query as it is. A year: the file\'s `ROW`, without its `EVALUATE`, inside `CALCULATETABLE` with the filter (`ROW` has no place for a filter of its own). The template\'s instructions allow small changes like this in code, as long as the query itself comes from the `.dax` file.',
       },
       {
-        do: 'In `src/App.tsx`, pass the year: `salesTotals(year)`.',
-        edits: [{ from: 'useDax(runDax, salesTotals())', to: 'useDax(runDax, salesTotals(year))' }],
+        do: 'In `packages/frontend/src/App.tsx`, pass the year: `salesTotals(year)`.',
+        edits: [{ from: 'useSemanticModelQuery(salesTotals())', to: 'useSemanticModelQuery(salesTotals(year))' }],
         see: 'Nothing changes yet: the slicer is on **All**.',
       },
       {
-        do: 'Same for the countries query. In `src/queries/overview/revenue-by-store-country.ts`, add this import on a new line above the marked one:',
+        do: 'Same for the countries query. In `packages/frontend/src/queries/overview/revenue-by-store-country.ts`, add this import on a new line above the marked one:',
         code: C.IMPORT_FILTERS_BOTH,
         edits: [{ file: COUNTRY_TS, from: COUNTRY_DAX_IMPORT, to: `${C.IMPORT_FILTERS_BOTH}\n${COUNTRY_DAX_IMPORT}` }],
         see: 'Nothing changes yet.',
@@ -1206,12 +1194,12 @@ export const lessons = [
         see: 'Nothing changes yet.',
       },
       {
-        do: 'In `src/App.tsx`, pass the year: `revenueByStoreCountry(year)`.',
-        edits: [{ from: 'useDax(runDax, revenueByStoreCountry())', to: 'useDax(runDax, revenueByStoreCountry(year))' }],
+        do: 'In `packages/frontend/src/App.tsx`, pass the year: `revenueByStoreCountry(year)`.',
+        edits: [{ from: 'useSemanticModelQuery(revenueByStoreCountry())', to: 'useSemanticModelQuery(revenueByStoreCountry(year))' }],
         see: 'Nothing changes yet.',
       },
       {
-        do: 'Mark where the year filter goes in the countries query: in `src/queries/overview/revenue-by-store-country.dax`, type `/* filters */` **and a space** in front of the marked `"Revenue", [Revenue]`.',
+        do: 'Mark where the year filter goes in the countries query: in `packages/frontend/src/queries/overview/revenue-by-store-country.dax`, type `/* filters */` **and a space** in front of the marked `"Revenue", [Revenue]`.',
         code: '/* filters */ "Revenue", [Revenue]',
         file: COUNTRY_DAX,
         find: '"Revenue", [Revenue]',
@@ -1230,16 +1218,16 @@ export const lessons = [
         why: 'A distinct count. That is why the cards ask the model for their totals.',
       },
       {
-        do: 'Look at the list at the end of `useDax`, in `src/hooks/use-dax.ts`.',
+        do: 'Look at the list at the end of the hook\'s `useEffect`, in `packages/frontend/src/hooks/use-semantic-model-query.ts`.',
         file: HOOK,
-        find: '}, [runDax, query]);',
-        see: '`[runDax, query]`, marked in pink.',
-        why: '`useDax` runs its query again whenever something in this [[dependency list|dependency-list]] changes. A new year means new query text, so it runs again.',
+        find: '}, [connection, query]);',
+        see: '`[connection, query]`, marked in pink.',
+        why: 'The hook runs its query again whenever something in this [[dependency list|dependency-list]] changes. A new year means new query text, so it runs again.',
       },
     ],
     summary: [
       'State is a value the page remembers. `useState` gives the value and a function that changes it and redraws the page.',
-      'One value, `year`, drives everything: the slicer shows it, the queries use it, and the list at the end of `useDax` makes them run again.',
+      'One value, `year`, drives everything: the slicer shows it, the queries use it, and the list at the end of the hook\'s `useEffect` makes them run again.',
       'Distinct counts don\'t add up, so totals come from their own query.',
     ],
     fabric: {
@@ -1253,57 +1241,63 @@ export const lessons = [
     title: 'The redraw trap',
     goal: 'spot and fix a page that keeps querying the model',
     builds: ['slicer'],
-    pbi: 'In Power BI, a visual queries again when its filters change. Here, `useDax` queries again when anything in its [[dependency list|dependency-list]] `[runDax, query]` changes, and a function can count as changed on every draw.',
-    idea: 'Agents often make the query function inside the page. Let\'s do that on purpose, and watch.',
+    pbi: 'In Power BI, a visual queries again when its filters change. In React, an effect runs again when anything in its [[dependency list|dependency-list]] changes, and a function made inside a page counts as changed on every draw.',
+    idea: 'The pack\'s hook depends only on the connection and the query text. Agents often write their own loading code inside the page instead. Let\'s do that on purpose, and watch.',
     steps: [
       {
-        do: 'The slip on purpose, in two parts. First, in `src/App.tsx`, add this import under the marked line:',
-        code: "import { rayfinClient } from './lib/rayfin-client';",
-        edits: [{ from: "import { useState } from 'react';\n", to: "import { useState } from 'react';\nimport { rayfinClient } from './lib/rayfin-client';\n" }],
+        do: 'The slip on purpose, in three parts. First, in `packages/frontend/src/App.tsx`, change the marked React import to: `import { useEffect, useState } from \'react\';`',
+        edits: [{ from: "import { useState } from 'react';\n", to: "import { useEffect, useState } from 'react';\n" }],
         see: 'Nothing changes yet.',
       },
       {
-        do: 'Then a `runDax` of our own, inside `App`: add this line under the marked `year` line.',
-        code: LOCAL_RUNDAX.trim(),
-        edits: [{ from: YEAR_STATE, to: YEAR_STATE + LOCAL_RUNDAX }],
+        do: 'Then the client\'s import, on a new line under the last import (marked):',
+        code: TRAP_IMPORT.trim(),
+        edits: [{ from: IMP_SLICER, to: IMP_SLICER + TRAP_IMPORT }],
+        see: 'Nothing changes yet.',
+      },
+      {
+        do: 'Now an agent\'s own loader for the totals, inside `App`: add these lines under the marked `year` line.',
+        code: TRAP_LINES.replace(/^ {2}/gm, ''),
+        edits: [{ from: YEAR_STATE, to: YEAR_STATE + TRAP_LINES }],
         see: 'No red line. The page looks fine, for a moment.',
-        why: 'Inside `App`, our `runDax` is used instead of the one imported from `src/hooks/use-dax.ts`.',
       },
       {
         do: 'Watch the count next to **Running**, above the preview.',
         point: 'status',
-        see: 'It keeps climbing, and the Log fills with the same queries. After more than 40 in 10 seconds, the playground stops the page.',
+        see: 'It keeps climbing, and the Log fills with the same query. After more than 40 in 10 seconds, the playground stops the page.',
       },
       {
         do: 'Look at the marked line.',
         file: APP,
-        find: 'const runDax = (query: string)',
-        see: 'Our `runDax`, inside `App`.',
-        why: 'The query text is the same on every draw, but a function made inside `App` is a new one on every draw. So: answer, redraw, new `runDax`, query again, and round it goes.',
+        find: 'const loadTotals = () =>',
+        see: 'The agent\'s loader, made inside `App`.',
+        why: 'A function made inside `App` is a new one on every draw, and it is in the effect\'s list. So: answer, `setAgentTotals`, redraw, new `loadTotals`, the effect runs again, query again, and round it goes.',
       },
       {
-        do: 'Fix it: delete that line, and the import we added (**Do it for me** does both). The `runDax` from `src/hooks/use-dax.ts`, made once outside any page, is used again.',
+        do: 'Fix it: take the three changes out again (**Do it for me** does it). The page already loads its totals through the pack\'s hook.',
         edits: [
-          { from: LOCAL_RUNDAX, to: '' },
-          { from: "import { rayfinClient } from './lib/rayfin-client';\n", to: '' },
+          { from: TRAP_LINES, to: '' },
+          { from: TRAP_IMPORT, to: '' },
+          { from: "import { useEffect, useState } from 'react';\n", to: "import { useState } from 'react';\n" },
         ],
-        done: { file: APP, absent: 'const runDax' },
+        done: { file: APP, absent: 'const loadTotals' },
         point: 'status',
         see: 'Press **Run again**: a few queries, and the count stays put.',
+        why: 'The hook\'s list is `[connection, query]`: plain text, the same on every draw until the year changes.',
       },
       {
-        do: 'Just read, no need to paste: in agent code you will also see this fix, which keeps `runDax` inside, wrapped in `useCallback`:',
-        code: 'const runDax = useCallback((query: string) => rayfinClient.connectors.contoso.executeQuery({ query }), []);',
-        why: '`useCallback` hands back the same function on every draw; `[]` is its list, and it is empty. Making it once, outside the page, is the sturdier fix.',
+        do: 'Just read, no need to paste: in agent code you will also see this fix, which keeps the loader inside, wrapped in `useCallback`:',
+        code: 'const loadTotals = useCallback(() => getRayfinClient().then((c) => c.connectors.contoso.executeQuery({ query: salesTotals(year).query })), [year]);',
+        why: '`useCallback` hands back the same function until something in its own list, here `[year]`, changes. Using the pack\'s hook, as the page does, is the sturdier fix.',
       },
     ],
     summary: [
       'No error, no red line, the right numbers. The only signs are the query count and, in a real app, the load on the model.',
-      'In agent code, check the list at the end of `useDax`: is each thing in it made outside the page? Anything made inside the page is new on every draw.',
-      'The fix: make it once, outside the component, or wrap it in `useCallback`.',
+      'In agent code, check every dependency list: is each thing in it a plain value, or made outside the page? A function made inside the page is new on every draw.',
+      'The fix: use the pack\'s hook, make the function once outside the component, or wrap it in `useCallback`.',
     ],
     fabric: {
-      text: 'Microsoft\'s data app template names unnecessary DAX queries, during development and at run time, as a problem its patterns reduce. A redraw loop is the extreme case.',
+      text: 'Microsoft Learn\'s page on its data app template names unnecessary DAX queries, during development and at run time, as a problem its patterns reduce. A redraw loop is the extreme case.',
       links: [learn.templateWhy],
     },
   },
@@ -1317,13 +1311,13 @@ export const lessons = [
     idea: 'We add a category chart in place of About, then let a click on a country filter the cards and the categories.',
     steps: [
       {
-        do: 'In `src/lib/filters.ts`, let the filters take a store country too: replace the marked `filters` function with this.',
+        do: 'In `packages/frontend/src/lib/filters.ts`, let the filters take a store country too: replace the marked `filters` function with this.',
         code: C.FILTERS_BOTH_FN,
         edits: [{ file: FILTERS, from: C.FILTERS_YEAR_FN, to: C.FILTERS_BOTH_FN }],
         see: 'Nothing changes yet.',
       },
       {
-        do: 'Let the cards\' query take a country and pass it on: in `src/queries/overview/sales-totals.ts`, two small changes, `(year?: number, country?: string)` and `filters(year, country)`. **Do it for me** makes both.',
+        do: 'Let the cards\' query take a country and pass it on: in `packages/frontend/src/queries/overview/sales-totals.ts`, two small changes, `(year?: number, country?: string)` and `filters(year, country)`. **Do it for me** makes both.',
         edits: [
           { file: TOTALS_TS, from: 'export function salesTotals(year?: number) {', to: 'export function salesTotals(year?: number, country?: string) {' },
           { file: TOTALS_TS, from: '  const f = filters(year);', to: '  const f = filters(year, country);' },
@@ -1338,38 +1332,38 @@ export const lessons = [
         why: 'It takes the year and the country from the start: both go where the `.dax` file has `/* filters */`.',
       }),
       {
-        do: 'List it in the folder\'s index: in `src/queries/overview/index.ts`, add this line under the last one.',
+        do: 'List it in the folder\'s index: in `packages/frontend/src/queries/overview/index.ts`, add this line under the last one.',
         code: reExport('revenue-by-category').trim(),
         edits: [{ file: OVERVIEW_INDEX, from: reExport('margin-pct'), to: reExport('margin-pct') + reExport('revenue-by-category') }],
         see: 'Nothing changes yet.',
       },
       {
-        do: 'Load it into the page: in `src/App.tsx`, add `revenueByCategory` to the marked query import.',
+        do: 'Load it into the page: in `packages/frontend/src/App.tsx`, add `revenueByCategory` to the marked query import.',
         code: IMP_Q_4.trim(),
         edits: [{ from: IMP_Q_3, to: IMP_Q_4 }],
         see: 'Nothing changes yet.',
       },
       {
-        do: 'Run it: add this line under the marked `const marginResult = …` line.',
-        code: 'const categoriesResult = useDax(runDax, revenueByCategory(year));',
-        edits: [{ from: MARGIN_LINE, to: `${MARGIN_LINE}  const categoriesResult = useDax(runDax, revenueByCategory(year));\n` }],
+        do: 'Run it: add this line under the marked `const marginQuery = …` line.',
+        code: 'const categoriesQuery = useSemanticModelQuery(revenueByCategory(year));',
+        edits: [{ from: MARGIN_LINE, to: `${MARGIN_LINE}  const categoriesQuery = useSemanticModelQuery(revenueByCategory(year));\n` }],
         see: 'A new query in the Log.',
       },
       {
-        do: 'Include it in the checks: add `|| !categoriesResult` to the Loading line, and `categoriesResult` to the list in the status line. **Do it for me** makes both.',
+        do: 'Include it in the checks: add `|| categoriesQuery.isLoading` to the Loading line, and `categoriesQuery` to the lists in the two error lines. **Do it for me** makes all three.',
         edits: [
-          { from: '!marginResult) return', to: '!marginResult || !categoriesResult) return' },
-          { from: '[countriesResult, totalsResult, marginResult])', to: '[countriesResult, totalsResult, marginResult, categoriesResult])' },
+          { from: '|| marginQuery.isLoading) return', to: '|| marginQuery.isLoading || categoriesQuery.isLoading) return' },
+          { from: '[countriesQuery, totalsQuery, marginQuery])', to: '[countriesQuery, totalsQuery, marginQuery, categoriesQuery])', all: true },
         ],
         see: 'Nothing changes.',
       },
       {
         do: 'Replace the marked About section with the category chart:',
-        code: "<section className=\"col-span-8 row-span-3 rounded-lg border border-gray-200 bg-white p-4\">\n  <h2 className=\"mb-2 font-semibold\">Revenue by category</h2>\n  <BarList rows={toBars(categoriesResult, 'product[CategoryName]', '[Revenue]')} />\n</section>",
+        code: "<section className=\"col-span-8 row-span-3 rounded-lg border border-gray-200 bg-white p-4\">\n  <h2 className=\"mb-2 font-semibold\">Revenue by category</h2>\n  <BarList rows={categoriesQuery.data ? toBars(categoriesQuery.data, 'product[CategoryName]', '[Revenue]') : []} />\n</section>",
         edits: [
           {
             from: '      <section className="col-span-8 row-span-3 rounded-lg border border-gray-200 bg-white p-4 text-sm">\n        <h2 className="mb-2 font-semibold">About this page</h2>\n        <p>Contoso sample model, revenue in USD.</p>\n      </section>\n',
-            to: "      <section className=\"col-span-8 row-span-3 rounded-lg border border-gray-200 bg-white p-4\">\n        <h2 className=\"mb-2 font-semibold\">Revenue by category</h2>\n        <BarList rows={toBars(categoriesResult, 'product[CategoryName]', '[Revenue]')} />\n      </section>\n",
+            to: "      <section className=\"col-span-8 row-span-3 rounded-lg border border-gray-200 bg-white p-4\">\n        <h2 className=\"mb-2 font-semibold\">Revenue by category</h2>\n        <BarList rows={categoriesQuery.data ? toBars(categoriesQuery.data, 'product[CategoryName]', '[Revenue]') : []} />\n      </section>\n",
           },
         ],
         see: 'Revenue by product category, under the cards.',
@@ -1423,7 +1417,7 @@ export const lessons = [
     idea: 'Our `App` becomes the first page, `OverviewPage`. A new `App` draws a page list and the open page. Then we add a second page.',
     steps: [
       {
-        do: 'Make it a report: rename `App` to `OverviewPage`, and add the report at the end of `src/App.tsx`. Use **Do it for me** for this one: it makes three edits.',
+        do: 'Make it a report: rename `App` to `OverviewPage`, and add the report at the end of `packages/frontend/src/App.tsx`. Use **Do it for me** for this one: it makes three edits.',
         code: C.REPORT.trimStart(),
         edits: [
           { from: 'export default function App() {', to: 'function OverviewPage() {' },
@@ -1442,15 +1436,15 @@ export const lessons = [
         see: 'A red line under `PAGES`. Hover: `years` is missing.',
         why: '`Record<PageId, …>` means one entry for every page id.',
       },
-      newFile(YEARS_DAX, 'The page needs a query. A new page gets its own folder in `src/queries`: ', {
+      newFile(YEARS_DAX, 'The page needs a query. A new page gets its own folder in `packages/frontend/src/queries`: ', {
         errors: 1,
-        see: 'A new folder, `src/queries/years`, with an empty `revenue-by-year.dax` in it. The red line stays.',
+        see: 'A new folder, `packages/frontend/src/queries/years`, with an empty `revenue-by-year.dax` in it. The red line stays.',
         why: 'The template\'s `AGENTS.md` groups query files by page (or topic): `overview` for the first page, `years` for this one.',
       }),
       paste(YEARS_DAX, C.YEARS_DAX, 'Paste its query:', { errors: 1, see: 'The red line stays.' }),
-      writeFile(YEARS_TS, C.YEARS_TS, '**Do it for me** writes its small `.ts` file, `src/queries/years/revenue-by-year.ts`:', { errors: 1, see: 'The red line stays.' }),
+      writeFile(YEARS_TS, C.YEARS_TS, '**Do it for me** writes its small `.ts` file, `packages/frontend/src/queries/years/revenue-by-year.ts`:', { errors: 1, see: 'The red line stays.' }),
       {
-        do: '**Do it for me** gives the new folder its `index.ts`, and lists the folder in `src/queries/index.ts` with this line:',
+        do: '**Do it for me** gives the new folder its `index.ts`, and lists the folder in `packages/frontend/src/queries/index.ts` with this line:',
         code: reExport('years').trim(),
         copy: false,
         edits: [
@@ -1460,17 +1454,17 @@ export const lessons = [
         file: QUERIES_INDEX,
         point: 'files',
         errors: 1,
-        see: '`src/queries/index.ts` now passes on `overview` and `years`; the new `src/queries/years/index.ts` passes on `revenue-by-year`. The red line stays.',
+        see: '`packages/frontend/src/queries/index.ts` now passes on `overview` and `years`; the new `packages/frontend/src/queries/years/index.ts` passes on `revenue-by-year`. The red line stays.',
       },
       {
-        do: 'Load the query: in `src/App.tsx`, add `revenueByYear` to the marked query import.',
+        do: 'Load the query: in `packages/frontend/src/App.tsx`, add `revenueByYear` to the marked query import.',
         code: IMP_Q_5.trim(),
         edits: [{ from: IMP_Q_4, to: IMP_Q_5 }],
         errors: 1,
         see: 'The red line stays.',
       },
       {
-        do: 'Write the page, above the marked `the report` line in `src/App.tsx`.',
+        do: 'Write the page, above the marked `the report` line in `packages/frontend/src/App.tsx`.',
         code: C.YEARS_PAGE.trim(),
         edits: [
           { from: '// ------------------------------------------------------------ the report\n', to: `${C.YEARS_PAGE}// ------------------------------------------------------------ the report\n` },
@@ -1514,7 +1508,7 @@ export const lessons = [
         do: 'Let the agent add its file: **Do it for me**.',
         edits: [{ file: AGENT, from: '', to: C.AGENT_PAGE }],
         point: 'files',
-        see: '`src/SalesOverview.tsx` in the file list: a whole page, with its own functions.',
+        see: '`packages/frontend/src/SalesOverview.tsx` in the file list: a whole page, with its own functions.',
       },
       {
         do: 'Add it to our report: the agent asked for a page id, a `PAGES` entry and an import. **Do it for me** makes the three edits.',
@@ -1533,15 +1527,15 @@ export const lessons = [
         why: 'A query loop, as in **The redraw trap**.',
       },
       {
-        do: 'Fix it, in `src/SalesOverview.tsx`: move the marked `runDax` line, with the comment above it, out of `SalesOverview` to just above `function useDax` (cut, then paste; **Do it for me** does the move).',
+        do: 'Fix it, in `packages/frontend/src/SalesOverview.tsx`: move the marked `runDax` line, with the comment above it, out of `SalesOverview` to just above `function useDax` (cut, then paste; **Do it for me** does the move).',
         file: AGENT,
-        find: 'const runDax: RunDax = (query)',
+        find: 'const runDax: RunDax = async (query)',
         edits: [
           { file: AGENT, from: AGENT_RUNDAX_IN_PAGE, to: '' },
           {
             file: AGENT,
             from: 'function useDax(runDax: RunDax, query: string) {',
-            to: '// Runs a DAX query against the model.\nconst runDax: RunDax = (query) => rayfinClient.connectors.contoso.executeQuery({ query });\n\nfunction useDax(runDax: RunDax, query: string) {',
+            to: '// Runs a DAX query against the model.\nconst runDax: RunDax = async (query) => (await getRayfinClient()).connectors.contoso.executeQuery({ query });\n\nfunction useDax(runDax: RunDax, query: string) {',
           },
         ],
         done: { file: AGENT, before: ['const runDax', 'export default function SalesOverview'] },
@@ -1585,7 +1579,7 @@ export const lessons = [
         why: 'The agent\'s conversions turn a failed result into zeros, and its page never checks `status`. It even wrote an `ErrorPanel`, but nothing uses it.',
       },
       {
-        do: 'Fix it: add this line under the marked `Loading…` line in `src/SalesOverview.tsx`.',
+        do: 'Fix it: add this line under the marked `Loading…` line in `packages/frontend/src/SalesOverview.tsx`.',
         code: "for (const r of [totalsResult, countriesResult, marginResult]) if (r.status === 'error') return <ErrorPanel message={r.error.message} />;",
         file: AGENT,
         edits: [
@@ -1619,7 +1613,7 @@ export const lessons = [
         code: 'const marginQuery = `\nEVALUATE\nROW ( "Margin %", [Margin %] )\n`;',
         edits: [{ file: AGENT, from: C.AGENT_MARGIN_IN_QUERY, to: 'const marginQuery = `\nEVALUATE\nROW ( "Margin %", [Margin %] )\n`;' }],
         see: 'Still 55.9%: the same number, but the formula now lives in one place, the model.',
-        why: 'The rest of the page is worth a note too: the agent wrote its own `useDax` hook and its own `Card`, `Bars` and `ErrorPanel` components inside `SalesOverview.tsx`, where our project keeps them in `src/hooks` and `src/components`.',
+        why: 'The rest of the page is worth a note too: the agent wrote its own `useDax` hook and its own `Card`, `Bars` and `ErrorPanel` components inside `SalesOverview.tsx`, where our project keeps them in `packages/frontend/src/hooks` and `packages/frontend/src/components`.',
       },
     ],
     summary: [
@@ -1660,7 +1654,7 @@ export const lessons = [
         why: 'Microsoft\'s walkthrough also asks for a model hosted on Fabric or Power BI capacity; its licensing page describes what works in Pro workspaces.',
       },
       {
-        do: 'Before publishing, check the page in a browser. Microsoft\'s data app template includes a browser-validation workflow (Playwright) for this.',
+        do: 'Before publishing, check the page in a browser. The template\'s app-validation skill ends with a browser check, because a build can succeed while a chart is empty.',
         see: 'Visuals draw and aren\'t cut off or squeezed, text is readable, loading, empty and error states make sense, filters and cross-highlighting work, and the browser console shows no unexpected errors.',
         why: 'We practised some of these in **Failure** (error and empty states) and **Cross-filter** (filters). Also test as a normal user who has access to both the app and the model: their permissions are the ones that count.',
       },
@@ -1703,8 +1697,8 @@ export const lessons = [
         do: 'Add it again, named `pareto`:',
         run: ADD_PARETO,
         point: 'terminal',
-        see: '`rayfin.yml` changed, a new `rayfin/connectors/pareto/schema.ts`, the same install line as before, and a note that nothing was wired. No need to run the install line yet.',
-        why: 'The name is how our code will reach it: `rayfinClient.connectors.pareto`. Pick one that says which model it is. New names are stored in lower case anyway.',
+        see: '`rayfin.yml` changed, a new `rayfin/connectors/pareto/schema.ts`, `🔌 Wired 2 connector(s) into packages/frontend/src/lib/connectors.ts`, and the same install line as before. No need to run it: the packages are already in.',
+        why: 'The name is how our code will reach it: the `connection` our query files name. Pick one that says which model it is. New names are stored in lower case anyway.',
       },
       {
         do: 'Look at `rayfin/rayfin.yml`, open in the editor.',
@@ -1721,10 +1715,10 @@ export const lessons = [
         why: 'The type knows what kind of connector it is, not which measures the model has. TypeScript can\'t tell our two models apart: only their names can.',
       },
       {
-        do: 'In `package.json`, open in the editor, find the packages from the install line.',
-        file: 'package.json',
+        do: 'Open `packages/frontend/package.json` and find the packages from the install line.',
+        file: 'packages/frontend/package.json',
         find: '"@microsoft/rayfin-connector-fabric-semanticmodel"',
-        see: 'Both are already there, since **Add the connector**, as `^2.0.0`: npm saves the `@2.0.0` we installed with its default `^` (2.0.0, or a later 2.x).',
+        see: 'Both are already there, as `^2.0.0`: the analytics pack added them in **Add the connector**, matching `@microsoft/rayfin-core` (2.0.0, or a later 2.x).',
         why: 'One package serves every semantic model connector, so there is nothing new to install.',
       },
       {
@@ -1755,53 +1749,31 @@ export const lessons = [
 
   {
     id: 'second-client',
-    title: 'Register the second model',
-    goal: 'register a second semantic model in the client, and recognise a missing runtime by its silence',
+    title: 'Use the second model',
+    goal: 'check how the second model was wired, and query it from a page of its own',
     builds: ['second-model', 'client'],
-    pbi: 'A model in `rayfin.yml` is like a data source in the workspace: it exists, but no report uses it yet. The client is what our pages use, so `pareto` needs its place there too.',
-    idea: 'The same three places as for `contoso` in **Wire the client**: the schema type, `configs` and the [[runtime]]. We leave the runtime out at first, on purpose, to see what that looks like.',
+    pbi: 'A model in `rayfin.yml` is like a data source in the workspace. Here, adding it also wires it into the app: what is left is a visual that uses it.',
+    idea: '`connector add` already wrote `pareto` into the wiring. We check the three places, then give the second model a query file and a page.',
     steps: [
       {
-        do: 'In `src/lib/rayfin-client.ts`, add this import on a new line under the marked `contoso` import:',
-        code: PARETO_CLIENT_IMPORT.trim(),
-        edits: [{ file: CLIENT, from: CONTOSO_CLIENT_IMPORT, to: CONTOSO_CLIENT_IMPORT + PARETO_CLIENT_IMPORT }],
-        see: 'Nothing changes, except the new line (it greys out until it\'s used).',
+        do: 'Open `packages/frontend/src/lib/connectors.ts` and look at the marked line.',
+        file: CONNECTORS,
+        find: "  'pareto': paretoSchema;",
+        point: 'files',
+        see: '`pareto` beside `contoso` in all three places: the schema type, `connectorConfigs`, and `connectorRuntimes` with `fabricSemanticModel()`.',
+        why: 'Written by `connector add` in **Add a second model**, under the exact name in `rayfin.yml`. With the wiring generated, the slips of writing it by hand, such as a missing runtime, don\'t happen.',
       },
-      {
-        do: 'In `AppConnectorsSchema`, add a line under the marked `contoso: ContosoSchema;`:',
-        code: 'pareto: ParetoSchema;',
-        edits: [{ file: CLIENT, from: '  contoso: ContosoSchema;\n', to: '  contoso: ContosoSchema;\n  pareto: ParetoSchema;\n' }],
-        errors: 1,
-        see: 'Scroll down to `configs`: a red line under it, because `pareto` is missing.',
-        why: '`configs` must have every connector in the schema, under the same name.',
-      },
-      {
-        do: 'A slip on purpose, in part: add `pareto` to `configs`, and leave `runtime` as it is. The marked line becomes:',
-        code: 'configs: { contoso: contosoConfig, pareto: paretoConfig },',
-        find: 'configs: { contoso: contosoConfig },',
-        edits: [{ file: CLIENT, from: 'configs: { contoso: contosoConfig },', to: 'configs: { contoso: contosoConfig, pareto: paretoConfig },' }],
-        see: 'The red line goes. `runtime` still names only `contoso`, and nothing is red.',
-        why: 'TypeScript checks `configs` against the schema, but not `runtime`: it takes any names, or none.',
-      },
-      {
-        do: 'Give the second model a [[runner]]: in `src/hooks/use-dax.ts`, add these lines under the marked `runDax`.',
-        code: C.RUN_PARETO.trim(),
-        file: HOOK,
-        edits: [{ file: HOOK, from: C.RUN_DAX_LINE, to: C.RUN_DAX_LINE + C.RUN_PARETO }],
-        see: 'No red lines.',
-        why: '`runPareto` is a runner: the function a page passes to `useDax`, which picks the connector, and so the model. It has the same type as `runDax`, and is made once, outside any page, for the reason in **The redraw trap**. Only the connector differs.',
-      },
-      newFile(PARETO_HEADLINE_DAX, 'The second model\'s first query gets a file, in `src/queries/categories`, for the **Categories** page we add in a few steps: ', {
-        see: 'A new folder, `src/queries/categories`, with an empty `pareto-headline.dax` in it.',
+      newFile(PARETO_HEADLINE_DAX, 'The second model\'s first query gets a file, in `packages/frontend/src/queries/categories`, for the **Categories** page we add in a few steps: ', {
+        see: 'A new folder, `packages/frontend/src/queries/categories`, with an empty `pareto-headline.dax` in it.',
       }),
       paste(PARETO_HEADLINE_DAX, C.PARETO_HEADLINE_DAX, 'Paste the query. It names two measures from the Pareto model:', { see: 'Nothing changes yet.' }),
       newFile(PARETO_HEADLINE_TS, 'And its small `.ts` file: '),
       paste(PARETO_HEADLINE_TS, C.PARETO_HEADLINE_TS, 'Paste this into it:', {
         see: 'No red lines.',
-        why: 'With a year, its `ROW` goes inside `CALCULATETABLE`, as for the cards. The Pareto model is built on the same tables, so the same filter text works there: `\'date\'[Year]` is in both. A filter is only DAX text: it works in any model that has that column.',
+        why: '`connection: \'pareto\'` sends it to the second model. With a year, its `ROW` goes inside `CALCULATETABLE`, as for the cards. The Pareto model is built on the same tables, so the same filter text works there: `\'date\'[Year]` is in both.',
       }),
       {
-        do: '**Do it for me** gives `src/queries/categories` its `index.ts`, and lists the folder in `src/queries/index.ts` with this line:',
+        do: '**Do it for me** gives `packages/frontend/src/queries/categories` its `index.ts`, and lists the folder in `packages/frontend/src/queries/index.ts` with this line:',
         code: reExport('categories').trim(),
         copy: false,
         edits: [
@@ -1810,16 +1782,16 @@ export const lessons = [
         ],
         file: QUERIES_INDEX,
         point: 'files',
-        see: '`src/queries/index.ts` now passes on three folders; the new `src/queries/categories/index.ts` passes on `pareto-headline`. No red lines.',
+        see: '`packages/frontend/src/queries/index.ts` now passes on three folders; the new `packages/frontend/src/queries/categories/index.ts` passes on `pareto-headline`. No red lines.',
       },
       {
-        do: 'At the end of `src/lib/conversions.ts`, add the headline\'s conversion:',
+        do: 'At the end of `packages/frontend/src/lib/conversions.ts`, add the headline\'s conversion:',
         code: C.HEADLINE_CONV.trimStart(),
         edits: [{ file: CONV, from: PERCENT_END, to: PERCENT_END + C.HEADLINE_CONV }],
         see: 'No red lines.',
       },
       {
-        do: 'Add the page as **Categories**: **Do it for me** writes `src/ParetoPage.tsx` (a year slicer and the headline) and adds the page to the report (page id, import and `PAGES` entry); this is the line it adds to `PAGES`:',
+        do: 'Add the page as **Categories**: **Do it for me** writes `packages/frontend/src/ParetoPage.tsx` (a year slicer and the headline) and adds the page to the report (page id, import and `PAGES` entry); this is the line it adds to `PAGES`:',
         code: "pareto: { title: 'Categories', Component: ParetoPage },",
         copy: false,
         edits: [
@@ -1833,65 +1805,17 @@ export const lessons = [
       {
         do: 'Click **Categories**.',
         point: 'preview',
-        see: 'The page draws, but the headline card is empty: no sentence, no error panel, no red line. The **Log** shows the `pareto` query, answered with a raw payload, not decoded.',
-        why: 'Without a `runtime` entry, `executeQuery` hands the page the raw payload the connector received, not the result the types promise: there is no `status: \'success\'` or `\'error\'` for the page to read. The page finds no `error` to show, and `toHeadline` finds no `success`, so it shows nothing. Rayfin\'s own CLI calls this failing silently.',
-      },
-      {
-        do: 'A slip on purpose: add the runtime with a capital P, so the marked line becomes the one below.',
-        code: 'runtime: { contoso: fabricSemanticModel(), Pareto: fabricSemanticModel() },',
-        file: CLIENT,
-        find: 'runtime: { contoso: fabricSemanticModel() },',
-        edits: [{ file: CLIENT, from: 'runtime: { contoso: fabricSemanticModel() },', to: RUNTIME_CASE_SLIP }],
-        see: 'No red line. The page starts again on **Overview**.',
-      },
-      {
-        do: 'Open **Categories**.',
-        point: 'preview',
-        see: 'The headline is still empty.',
-        why: 'The client finds a connector by its name in any case, but then looks up its runtime by the exact name in `configs`: `pareto`. `Pareto` is never found.',
-      },
-      {
-        do: 'Fix the name, so the marked line reads as below.',
-        code: RUNTIME_BOTH.trim(),
-        file: CLIENT,
-        find: RUNTIME_CASE_SLIP,
-        edits: [{ file: CLIENT, from: RUNTIME_CASE_SLIP, to: RUNTIME_BOTH }],
-        see: 'The page starts again on **Overview**.',
-        why: 'One runtime per semantic model, under its own connector name: the same name in four places, `rayfin.yml`, the schema type, `configs` and `runtime`.',
-      },
-      {
-        do: 'Open **Categories** again.',
-        point: 'preview',
         see: '**It takes 4 of 8 categories to reach 80% of revenue**.',
-      },
-      {
-        do: 'A slip on purpose: in `src/hooks/use-dax.ts`, change the marked `connectors.pareto` to `connectors.Pareto`.',
-        file: HOOK,
-        find: 'connectors.pareto',
-        edits: [{ file: HOOK, from: 'rayfinClient.connectors.pareto.executeQuery', to: 'rayfinClient.connectors.Pareto.executeQuery' }],
-        errors: 1,
-        see: 'A red line: `Property \'Pareto\' does not exist on type …`, ending `Did you mean \'pareto\'?`',
-      },
-      {
-        do: 'Open **Categories**.',
-        point: 'preview',
-        errors: 1,
-        see: 'The headline is still there.',
-        why: 'At run time, a name that differs only by case finds the one connector it matches (two such connectors would throw `AMBIGUOUS_CONNECTOR`). The types want the exact name. As in **Types**, the red line is a check, not a gate: fix it anyway.',
-      },
-      {
-        do: UNDO,
-        edits: [{ file: HOOK, from: 'rayfinClient.connectors.Pareto.executeQuery', to: 'rayfinClient.connectors.pareto.executeQuery' }],
-        see: 'The red line goes.',
+        why: 'The model writes that sentence itself, from its own measure, `[Cutoff Headline]`.',
       },
     ],
     summary: [
-      'Each semantic model needs its name in the schema type, in `configs` and in `runtime`.',
-      'A missing `configs` entry is a red line. A missing or misspelled `runtime` entry is silent: an empty page.',
-      'Use the exact, lower-case name everywhere: the client forgives the case of a name, but not in `runtime`, and the types never do.',
+      '`connector add` writes a second model into the wiring too: its name in the schema type, `connectorConfigs` and `connectorRuntimes`.',
+      'A query file names its model: `connection: \'pareto\'` sends it to the Pareto model.',
+      'Use the exact, lower-case name: it is the key in `rayfin.yml` and in the wiring.',
     ],
     fabric: {
-      text: 'In a project made from a template that has `src/lib/connectors.ts`, `connector add` writes these entries for you. The data app template has no such file, so you (or an agent) add them by hand: when you review an agent\'s change, check all three.',
+      text: 'In the default template, `connector add` keeps `packages/frontend/src/lib/connectors.ts` in step with `rayfin.yml`. If you have taken the file over, it prints the wiring to merge instead of rewriting it.',
       links: [rayfin.clientSetup, rayfin.semanticModels],
     },
   },
@@ -1905,16 +1829,16 @@ export const lessons = [
     idea: 'We grow **Categories** into a Pareto page: bars with the running share, the vital few starred, and two Revenue cards, one per model. Then we check the two Revenue measures properly.',
     steps: [
       {
-        do: '**Do it for me** writes the query file for the bars, `src/queries/categories/pareto-by-category.dax`:',
+        do: '**Do it for me** writes the query file for the bars, `packages/frontend/src/queries/categories/pareto-by-category.dax`:',
         code: C.PARETO_BY_CATEGORY_DAX,
         copy: false,
         edits: [{ file: PARETO_BY_CATEGORY_DAX, from: '', to: C.PARETO_BY_CATEGORY_DAX }],
         point: 'files',
-        see: 'A new file in `src/queries/categories`, open in the editor.',
+        see: 'A new file in `packages/frontend/src/queries/categories`, open in the editor.',
         why: 'It names the model\'s own measures (`[Revenue Share %]`, `[Revenue Cumulative %]`): the running share stays in the model, as **Measure or query** advised. The year goes where `/* filters */` is.',
       },
       {
-        do: '**Do it for me** writes its `.ts` file, `src/queries/categories/pareto-by-category.ts`, and lists it in the folder\'s `index.ts`:',
+        do: '**Do it for me** writes its `.ts` file, `packages/frontend/src/queries/categories/pareto-by-category.ts`, and lists it in the folder\'s `index.ts`:',
         code: C.PARETO_BY_CATEGORY_TS,
         copy: false,
         edits: [
@@ -1926,7 +1850,7 @@ export const lessons = [
         why: 'The year goes into the file\'s marker, as for the countries chart.',
       },
       {
-        do: '**Do it for me** writes the query file for the two Revenue cards, `src/queries/categories/revenue-card.dax`:',
+        do: '**Do it for me** writes the query file for the two Revenue cards, `packages/frontend/src/queries/categories/revenue-card.dax`:',
         code: C.REVENUE_CARD_DAX,
         copy: false,
         edits: [{ file: REVENUE_CARD_DAX, from: '', to: C.REVENUE_CARD_DAX }],
@@ -1934,7 +1858,7 @@ export const lessons = [
         see: 'One measure, by name. The page sends this same text to both models.',
       },
       {
-        do: '**Do it for me** writes its `.ts` file too, `src/queries/categories/revenue-card.ts`, and lists it in the folder\'s `index.ts`:',
+        do: '**Do it for me** writes its `.ts` file too, `packages/frontend/src/queries/categories/revenue-card.ts`, and lists it in the folder\'s `index.ts`:',
         code: C.REVENUE_CARD_TS,
         copy: false,
         edits: [
@@ -1946,13 +1870,13 @@ export const lessons = [
         why: 'With a year, its `ROW` goes inside `CALCULATETABLE`, as for the cards.',
       },
       {
-        do: 'At the end of `src/lib/conversions.ts`, add the page\'s two conversions:',
+        do: 'At the end of `packages/frontend/src/lib/conversions.ts`, add the page\'s two conversions:',
         code: C.PARETO_CONV.trimStart(),
         edits: [{ file: CONV, from: HEADLINE_END, to: HEADLINE_END + C.PARETO_CONV }],
         see: 'No red lines.',
       },
       {
-        do: '**Do it for me** replaces `src/ParetoPage.tsx` with the full page.',
+        do: '**Do it for me** replaces `packages/frontend/src/ParetoPage.tsx` with the full page.',
         code: C.PARETO_PAGE,
         file: PARETO_PAGE,
         edits: [{ file: PARETO_PAGE, from: C.PARETO_PAGE_V1, to: C.PARETO_PAGE }],
@@ -1964,11 +1888,11 @@ export const lessons = [
         see: 'Two cards, **Revenue, contoso model** and **Revenue, pareto model**, both 150.6M; the headline; eight bars (scroll inside their card for the rest), the first four starred: `★ Computers (46.1%)`, `★ Cell phones (61%)`, `★ Home Appliances (72.4%)`, `★ Cameras and camcorders (83%)`.',
       },
       {
-        do: 'Look at the four `useDax` lines, from the marked one down.',
+        do: 'Look at the four `useSemanticModelQuery` lines, from the marked one down.',
         file: PARETO_PAGE,
-        find: 'const paretoResult = useDax(runPareto, paretoByCategory(year));',
-        see: 'Three use `runPareto`, one uses `runDax`. All four take the same `year`.',
-        why: '`useDax` doesn\'t care which model answers: the runner decides. One slicer state feeds both models, like a slicer on two visuals.',
+        find: 'const paretoQuery = useSemanticModelQuery(paretoByCategory(year));',
+        see: 'Two Pareto query files, then `revenueCard` twice: once with `\'contoso\'`, once with `\'pareto\'`. All four take the same `year`.',
+        why: 'The hook doesn\'t care which model answers: each query\'s `connection` decides. One slicer state feeds both models, like a slicer on two visuals.',
       },
       {
         do: 'Pick **2024** in the slicer.',
@@ -1977,10 +1901,10 @@ export const lessons = [
         why: 'The number of vital categories is 4 in every year, but which four changes: try **2023**, where Cameras is second. The stars use the model\'s count, `[# Categories to 80%]`: the page doesn\'t redo the maths.',
       },
       {
-        do: 'A slip on purpose: in the marked line, change `runPareto` to `runDax`.',
-        file: PARETO_PAGE,
-        find: 'useDax(runPareto, paretoByCategory(year))',
-        edits: [{ file: PARETO_PAGE, from: 'useDax(runPareto, paretoByCategory(year))', to: 'useDax(runDax, paretoByCategory(year))' }],
+        do: 'A slip on purpose: in `packages/frontend/src/queries/categories/pareto-by-category.ts`, change the marked `\'pareto\'` to `\'contoso\'`.',
+        file: PARETO_BY_CATEGORY_TS,
+        find: "connection: 'pareto'",
+        edits: [{ file: PARETO_BY_CATEGORY_TS, from: "return { connection: 'pareto', query:", to: "return { connection: 'contoso', query:" }],
         queryFails: true,
         see: 'No red line. The page starts again on **Overview**.',
       },
@@ -1988,11 +1912,11 @@ export const lessons = [
         do: 'Open **Categories**.',
         point: 'preview',
         see: 'The page shows its error panel: `Query (4, 73) The value for \'Revenue Cumulative %\' cannot be determined. Either the column doesn\'t exist, or there is no current row for this column.`',
-        why: 'The query went to `contoso`, which has no Pareto measures. TypeScript can\'t catch it: both runners have the same type, and the DAX is text. Only the model can.',
+        why: 'The query went to `contoso`, which has no Pareto measures. TypeScript can\'t catch it: `connection` is text, and so is the DAX. Only the model can.',
       },
       {
         do: UNDO,
-        edits: [{ file: PARETO_PAGE, from: 'useDax(runDax, paretoByCategory(year))', to: 'useDax(runPareto, paretoByCategory(year))' }],
+        edits: [{ file: PARETO_BY_CATEGORY_TS, from: "return { connection: 'contoso', query:", to: "return { connection: 'pareto', query:" }],
         see: 'The page starts again on **Overview**.',
       },
       {
@@ -2061,7 +1985,7 @@ export const lessons = [
         do: 'Add it, named `lake`, for reading:',
         run: LAKE_ADD,
         see: '`rayfin.yml` changed, a new folder `rayfin/connectors/lake/` with `metadata.json` and `schema.ts`, an install line, and a line saying nothing was wired into the app.',
-        why: 'For a SQL source, the command reads the tables and columns (schema discovery) and saves them. It writes no code for them: that is the next lesson. Nothing was wired because the project has no `src/lib/connectors.ts` for the CLI to update: our client is the one from **Wire the client**, so we register `lake` there. `--operations read` is how Microsoft Learn\'s example adds a lakehouse; `read` is all a lakehouse allows anyway.',
+        why: 'For a SQL source, the command reads the tables and columns (schema discovery) and saves them. It writes no code for them: that is the next lesson. Nothing was wired because the project has no `packages/frontend/src/lib/connectors.ts` for the CLI to update: our client is the one from **Wire the client**, so we register `lake` there. `--operations read` is how Microsoft Learn\'s example adds a lakehouse; `read` is all a lakehouse allows anyway.',
       },
       {
         do: 'Open `rayfin/rayfin.yml` and find the marked `- name: lake`.',
@@ -2117,7 +2041,7 @@ export const lessons = [
     idea: 'In a real project an agent usually writes these files from `metadata.json`: Rayfin\'s docs spell out the rules for it. We write the small one, `Store`, by hand, let the "agent" write `Sales`, and check it against the same rules.',
     steps: [
       {
-        do: 'Click **+ New file**, at the top of the file list, and type `rayfin/connectors/lake/Store.ts` in place of the `src/` already there.',
+        do: 'Click **+ New file**, at the top of the file list, and type `rayfin/connectors/lake/Store.ts` in place of the `packages/frontend/src/` already there.',
         edits: [{ file: LAKE_STORE, from: '', to: '' }],
         point: 'files',
         see: 'A new, empty `Store.ts`, beside `schema.ts` in `rayfin/connectors/lake`, open in the editor.',
@@ -2187,34 +2111,41 @@ export const lessons = [
   {
     id: 'lakehouse-rows',
     title: 'Rows on a page',
-    goal: 'wire the lakehouse connector into the client and list the order lines behind a number',
+    goal: 'wire the lakehouse connector into the app and list the order lines behind a number',
     builds: ['lakehouse-entities', 'pages'],
     pbi: 'A drill-through page: the order lines behind a country\'s total, newest first.',
-    idea: 'We register `lake` in the client, write a small hook that waits for a promise, and add an **Order lines** page.',
+    idea: 'We wire `lake` into the app by hand, write a small hook that waits for a promise, and add an **Order lines** page.',
     steps: [
       {
-        do: 'In `src/lib/rayfin-client.ts`, add this import on a new line under the marked `pareto` import:',
-        code: LAKE_CLIENT_IMPORT.trim(),
-        edits: [{ file: CLIENT, from: PARETO_CLIENT_IMPORT, to: PARETO_CLIENT_IMPORT + LAKE_CLIENT_IMPORT }],
+        do: 'Take the wiring file over: in `packages/frontend/src/lib/connectors.ts`, delete the marked line.',
+        file: CONNECTORS,
+        find: LAKE_MARKER.trim(),
+        edits: [{ file: CONNECTORS, from: LAKE_MARKER, to: '' }],
+        see: 'Nothing changes on the page. From now on, `connector add` leaves the file alone and prints the wiring for us to merge.',
+        why: 'The template\'s connectors skill: once you have written a lakehouse\'s entities, take the file over and add the connector yourself. Don\'t run `connector add --yes` again: it would replace your `schema.ts` with a placeholder.',
+      },
+      {
+        do: 'Import the lakehouse\'s schema: add this line under the marked `pareto` import.',
+        code: LAKE_WIRE_IMPORT.trim(),
+        edits: [{ file: CONNECTORS, from: PARETO_WIRE_IMPORT, to: PARETO_WIRE_IMPORT + LAKE_WIRE_IMPORT }],
         see: 'Nothing changes.',
       },
       {
-        do: 'In `AppConnectorsSchema`, add a line under the marked `pareto: ParetoSchema;`:',
-        code: 'lake: LakeSchema;',
-        edits: [{ file: CLIENT, from: '  pareto: ParetoSchema;\n', to: '  pareto: ParetoSchema;\n  lake: LakeSchema;\n' }],
-        errors: 1,
-        see: 'A red line under `configs`: `lake` is missing.',
-        why: 'The `configs` map must have every connector in the schema, under the same name. TypeScript points at the gap.',
+        do: 'In `AppConnectorsSchema`, add a line under the marked `\'pareto\'` one:',
+        code: "'lake': lakeSchema;",
+        edits: [{ file: CONNECTORS, from: "  'pareto': paretoSchema;\n", to: "  'pareto': paretoSchema;\n  'lake': lakeSchema;\n" }],
+        errors: 2,
+        see: 'Two red lines, under `connectorConfigs` and in the client that reads it: `lake` is missing.',
+        why: '`connectorConfigs` must have every connector in the schema type, under the same name. TypeScript points at the gap.',
       },
       {
-        do: 'In `configs`, add the lakehouse, so the marked line reads:',
-        code: 'configs: { contoso: contosoConfig, pareto: paretoConfig, lake: lakeConfig },',
-        find: 'configs: { contoso: contosoConfig, pareto: paretoConfig },',
-        edits: [{ file: CLIENT, from: 'configs: { contoso: contosoConfig, pareto: paretoConfig },', to: 'configs: { contoso: contosoConfig, pareto: paretoConfig, lake: lakeConfig },' }],
-        see: 'The red line goes.',
-        why: 'No `runtime` entry this time: `runtime` is for function-style connectors such as the semantic model, whose `fabricSemanticModel()` decodes the answer. An entity connector, such as a lakehouse, needs its configuration only.',
+        do: 'In `connectorConfigs`, add the lakehouse under the marked `\'pareto\'` line:',
+        code: "'lake': lakeConfig,",
+        edits: [{ file: CONNECTORS, from: "  'pareto': paretoConfig,\n", to: "  'pareto': paretoConfig,\n  'lake': lakeConfig,\n" }],
+        see: 'The red lines go.',
+        why: 'No `connectorRuntimes` entry this time: the skill says a lakehouse needs none. Its rows arrive as plain JSON, with nothing to decode, unlike a semantic model\'s answer.',
       },
-      newFile(USE_LOAD, 'First, a hook that waits for any promise. Hooks go in `src/hooks`: '),
+      newFile(USE_LOAD, 'First, a hook that waits for any promise. Hooks go in `packages/frontend/src/hooks`: '),
       {
         do: 'Paste the hook into it:',
         code: C.LAKE_HOOK,
@@ -2229,7 +2160,7 @@ export const lessons = [
         see: '`live` is checked before every `setState`.',
         why: '`Loaded<T>` is the three states from **Failure** for any kind of value. `live` ignores an answer that arrives after the page has moved on (React runs the returned function when `key` changes or the page closes).',
       },
-      newFile(LAKE_TS, 'The lakehouse reads are code the pages share, so they go in `src/lib`: '),
+      newFile(LAKE_TS, 'The lakehouse reads are code the pages share, so they go in `packages/frontend/src/lib`: '),
       {
         do: 'Paste the two reads into it:',
         code: C.LAKE_QUERIES,
@@ -2238,7 +2169,7 @@ export const lessons = [
         why: 'The chain reads like a query: `select` the columns, `where` to filter, `orderBy`, `first` for the row count, then `execute`. Two calls, because the tables have no relationship: the first finds France\'s store keys, the second the lines in those stores.',
       },
       {
-        do: 'Add the page as **Order lines**: **Do it for me** writes `src/LinesPage.tsx` and adds the page to the report (page id, import and `PAGES` entry); this is the line it adds to `PAGES`:',
+        do: 'Add the page as **Order lines**: **Do it for me** writes `packages/frontend/src/LinesPage.tsx` and adds the page to the report (page id, import and `PAGES` entry); this is the line it adds to `PAGES`:',
         code: "lines: { title: 'Order lines', Component: LinesPage },",
         edits: [
           { file: LINES, from: '', to: C.LINES_PAGE },
@@ -2254,7 +2185,7 @@ export const lessons = [
         see: '20 lines for France, newest first: 12/31/2023 at the top. The Log shows two lakehouse reads.',
       },
       {
-        do: 'A slip on purpose: in `src/LinesPage.tsx`, replace the marked date with `{line.orderDate.toLocaleDateString(\'en-US\', { timeZone: \'UTC\' })}`.',
+        do: 'A slip on purpose: in `packages/frontend/src/LinesPage.tsx`, replace the marked date with `{line.orderDate.toLocaleDateString(\'en-US\', { timeZone: \'UTC\' })}`.',
         file: LINES,
         edits: [{ file: LINES, from: C.LINES_DATE, to: C.LINES_DATE_SLIP }],
         errors: 1,
@@ -2267,7 +2198,7 @@ export const lessons = [
         see: 'The red line goes.',
       },
       {
-        do: 'Another slip on purpose: in `src/lib/lake.ts`, delete the marked `.select([\'storeKey\'])` line in `storeKeysIn`.',
+        do: 'Another slip on purpose: in `packages/frontend/src/lib/lake.ts`, delete the marked `.select([\'storeKey\'])` line in `storeKeysIn`.',
         file: LAKE_TS,
         edits: [{ file: LAKE_TS, from: "    .select(['storeKey'])\n", to: '' }],
         see: 'No red line. The page starts again on **Overview**: open **Order lines**, and it shows its error panel: **A read requires an explicit .select([...]).**',
@@ -2275,7 +2206,7 @@ export const lessons = [
       },
       {
         do: UNDO,
-        edits: [{ file: LAKE_TS, from: "  const stores = await rayfinClient.connectors.lake.Store\n    .where(", to: "  const stores = await rayfinClient.connectors.lake.Store\n    .select(['storeKey'])\n    .where(" }],
+        edits: [{ file: LAKE_TS, from: "  const stores = await client.connectors.lake.Store\n    .where(", to: "  const stores = await client.connectors.lake.Store\n    .select(['storeKey'])\n    .where(" }],
         see: 'The lines are back.',
       },
       {
@@ -2306,13 +2237,13 @@ export const lessons = [
     idea: 'We try to get France\'s 2023 revenue from the lakehouse rows, and compare it with the model\'s `[Revenue]`. A slip on purpose, the kind an agent makes.',
     steps: [
       {
-        do: 'A slip on purpose: at the end of `src/lib/lake.ts`, add a revenue total over the lines:',
+        do: 'A slip on purpose: at the end of `packages/frontend/src/lib/lake.ts`, add a revenue total over the lines:',
         code: C.REVENUE_ONE_PAGE.trimStart(),
         edits: [{ file: LAKE_TS, from: LATEST_LINES_END, to: LATEST_LINES_END + C.REVENUE_ONE_PAGE }],
         see: 'No red lines.',
       },
       {
-        do: 'Show it on the page: **Do it for me** adds a **Revenue (from lines)** card to `src/LinesPage.tsx` (two imports, the hook line, the card).',
+        do: 'Show it on the page: **Do it for me** adds a **Revenue (from lines)** card to `packages/frontend/src/LinesPage.tsx` (two imports, the hook line, the card).',
         code: C.REVENUE_CARD.trim(),
         edits: [
           { file: LINES, from: IMP_ERR, to: IMP_ERR + COMP_IMPORT },
@@ -2396,7 +2327,7 @@ export const lessons = [
         why: 'The playground prints this line; a real app doesn\'t. `connector add` and `inspect` ran as you, the developer: discovery and the running app use different identities.',
       },
       {
-        do: 'A slip on purpose: at the end of `src/lib/lake.ts`, add a write:',
+        do: 'A slip on purpose: at the end of `packages/frontend/src/lib/lake.ts`, add a write:',
         code: C.ADD_LINE.trimStart(),
         edits: [{ file: LAKE_TS, from: LATEST_LINES_END, to: LATEST_LINES_END + C.ADD_LINE }],
         errors: 1,
@@ -2413,7 +2344,7 @@ export const lessons = [
         run: LAKE_READD,
         errors: 6,
         point: 'terminal',
-        see: '`type: delegated` for `lake` in `rayfin.yml`, and red lines in `src/lib/rayfin-client.ts`, `src/lib/lake.ts` and `src/LinesPage.tsx`: `schema.ts` is a placeholder again.',
+        see: '`type: delegated` for `lake` in `rayfin.yml`, and red lines in `packages/frontend/src/lib/rayfin-client.ts`, `packages/frontend/src/lib/lake.ts` and `packages/frontend/src/LinesPage.tsx`: `schema.ts` is a placeholder again.',
         why: 'Re-adding keeps the entity files, but `--yes` replaces a hand-written `schema.ts` with a fresh placeholder. Without `--auth`, re-adding would also have set `auth` back to `application`.',
       },
       {
@@ -2475,7 +2406,7 @@ export const lessons = [
       },
       {
         do: 'Open `package.json` and find the marked `@microsoft/rayfin-data`.',
-        file: 'package.json',
+        file: 'packages/frontend/package.json',
         find: '"@microsoft/rayfin-data"',
         see: '`@microsoft/rayfin-data` and `@microsoft/rayfin-core` are already in `dependencies`.',
         why: 'The template lists them, and our first `npm install` installed them. Nothing to install this time.',
@@ -2512,10 +2443,10 @@ export const lessons = [
     idea: 'One class, `SalesTarget`: a country, a year, an amount. Then a slip that shows why every entity names its permissions.',
     steps: [
       {
-        do: 'Click **+ New file**, at the top of the file list, and type `rayfin/data/SalesTarget.ts` in place of the `src/` already there.',
+        do: 'Click **+ New file**, at the top of the file list, and type `packages/data/src/SalesTarget.ts` in place of the `packages/frontend/src/` already there.',
         edits: [{ file: TARGET, from: '', to: '' }],
         point: 'files',
-        see: 'A new, empty `SalesTarget.ts`, in a new `rayfin/data` folder, open in the editor.',
+        see: 'A new, empty `SalesTarget.ts`, in the data package beside its `index.ts`, open in the editor.',
       },
       {
         do: 'Paste the import into it:',
@@ -2576,18 +2507,26 @@ export const lessons = [
     idea: 'We list the entity in the schema, [[apply|schema-apply]] it, and check the deployment. Then a slip that a successful apply hides.',
     steps: [
       {
-        do: 'Open `rayfin/data/schema.ts`, beside `SalesTarget.ts`: the template made it.',
+        do: 'Open `packages/data/src/index.ts`, beside `SalesTarget.ts`: the template\'s list of the app\'s entities.',
         file: DATA_SCHEMA,
-        find: 'export type DataAppSchema = {};',
+        find: 'export const schema = [];',
         point: 'files',
-        see: 'Two empty lists: the type `DataAppSchema` and the array `schema`.',
+        see: 'The array `schema`, empty: no entities yet. The type, `UniversalAppSchema`, comes from the shared package.',
       },
       {
         do: 'Replace everything in it with this (select all, then paste):',
         code: C.DATA_SCHEMA,
-        edits: [{ file: DATA_SCHEMA, from: TEMPLATE_DATA_SCHEMA, to: C.DATA_SCHEMA }],
+        edits: [{ file: DATA_SCHEMA, from: TEMPLATE_DATA_INDEX, to: C.DATA_SCHEMA }],
         see: 'No red lines.',
-        why: 'Two lists, kept in step: the type `DataAppSchema` (for the client\'s types; Rayfin\'s docs call theirs `AppSchema`) and the array `schema`, the list Rayfin\'s docs ask you to keep. Every new entity goes in both. As in **Entities from the metadata**, imports under `rayfin/` end in `.js`.',
+        why: '`schema` is the list Rayfin\'s docs ask you to keep, and the data-modeling skill also exports the class from here.',
+      },
+      {
+        do: 'Now the type the browser\'s client reads: replace everything in `packages/shared/src/index.ts` with this.',
+        code: C.SHARED_SCHEMA,
+        file: SHARED_SCHEMA,
+        edits: [{ file: SHARED_SCHEMA, from: TEMPLATE_SHARED_INDEX, to: C.SHARED_SCHEMA }],
+        see: 'No red lines.',
+        why: 'Two lists, kept in step: the record in the shared package (`UniversalAppSchema`, for the client\'s types; Rayfin\'s docs call theirs `AppSchema`) and the array `schema` in the data package. The shared package holds no decorated class, so the browser can use it: the data-modeling skill keeps the two apart this way. Every new entity goes in both. As in **Entities from the metadata**, imports under `rayfin/` end in `.js`.',
       },
       {
         do: 'Apply the schema:',
@@ -2640,7 +2579,7 @@ export const lessons = [
       },
     ],
     summary: [
-      'Register each entity twice: in the `DataAppSchema` type and in the `schema` array.',
+      'Register each entity twice: its record in `UniversalAppSchema` (the shared package) and its class in the `schema` array (the data package).',
       '`db apply` changes the database; `up status` checks the deployment. Neither proves every query works.',
       'Every `@text()` needs a `max`. `--force` only after reading what it lists.',
     ],
@@ -2657,26 +2596,20 @@ export const lessons = [
     goal: 'list, add and change targets from a page',
     builds: ['register-apply', 'lakehouse-rows'],
     pbi: 'A table visual you can type into. The data API checks every write against the entity\'s permissions, as row-level security checks every query.',
-    idea: 'We register the data service in the client, read the targets with the query chain from **Rows on a page**, and add a **Targets** page that can add and change them.',
+    idea: 'The template\'s client already has a data service. We read the targets with the query chain from **Rows on a page**, and add a **Targets** page that can add and change them.',
     steps: [
       {
-        do: 'In `src/lib/rayfin-client.ts`, add these imports on new lines under the marked `lake` import:',
-        code: C.CLIENT_DATA_IMPORTS.trim(),
-        edits: [{ file: CLIENT, from: LAKE_CLIENT_IMPORT, to: LAKE_CLIENT_IMPORT + C.CLIENT_DATA_IMPORTS }],
-        see: 'Nothing changes.',
+        do: 'Open `packages/frontend/src/lib/rayfin-client.ts` and look at the marked data service.',
+        file: CLIENT,
+        find: 'data: dataService<UniversalAppSchema>(),',
+        see: 'The template\'s client already has the data service, typed by `UniversalAppSchema`. Now that the shared package lists `SalesTarget`, so does `client.data`.',
+        why: 'In the default template the client comes with it: we only register the entity, in the data and shared packages.',
       },
       {
-        do: 'In `services`, add a line above `connectors:`, under the marked `services: {`:',
-        code: 'data: dataService<DataAppSchema>(),',
-        edits: [{ file: CLIENT, from: '  services: {\n', to: '  services: {\n    data: dataService<DataAppSchema>(),\n' }],
-        see: 'No red lines. `rayfinClient.data.SalesTarget` now exists.',
-        why: 'The client has only the services we register: until now, connectors. `<DataAppSchema>` gives it our entities\' types.',
-      },
-      {
-        do: 'Click **+ New file**, at the top of the file list, and type `lib/targets.ts` after the `src/` already there.',
+        do: 'Click **+ New file**, at the top of the file list, and type `lib/targets.ts` after the `packages/frontend/src/` already there.',
         edits: [{ file: TARGETS_TS, from: '', to: '' }],
         point: 'files',
-        see: 'A new, empty `src/lib/targets.ts`, open in the editor.',
+        see: 'A new, empty `packages/frontend/src/lib/targets.ts`, open in the editor.',
       },
       {
         do: 'Paste a read into it:',
@@ -2686,7 +2619,7 @@ export const lessons = [
         why: 'The same chain as the lakehouse: `select`, `where`, `orderBy`, `execute`. `execute()` returns one page (100 rows), which is plenty here: we add one target per country and year (nothing enforces that: the `unique` option on a field covers that one field, and Rayfin\'s guide says a rule over two fields is a unique constraint you add in the database itself).',
       },
       {
-        do: 'Add the page: **Do it for me** writes `src/TargetsPage.tsx` and adds it to the report as **Targets** (page id, `PAGES` entry and import).',
+        do: 'Add the page: **Do it for me** writes `packages/frontend/src/TargetsPage.tsx` and adds it to the report as **Targets** (page id, `PAGES` entry and import).',
         code: "targets: { title: 'Targets', Component: TargetsPage },",
         edits: [
           { file: TARGETS_PAGE, from: '', to: C.TARGETS_PAGE },
@@ -2697,7 +2630,7 @@ export const lessons = [
         see: 'Click **Targets** in the page list: "No targets for 2026 yet." The Log shows the read, and who it ran as.',
       },
       {
-        do: 'At the end of `src/lib/targets.ts`, add the writes:',
+        do: 'At the end of `packages/frontend/src/lib/targets.ts`, add the writes:',
         code: C.TARGETS_WRITES.trimStart(),
         edits: [{ file: TARGETS_TS, from: C.TARGETS_LOAD, to: C.TARGETS_LOAD + C.TARGETS_WRITES }],
         see: 'No red lines.',
@@ -2723,7 +2656,7 @@ export const lessons = [
         see: 'The row appears: Germany, 3,000,000. The **Data** tab shows one row, and the **Log** the create.',
       },
       {
-        do: 'A slip on purpose: in `src/lib/targets.ts`, delete `\'amount\', ` from the marked `select` list.',
+        do: 'A slip on purpose: in `packages/frontend/src/lib/targets.ts`, delete `\'amount\', ` from the marked `select` list.',
         file: TARGETS_TS,
         find: "    .select(['id', 'country', 'year', 'amount'])",
         edits: [{ file: TARGETS_TS, from: "    .select(['id', 'country', 'year', 'amount'])", to: "    .select(['id', 'country', 'year'])" }],
@@ -2743,7 +2676,7 @@ export const lessons = [
       },
     ],
     summary: [
-      'Register `dataService<DataAppSchema>()` once, then read with the same chain as the lakehouse.',
+      'The template\'s client has the data service, typed by `UniversalAppSchema`; read with the same chain as the lakehouse.',
       '`create` and `update` take typed fields; writes return the key and what you sent.',
       'A result has only the fields you select: reading another one is a red line.',
     ],
@@ -2789,11 +2722,14 @@ export const lessons = [
         why: 'A new optional column loses nothing: existing targets get no note.',
       },
       {
-        do: 'A slip on purpose: rename the marked `amount` to `targetAmount`.',
+        do: 'A slip on purpose: rename the marked `amount` to `targetAmount`, here and in its shared record, as an agent would (**Do it for me** makes both).',
         file: TARGET,
-        edits: [{ file: TARGET, from: AMOUNT_FIELD, to: AMOUNT_RENAMED }],
+        edits: [
+          { file: TARGET, from: AMOUNT_FIELD, to: AMOUNT_RENAMED },
+          { file: SHARED_SCHEMA, from: '  amount: number;\n', to: '  targetAmount: number;\n' },
+        ],
         errors: '1+',
-        see: 'Red lines in `src/lib/targets.ts` and `src/TargetsPage.tsx` wherever `amount` is used, and a few that follow from them.',
+        see: 'Red lines in `packages/frontend/src/lib/targets.ts` and `packages/frontend/src/TargetsPage.tsx` wherever `amount` is used, and a few that follow from them.',
         why: 'TypeScript finds every place the old name is used. The database is another matter.',
       },
       {
@@ -2806,7 +2742,10 @@ export const lessons = [
       },
       {
         do: UNDO,
-        edits: [{ file: TARGET, from: AMOUNT_RENAMED, to: AMOUNT_FIELD }],
+        edits: [
+          { file: TARGET, from: AMOUNT_RENAMED, to: AMOUNT_FIELD },
+          { file: SHARED_SCHEMA, from: '  targetAmount: number;\n', to: '  amount: number;\n' },
+        ],
         see: '`amount` again, the red lines go, and the database never changed.',
       },
     ],
@@ -2838,10 +2777,10 @@ export const lessons = [
         why: 'Simulated. On Fabric, people sign in with Microsoft Entra ID through Fabric, and nobody can switch to someone else.',
       },
       {
-        do: 'Click **+ New file**, at the top of the file list, and type `lib/session.ts` after the `src/` already there.',
+        do: 'Click **+ New file**, at the top of the file list, and type `lib/session.ts` after the `packages/frontend/src/` already there.',
         edits: [{ file: SESSION_TS, from: '', to: '' }],
         point: 'files',
-        see: 'A new, empty `src/lib/session.ts`, open in the editor.',
+        see: 'A new, empty `packages/frontend/src/lib/session.ts`, open in the editor.',
       },
       {
         do: 'Paste this into it:',
@@ -2864,7 +2803,7 @@ export const lessons = [
         see: 'The page still says Alice.',
         why: 'The page read the session once, when it drew, and didn\'t hear about the change. We need [[state]] that listens, as **State as a slicer** taught.',
       },
-      newFile(USE_SESSION, 'Listening is a hook\'s job, so it gets a file in `src/hooks`: ', {
+      newFile(USE_SESSION, 'Listening is a hook\'s job, so it gets a file in `packages/frontend/src/hooks`: ', {
         why: 'The template\'s own sign-in hooks are beside it, locked (`use-auth.tsx`, `auth.context.ts`): in a real project they run the Fabric sign-in. Ours only listens to Rayfin\'s session, which the playground simulates.',
       }),
       {
@@ -2875,7 +2814,7 @@ export const lessons = [
         why: '`onSessionChange` calls us back at each sign-in, sign-out or refresh, and returns a function that stops listening. Returning it from `useEffect` stops it when the page goes away.',
       },
       {
-        do: 'Use it: **Do it for me** makes the page list use `useSession()`, and takes `signedInEmail` out of `src/lib/session.ts`: nothing uses it any more, and only the client import stays there for now.',
+        do: 'Use it: **Do it for me** makes the page list use `useSession()`, and takes `signedInEmail` out of `packages/frontend/src/lib/session.ts`: nothing uses it any more, and only the client import stays there for now.',
         edits: [
           { from: "import { signedInEmail } from './lib/session';\n", to: "import { useSession } from './hooks/use-session';\n" },
           { from: APP_PAGE_STATE, to: `${APP_PAGE_STATE}  const session = useSession();\n${C.SIGNED_IN_STATE}` },
@@ -2893,7 +2832,7 @@ export const lessons = [
       {
         do: 'How does a real app sign in? Read this card.',
         see: 'A button calls `ensureSignedInWithFabric(…)` from `@microsoft/rayfin-auth-provider-fabric`, which opens a Fabric sign-in window. Inside the Fabric portal, `initEmbeddedAuth()` at startup signs in with no click.',
-        why: 'The data app template comes with this. The playground skips it, and signs in whoever the switch says.',
+        why: 'The template comes with this, in `packages/frontend/src/services/rayfin-auth.service.ts`. The playground skips it, and signs in whoever the switch says.',
       },
     ],
     summary: [
@@ -2922,12 +2861,15 @@ export const lessons = [
         why: 'We\'re adding a required field, and existing rows would have no value for it. What the real apply does with them isn\'t documented, so the playground stops if there are any. On a real project, decide what existing rows should get first.',
       },
       {
-        do: 'In `SalesTarget.ts`, add an owner on a new line under the marked `updatedAt`:',
+        do: 'In `SalesTarget.ts`, add an owner on a new line under the marked `updatedAt`. **Do it for me** also adds `owner_id: string;` to its record in `packages/shared/src/index.ts`, which the client is typed by.',
         code: C.OWNER_FIELD.trim(),
         file: TARGET,
-        edits: [{ file: TARGET, from: UPDATED_FIELD, to: UPDATED_FIELD + C.OWNER_FIELD }],
+        edits: [
+          { file: TARGET, from: UPDATED_FIELD, to: UPDATED_FIELD + C.OWNER_FIELD },
+          { file: SHARED_SCHEMA, from: C.SHARED_UPDATED, to: C.SHARED_UPDATED + C.SHARED_OWNER },
+        ],
         errors: 1,
-        see: 'A red line in `src/lib/targets.ts`: `create` is missing `owner_id`.',
+        see: 'A red line in `packages/frontend/src/lib/targets.ts`: `create` is missing `owner_id`.',
         why: 'The field is required, and TypeScript checks every create.',
       },
       {
@@ -3245,7 +3187,7 @@ export const lessons = [
         see: 'The director\'s rule is back. Bob sees both rows at the page\'s next read: switch to Alice and back to Bob.',
       },
       {
-        do: 'Hide **Add** from people who can\'t use it. At the end of `src/lib/session.ts`, add:',
+        do: 'Hide **Add** from people who can\'t use it. At the end of `packages/frontend/src/lib/session.ts`, add:',
         code: C.IS_DIRECTOR.trimStart(),
         edits: [{ file: SESSION_TS, from: SESSION_CLIENT_IMPORT, to: SESSION_CLIENT_IMPORT + C.IS_DIRECTOR }],
         see: 'No red lines.',

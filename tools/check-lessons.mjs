@@ -11,11 +11,12 @@
 // project has installed so far, in strict mode, and compares the number of errors with what the step
 // says. It also checks that every DAX query the project can send has a saved answer from the model its
 // connector names (or, where the step is about a failing query, is saved as that model's error). Query
-// functions are called with every year and store country to find the queries they can make, and the
-// runner each is sent through (runDax, runPareto…) says which connector sends it.
+// factories (packages/frontend/src/queries/<page>/*.ts) are called with every connection, year and store country
+// to find the queries they can make, and the `connection` each returns says which connector sends it. A query
+// written into a page (the test page, the agent's page) is sent by the client call or the runner next to it.
 //
 // Then the controls: slips whose effect a type check can't see, run on the projects the course builds
-// (the silent runtime, the case of connector names, answers per connector, the data API's permissions).
+// (the generated wiring, the case of connector names, answers per connector, the data API's permissions).
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -25,7 +26,7 @@ import { lessons } from '../src/lesson-list.mjs';
 import { chapters, modules, parts } from '../src/course.mjs';
 import { terms, help } from '../src/terms.mjs';
 import { emptyProject, doStep, numberRuns, stepFile, stepIsDone, PAGE_FILE, WORKSPACE_MODULES } from '../src/project.mjs';
-import { createConnectorsApi, rawPayload } from '../src/connectors-sim.mjs';
+import { createConnectorsApi } from '../src/connectors-sim.mjs';
 import lakehouse from '../data/lakehouse.json' with { type: 'json' };
 import * as C from '../src/course-code.mjs';
 import { checkClaimsResult, claimsContract, entityFiles, handleRequest, parseEntity, planApply } from '../src/app-data.mjs';
@@ -214,8 +215,8 @@ function typeCheck(project) {
     return originalDirExists ? originalDirExists(d) : true;
   };
   // npm workspaces link @rayfin-app/* by name: map each to its package's src.
-  const paths = Object.fromEntries(Object.entries(WORKSPACE_MODULES).map(([name, file]) => [name, [file]]));
-  const prog = ts.createProgram([...files.keys(), ...libs], { ...options, baseUrl: vroot, paths }, host);
+  const paths = Object.fromEntries(Object.entries(WORKSPACE_MODULES).map(([name, file]) => [name, [`${vroot}/${file}`]]));
+  const prog = ts.createProgram([...files.keys(), ...libs], { ...options, paths }, host);
   return ts.getPreEmitDiagnostics(prog).map((d) => {
     const where = d.file ? `${d.file.fileName.replace(`${vroot}/`, '')}:${d.file.getLineAndCharacterOfPosition(d.start).line + 1}` : '';
     return `${where}: ${ts.flattenDiagnosticMessageText(d.messageText, ' ')}`;
@@ -270,8 +271,8 @@ function loader(project, packages = {}) {
 // ---------------------------------------------------------------- the queries a project can send
 // A query written into code: a string that starts with EVALUATE or DEFINE.
 const QUERY_STRING = /`(\s*(?:EVALUATE|DEFINE)\b[^`]*)`/g;
-// A runner: `const runDax: RunDax = (query) => rayfinClient.connectors.contoso.executeQuery({ query })`.
-const RUNNER = /const (\w+)(?::\s*RunDax)?\s*=\s*\(query(?::\s*string)?\)\s*=>\s*rayfinClient\.connectors\.(\w+)\.executeQuery/g;
+// A runner, as the agent's page makes its own: `const runDax: RunDax = async (query) => (await getRayfinClient()).connectors.contoso…`.
+const RUNNER = /const (\w+)(?::\s*RunDax)?\s*=\s*(?:async\s*)?\(query(?::\s*string)?\)\s*=>\s*\(await getRayfinClient\(\)\)\.connectors\.(\w+)\.executeQuery/g;
 
 function queriesOf(project) {
   const found = [];
@@ -285,19 +286,13 @@ function queriesOf(project) {
       ownConnector[path] ??= m[2].toLowerCase();
     }
   }
-  // Which runners send each query function: `useDax(runPareto, paretoByCategory(year))`, `runDax(salesTotals(…))`.
-  const sentBy = new Map();
-  for (const [, text] of code) {
-    for (const m of text.matchAll(/\b(\w+)\(\s*(\w+)\s*,\s*(\w+)\(/g)) if (m[1] === 'useDax' && runners.has(m[2])) sentBy.set(m[3], new Set([...(sentBy.get(m[3]) ?? []), runners.get(m[2])]));
-    for (const m of text.matchAll(/\b(\w+)\(\s*(\w+)\(/g)) if (runners.has(m[1])) sentBy.set(m[2], new Set([...(sentBy.get(m[2]) ?? []), runners.get(m[1])]));
-  }
   for (const [path, text] of code) {
     for (const m of text.matchAll(QUERY_STRING)) if (!m[1].includes('${')) found.push({ connector: ownConnector[path] ?? 'contoso', query: m[1], from: path });
   }
   // A .dax file that other code imports directly as text (?raw) is sent as it is, by that file's runner. A query
   // file's own .dax import is checked through its function, below.
   for (const [path, text] of code) {
-    if (/^src\/queries\//.test(path)) continue;
+    if (/^packages\/frontend\/src\/queries\//.test(path)) continue;
     for (const m of text.matchAll(/^import \w+ from '(\.[^']+\.dax)\?raw';$/gm)) {
       const parts = path.split('/').slice(0, -1);
       for (const part of m[1].split('/')) {
@@ -309,20 +304,22 @@ function queriesOf(project) {
       if (query?.trim()) found.push({ connector: ownConnector[path] ?? null, query, from: dax });
     }
   }
-  // The query files (src/queries/<page>/<name>.ts): each exports a function that hands out its .dax text, with
-  // the filters put in. Run each one with every choice its parameters allow, for each runner that sends it. One no
-  // page sends yet has no model of its own: connector null, checked against the model it is saved for.
+  // The query files (packages/frontend/src/queries/<page>/<name>.ts): each exports a factory that returns what the
+  // analytics pack's hook takes, { connection, query }. Run each with every value its parameters take (by name:
+  // connection, year, country) and check each query against its own connection's saved answers.
   const load = loader(project, { react: { useState() {}, useEffect() {} } });
+  const choices = { connection: MODELS, year: [undefined, ...catalog.years], country: [undefined, ...catalog.countries] };
   for (const [path] of code) {
-    if (!/^src\/queries\/.+\.ts$/.test(path)) continue;
+    if (!/^packages\/frontend\/src\/queries\/.+\.ts$/.test(path)) continue;
     if (/\/index\.ts$/.test(path)) continue; // re-exports only: their functions are run from their own files
     for (const [name, fn] of Object.entries(load(path))) {
       if (typeof fn !== 'function') continue;
-      const years = [undefined, ...catalog.years];
-      const countries = [undefined, ...catalog.countries];
-      const calls = fn.length === 0 ? [[]] : fn.length === 1 ? years.map((y) => [y]) : years.flatMap((y) => countries.map((c) => [y, c]));
-      for (const connector of sentBy.get(name) ?? [null]) {
-        for (const args of calls) found.push({ connector, query: fn(...args), from: `${connector ?? 'not sent yet'}: ${name}(${args.map(String).join(', ')})` });
+      const params = (fn.toString().match(/^[^(]*\(([^)]*)\)/)?.[1] ?? '').split(',').map((x) => x.trim().replace(/\s*=.*$/, '')).filter(Boolean);
+      let calls = [[]];
+      for (const param of params) calls = calls.flatMap((c) => (choices[param] ?? [undefined]).map((v) => [...c, v]));
+      for (const args of calls) {
+        const r = fn(...args);
+        found.push({ connector: r.connection, query: r.query, from: `${r.connection}: ${name}(${args.map(String).join(', ')})` });
       }
     }
   }
@@ -426,15 +423,15 @@ if (finalErrors.length) {
 // ---------------------------------------------------------------- controls
 console.log('\ncontrols');
 
-// The redraw trap: the useCallback line shown in its last step must compile in place of the slip.
+// The redraw trap: the useCallback line shown in its last step must compile in place of the agent's loader.
 {
   const lesson = byId.get('redraw-trap');
   const step = lesson.steps.find((s) => s.code?.includes('useCallback'));
   let p = after.slicer;
-  for (const s of lesson.steps.slice(0, 2)) p = doStep(p, s, answer).project; // the slip, in two parts
+  for (const s of lesson.steps.slice(0, 3)) p = doStep(p, s, answer).project; // the slip, in three parts
   const app = p.files[PAGE_FILE]
-    .replace("import { useState } from 'react';", "import { useCallback, useState } from 'react';")
-    .replace('  const runDax = (query: string) => rayfinClient.connectors.contoso.executeQuery({ query });', `  ${step.code}`);
+    .replace("import { useEffect, useState } from 'react';", "import { useCallback, useEffect, useState } from 'react';")
+    .replace(/^ {2}const loadTotals = \(\) => .*$/m, `  ${step.code}`);
   const d = typeCheck({ ...p, files: { ...p.files, [PAGE_FILE]: app } });
   console.log(`   ${numOf(lesson)} useCallback line: ${d.length} type error(s)`);
   if (!app.includes(step.code) || d.length) fail(`${numOf(lesson)}: the useCallback line does not compile as shown`);
@@ -450,11 +447,11 @@ console.log('\ncontrols');
   if (!d.some((x) => x.includes("'years'"))) fail(`${numOf(lesson)}: the error does not name 'years'`);
 }
 
-// Wire the client: a mistyped connector name in configs must get a red line.
+// Read the wiring: a mistyped connector name in connectorConfigs gets a red line.
 {
   const p = after.client;
-  const file = 'src/lib/rayfin-client.ts';
-  const bad = p.files[file].replace('configs: { contoso: contosoConfig }', 'configs: { contosso: contosoConfig }');
+  const file = 'packages/frontend/src/lib/connectors.ts';
+  const bad = p.files[file].replace("'contoso': contosoConfig,", "'contosso': contosoConfig,");
   const d = typeCheck({ ...p, files: { ...p.files, [file]: bad } });
   console.log(`   ${numOf(byId.get('client'))} mistyped connector name: ${d[0] ?? 'no error'}`.slice(0, 140));
   if (bad === p.files[file] || !d.some((x) => x.includes('contosso'))) fail('client: a mistyped connector name gets no red line');
@@ -481,74 +478,34 @@ console.log('\ncontrols');
   if (!ok2) fail(`${numOf(lesson)}: a new mixed-case name is not stored in lower case`);
 }
 
-// The client, run as the preview runs it: `connectorsService` follows Rayfin 2.0's rules (src/connectors-sim.mjs),
-// and a semantic model connector answers from its own model's saved results, or with the raw payload
-// when it has no runtime under its exact name. Returns the project's runners, conversions and Categories query files.
-const RUNTIME = Symbol('fabricSemanticModel');
+// Chapter 2, run as the preview runs it: each query file's { connection, query } goes to that connector and is answered
+// from that model's saved results. Returns the conversions, the Categories query files and send().
+const QUERIES = 'packages/frontend/src/queries';
 function runApp(project) {
+  const load = loader(project, { react: { useState() {}, useEffect() {} } });
   const asked = [];
-  const make = (name, config, runtime) => ({
-    async executeQuery({ query }) {
-      const entry = known.get(keyOf(name, query));
-      asked.push({ connector: name, id: entry?.id, decoded: !!runtime?.[RUNTIME] });
-      if (!runtime?.[RUNTIME]) return rawPayload(name);
-      return entry ? { ...snapshots[entry.id], requestId: 'check' } : { status: 'error', error: { category: 'query', message: 'not saved' }, requestId: 'check' };
-    },
-  });
-  const load = loader(project, {
-    react: { useState() {}, useEffect() {} },
-    '@microsoft/rayfin-client': { RayfinClient: { create: (config) => Object.fromEntries(Object.entries(config.services ?? {}).map(([k, f]) => [k, f()])) } },
-    '@microsoft/rayfin-auth': { browserSession: () => () => ({}) },
-    '@microsoft/rayfin-connectors': { connectorsService: (options) => () => createConnectorsApi(options.configs, options.runtime, make) },
-    '@microsoft/rayfin-connector-fabric-semanticmodel': { fabricSemanticModel: () => ({ [RUNTIME]: true }) },
-  });
-  const q = (name) => load(`src/queries/categories/${name}.ts`);
-  const files = { hooks: load('src/hooks/use-dax.ts'), conv: load('src/lib/conversions.ts') };
-  const present = (name) => project.files[`src/queries/categories/${name}.ts`] !== undefined;
-  return {
-    ...files.hooks,
-    ...files.conv,
-    ...(present('pareto-headline') ? q('pareto-headline') : {}),
-    ...(present('pareto-by-category') ? q('pareto-by-category') : {}),
-    ...(present('revenue-card') ? q('revenue-card') : {}),
-    asked,
+  const send = async ({ connection, query }) => {
+    const entry = known.get(keyOf(connection, query));
+    asked.push({ connector: connection, id: entry?.id });
+    return entry ? { ...snapshots[entry.id], requestId: 'check' } : { status: 'error', error: { category: 'query', message: 'not saved' }, requestId: 'check' };
   };
+  const q = (n) => (project.files[`${QUERIES}/categories/${n}.ts`] !== undefined ? load(`${QUERIES}/categories/${n}.ts`) : {});
+  return { ...load('packages/frontend/src/lib/conversions.ts'), ...q('pareto-headline'), ...q('pareto-by-category'), ...q('revenue-card'), send, asked };
 }
 {
   const lesson = byId.get('second-client');
-  const upTo = (test) => {
-    const last = lesson.steps.findIndex(test);
-    let p = after['second-model'];
-    for (const s of lesson.steps.slice(0, last + 1)) p = doStep(p, s, answer).project;
-    return p;
-  };
-  const headline = async (project) => {
-    const app = runApp(project);
-    const r = await app.runPareto(app.paretoHeadline());
-    return { r, text: app.toHeadline(r).text, asked: app.asked };
-  };
-  const SENTENCE = snapshots['pareto-headline'].table.rows[0][1];
   const check = (ok, label) => {
     console.log(`   ${ok ? 'ok  ' : 'FAIL'} ${numOf(lesson)} ${label}`);
     if (!ok) fail(`${numOf(lesson)}: ${label}`);
   };
-  // No runtime for pareto: 0 type errors, no status, an empty headline.
-  const noRuntime = upTo((s) => s.edits?.some((e) => e.file === 'src/ParetoPage.tsx'));
-  const a = await headline(noRuntime);
-  check(!/pareto: fabricSemanticModel|Pareto: fabricSemanticModel/.test(noRuntime.files['src/lib/rayfin-client.ts']) && typeCheck(noRuntime).length === 0 && a.r instanceof ArrayBuffer && a.r.status === undefined && a.text === '',
-    'no runtime entry: no red line, the raw payload (no status), an empty headline');
-  // A runtime under `Pareto`: still found by nobody.
-  const caseRuntime = upTo((s) => s.edits?.some((e) => e.to.includes('Pareto: fabricSemanticModel()')));
-  const b = await headline(caseRuntime);
-  check(typeCheck(caseRuntime).length === 0 && b.r instanceof ArrayBuffer && b.text === '', 'runtime key `Pareto`: no red line, still an empty headline');
-  // The fix: the model's own sentence.
-  const fixed = await headline(after['second-client']);
-  check(fixed.text === SENTENCE && fixed.asked[0].id === 'pareto-headline', `runtime key \`pareto\`: "${fixed.text}"`);
-  // connectors.Pareto: a red line naming pareto, and at run time the same connector.
-  const caseAccess = upTo((s) => s.edits?.some((e) => e.to.includes('connectors.Pareto')));
-  const d = typeCheck(caseAccess);
-  const c = await headline(caseAccess);
-  check(d.length === 1 && d[0].includes("Did you mean 'pareto'?") && c.text === SENTENCE, `connectors.Pareto: "${(d[0] ?? 'no error').split(': ').slice(1).join(': ').slice(0, 90)}…", and the headline still shows`);
+  // connector add wired pareto: in all three places of the generated file.
+  const wiring = after['second-model'].files['packages/frontend/src/lib/connectors.ts'] ?? '';
+  check(["'pareto': paretoSchema;", "'pareto': paretoConfig,", "'pareto': fabricSemanticModel(),"].every((x) => wiring.includes(x)), 'connector add wired pareto in all three places');
+  // The headline query file goes to pareto, and the model writes its own sentence.
+  const app = runApp(after['second-client']);
+  const SENTENCE = snapshots['pareto-headline'].table.rows[0][1];
+  const r = await app.send(app.paretoHeadline());
+  check(app.toHeadline(r).text === SENTENCE && app.asked[0].id === 'pareto-headline', `the headline: "${app.toHeadline(r).text}"`);
   // Two keys that differ only by case: access by a third spelling is ambiguous.
   let code;
   try {
@@ -562,14 +519,14 @@ function runApp(project) {
 {
   const lesson = byId.get('two-models-page');
   const app = runApp(after['two-models-page']);
-  const fromContoso = await app.runDax(app.revenueCard(2024));
-  const fromPareto = await app.runPareto(app.revenueCard(2024));
-  const slip = await app.runDax(app.paretoByCategory(2024));
+  const fromContoso = await app.send(app.revenueCard('contoso', 2024));
+  const fromPareto = await app.send(app.revenueCard('pareto', 2024));
+  const slip = await app.send({ ...app.paretoByCategory(2024), connection: 'contoso' });
   const [x, y, z] = app.asked;
   const ok =
     x.connector === 'contoso' && x.id === 'contoso-revenue-2024' && y.connector === 'pareto' && y.id === 'pareto-revenue-2024' &&
     app.toRevenue(fromContoso) === app.toRevenue(fromPareto) && z.id === 'contoso-pareto-by-category-2024' && slip.status === 'error';
-  console.log(`   ${ok ? 'ok  ' : 'FAIL'} ${numOf(lesson)} per connector: ${x.id} and ${y.id} (${app.toRevenue(fromPareto)}); the Pareto query through runDax: ${z.id}`);
+  console.log(`   ${ok ? 'ok  ' : 'FAIL'} ${numOf(lesson)} per connector: ${x.id} and ${y.id} (${app.toRevenue(fromPareto)}); the Pareto query sent to contoso: ${z.id}`);
   if (!ok) fail(`${numOf(lesson)}: saved answers are not looked up per connector`);
   // The numbers the steps show.
   const pct = (n) => n.toLocaleString('en-US', { style: 'percent', maximumFractionDigits: 1 });
@@ -577,11 +534,11 @@ function runApp(project) {
   const text = JSON.stringify(lesson.steps);
   const shown = [];
   for (const y2 of [undefined, 2024]) {
-    const rows = app.toPareto(await app.runPareto(app.paretoByCategory(y2)));
-    const count = app.toHeadline(await app.runPareto(app.paretoHeadline(y2))).count;
+    const rows = app.toPareto(await app.send(app.paretoByCategory(y2)));
+    const count = app.toHeadline(await app.send(app.paretoHeadline(y2))).count;
     shown.push(...rows.slice(0, count).map((r) => (y2 ? pct(r.cumulative) : `★ ${r.label} (${pct(r.cumulative)})`)));
   }
-  for (const y2 of [undefined, ...catalog.years]) shown.push(compact(app.toRevenue(await app.runPareto(app.revenueCard(y2)))));
+  for (const y2 of [undefined, ...catalog.years]) shown.push(compact(app.toRevenue(await app.send(app.revenueCard('pareto', y2)))));
   const missing = shown.filter((v) => !text.includes(v));
   console.log(`   ${missing.length ? 'FAIL' : 'ok  '} ${numOf(lesson)} the steps show the saved numbers: ${shown.join(', ')}`);
   if (missing.length) fail(`${numOf(lesson)}: the steps don't show ${missing.join(', ')}`);
@@ -591,7 +548,7 @@ function runApp(project) {
 {
   const lesson = byId.get('lakehouse-rows');
   let p = after['lakehouse-entities'];
-  for (const s of lesson.steps.slice(0, 2)) p = doStep(p, s, answer).project;
+  for (const s of lesson.steps.slice(0, 3)) p = doStep(p, s, answer).project; // take the file over, import, the schema type
   const d = typeCheck(p);
   console.log(`   ${numOf(lesson)} missing configs entry: ${d[0] ?? 'no error'}`.slice(0, 140));
   if (!d.some((x) => x.includes("'lake'"))) fail(`${numOf(lesson)}: the error does not name 'lake'`);
@@ -644,7 +601,7 @@ function runApp(project) {
   {
     const lesson = byId.get('register-apply');
     let p = after['sales-target'];
-    const slipApplied = lesson.steps.findIndex((s, i) => s.run === 'npx rayfin up db apply' && i > 2);
+    const slipApplied = lesson.steps.findIndex((s, i) => s.run === 'npx rayfin up db apply' && i > 3);
     for (const s of lesson.steps.slice(0, slipApplied + 1)) p = doStep(p, s, answer).project;
     const r = readAll(p.db, person('alice'));
     expect(!r.ok && r.error === 'Internal server error', `${numOf(lesson)} @text() without max: reads say "Internal server error"`);
@@ -667,12 +624,12 @@ function runApp(project) {
     const lesson = byId.get('change-model');
     let p = after['read-write'];
     p = doStep(p, lesson.steps[0], answer).project;
-    const note = parseEntity(p.files['rayfin/data/SalesTarget.ts']).fields.find((f) => f.name === 'note');
+    const note = parseEntity(p.files['packages/data/src/SalesTarget.ts']).fields.find((f) => f.name === 'note');
     expect(note && !note.optional, `${numOf(lesson)} \`note?\` without optional: true is a required column`);
     // The fabric note's way out: rename only the property, and keep the column with `column: 'amount'`.
     const end = after['change-model'];
     const added = create(end.db, person('alice'), { country: 'Germany', amount: 3000000 });
-    const target = 'rayfin/data/SalesTarget.ts';
+    const target = 'packages/data/src/SalesTarget.ts';
     const field = '  @decimal({ precision: 18, scale: 2 }) amount!: number;\n';
     const kept = "  @decimal({ precision: 18, scale: 2, column: 'amount' }) targetAmount!: number;\n";
     const renamed = { ...end, db: added.db, files: { ...end.files, [target]: end.files[target].replace(field, kept) } };
@@ -763,7 +720,8 @@ function runApp(project) {
 // ---------------------------------------------------------------- saved step positions
 // Steps split since STEPS_FROM move the positions saved in a browser: src/step-moves.mjs says where each old
 // one goes. It must be what tools/make-step-moves.mjs makes from the two lesson lists today, and every old
-// position must land on the same step, on the first part of the step that was split, or on the summary.
+// position must land on the same step, on the first part of the step that was split, or, for a step that was
+// removed or merged, on a later step or the summary, never back.
 console.log(`\nsaved step positions (lessons as at ${STEPS_FROM})`);
 {
   let old;
@@ -787,14 +745,18 @@ console.log(`\nsaved step positions (lessons as at ${STEPS_FROM})`);
       if (moves.length !== before.length + 2) fail(`${label}: ${moves.length} positions for ${before.length} old steps`);
       if (moves[0] !== 0) fail(`${label}: the idea card moves`);
       if (moves.at(-1) !== now.length + 1) fail(`${label}: a saved summary is no longer the summary`);
-      if (moves.some((m, i) => i && m <= moves[i - 1])) fail(`${label}: positions out of order`);
+      if (moves.some((m, i) => i && m < moves[i - 1])) fail(`${label}: positions out of order`);
       const keysNow = now.map(stepKey);
       for (let i = 1; i <= before.length; i++) {
         const key = stepKey(before[i - 1]);
         const to = moves[i];
         const range = keysNow.slice(to - 1, (moves[i + 1] ?? now.length + 1) - 1);
-        // the same step; or the first part of the steps it became (its content is in them, or it was rewritten into them)
-        const ok = keysNow[to - 1] === key || range.includes(key) || (!keysNow.includes(key) && range.length >= 1);
+        // the same step; or the first part of the steps it became (its content is in them, or it was rewritten
+        // into them); or, for a step that is gone, the next one still there (or the summary)
+        const gone = !keysNow.includes(key);
+        const ok = keysNow[to - 1] === key || range.includes(key) || (gone && (range.length >= 1 || to <= now.length + 1));
+        // two old positions may share a new one only when at least one of them is gone
+        if (i > 1 && to === moves[i - 1] && !gone && keysNow.includes(stepKey(before[i - 2]))) fail(`${label}: old steps ${i - 1} and ${i} both land on step ${to}`);
         if (!ok) fail(`${label}: old step ${i} lands on step ${to}, which is not that step or its first part`);
         if (to !== i) moved++;
       }
