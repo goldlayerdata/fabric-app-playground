@@ -131,7 +131,7 @@ const newQueryFile = (file, lead, extra = {}) => ({
   ...extra,
 });
 const importQuery = (line, under, extra = {}) => ({
-  do: 'In `src/data.ts`, add its import on a new line under the marked one:',
+  do: 'Load the new file into `src/data.ts`: add this import on a new line under the marked one.',
   code: line,
   edits: [{ file: DATA, from: `${under}\n`, to: `${under}\n${line}\n` }],
   see: 'Nothing changes yet.',
@@ -147,6 +147,7 @@ const INVOKE = 'npx rayfin connector invoke contoso executeQuery --input \'{"que
 // Lines the lessons edit more than once.
 const COUNTRY_ROW = "    'store'[CountryName],\n    \"Revenue\", [Revenue]";
 const COUNTRY_ROW_ORDERS = "    'store'[CountryName],\n    \"Orders\", [# Orders],\n    \"Revenue\", [Revenue]";
+// /* … */ is a DAX comment: Microsoft Learn, DAX user-defined functions ("multi-line (/* */) comments").
 const COUNTRY_ROW_MARKED = "    'store'[CountryName],\n    /* filters */ \"Revenue\", [Revenue]";
 const KPI_VALUE_LINE = "      <p className=\"text-2xl font-bold\">{value.toLocaleString('en-US', { notation: 'compact', maximumFractionDigits: 1 })}</p>\n";
 const KPI_VALUE_FORMAT = "      <p className=\"text-2xl font-bold\">\n        {format === 'percent'\n          ? value.toLocaleString('en-US', { style: 'percent', maximumFractionDigits: 1 })\n          : value.toLocaleString('en-US', { notation: 'compact', maximumFractionDigits: 1 })}\n      </p>\n";
@@ -734,7 +735,7 @@ export const lessons = [
         code: C.COUNTRY_QUERY.trimStart(),
         edits: [{ file: DATA, from: '  return result;\n}\n', to: `  return result;\n}\n${C.COUNTRY_QUERY}` }],
         see: 'Still nothing on the page.',
-        why: '`.map` makes one bar for each row. `toBars` reads `row[0]` as the label and `row[1]` as the value: positions, counted from 0. Keep that in mind.',
+        why: '`salesByCountryQuery` is the name the page will use; in **State as a slicer** it becomes a function that adds the year. `.map` makes one bar for each row. `toBars` reads `row[0]` as the label and `row[1]` as the value: positions, counted from 0. Keep that in mind.',
       },
       {
         do: 'In `src/App.tsx`, add this import on a new line under the marked one:',
@@ -824,7 +825,7 @@ export const lessons = [
       'The queries name the model\'s measures, such as `[Revenue]` and `[# Orders]`, as a report visual does.',
     ],
     fabric: {
-      text: 'The real connector returns this same result shape: `columns`, each with a name and a data type, and `rows` as lists of values in column order. The `.dax` files follow the data app template, whose scaffold comes with instructions for coding agents: they keep all DAX in `.dax` files under `src/queries`, imported with Vite\'s `?raw`.',
+      text: 'The real connector returns this same result shape: `columns`, each with a name and a data type, and `rows` as lists of values in column order. The `.dax` files follow the data app template. Its scaffold includes instructions for coding agents, and those (its `AGENTS.md`) keep all DAX in `.dax` files under `src/queries`, imported as text with `?raw`.',
       links: [rayfin.semanticModels, learn.templateAgent],
     },
   },
@@ -840,6 +841,7 @@ export const lessons = [
       {
         do: 'Change the DAX the way an agent might (we take it out again at the end): in `src/queries/revenue-by-store-country.dax`, add an Orders column above the marked `"Revenue", [Revenue]` line.',
         code: '"Orders", [# Orders],',
+        find: '"Revenue", [Revenue]',
         edits: [{ file: COUNTRY_DAX, from: COUNTRY_ROW, to: COUNTRY_ROW_ORDERS }],
         see: 'The bars now show order counts: United States 22,824. No red line, no error.',
       },
@@ -1040,7 +1042,7 @@ export const lessons = [
         why: '`for (const r of [a, b, c])` runs the check once for each result; the first one that failed shows its message.',
       },
       {
-        do: "Fix the slip: back to `'store'[CountryName]`.",
+        do: "Fix the slip: in `src/queries/revenue-by-store-country.dax`, change it back to `'store'[CountryName]`.",
         edits: [{ file: COUNTRY_DAX, from: "    'store'[Country],\n    \"Revenue\", [Revenue]", to: COUNTRY_ROW }],
         see: 'The page is back.',
       },
@@ -1155,7 +1157,7 @@ export const lessons = [
         edits: [{ file: DATA, from: C.TOTALS_QUERY_CONST, to: C.TOTALS_QUERY_FN }],
         errors: '1+',
         see: 'A red line in `src/App.tsx`, and the page shows an error: `App` passes a function where query text goes. The next step fixes both.',
-        why: 'No year: the file\'s query as it is. A year: the file\'s `ROW`, without its `EVALUATE`, inside `CALCULATETABLE` with the filter. The template\'s instructions allow small changes like this in code, as long as the query itself comes from the `.dax` file.',
+        why: 'No year: the file\'s query as it is. A year: the file\'s `ROW`, without its `EVALUATE`, inside `CALCULATETABLE` with the filter (`ROW` has no place for a filter of its own). The template\'s instructions allow small changes like this in code, as long as the query itself comes from the `.dax` file.',
       },
       {
         do: 'In `src/App.tsx`, call it with the year: `totalsQuery(year)`.',
@@ -1175,7 +1177,7 @@ export const lessons = [
         see: 'The red line and the error go.',
       },
       {
-        do: 'Show it where the year goes: in `src/queries/revenue-by-store-country.dax`, type `/* filters */` and a space in front of the marked `"Revenue", [Revenue]`.',
+        do: 'Mark where the year filter goes in the countries query: in `src/queries/revenue-by-store-country.dax`, type `/* filters */` **and a space** in front of the marked `"Revenue", [Revenue]`.',
         code: '/* filters */ "Revenue", [Revenue]',
         file: COUNTRY_DAX,
         find: '"Revenue", [Revenue]',
@@ -1418,7 +1420,7 @@ export const lessons = [
       },
       importQuery(C.IMPORT_YEARS, C.IMPORT_CATEGORY, { errors: 1, see: 'The red line stays.' }),
       {
-        do: 'At the end of `src/data.ts`, add the query:',
+        do: 'In `src/data.ts`, add the query under the marked end of `salesByCategoryQuery`:',
         code: C.YEARS_QUERY.trimStart(),
         edits: [{ file: DATA, from: C.CATEGORY_QUERY_FN.trimStart(), to: C.CATEGORY_QUERY_FN.trimStart() + C.YEARS_QUERY }],
         errors: 1,
@@ -1568,7 +1570,7 @@ export const lessons = [
         file: AGENT,
         find: 'const marginQuery',
         see: 'A whole margin formula inside the query, with `DEFINE MEASURE`.',
-        why: 'The model already has `[Margin %]`, as in **Measure or query** (on a real project, look in the model\'s field list). A copy can drift from it, and nothing would warn us. The agent also wrote its DAX inside the page; the template\'s instructions keep every query in a `.dax` file, as ours are, so that is worth a note in the review too.',
+        why: 'The model already has `[Margin %]`, as in **Measure or query** (on a real project, look in the model\'s field list). A copy can drift from it, and nothing would warn us. The agent also wrote its DAX inside the page; the template\'s instructions keep every query in a `.dax` file, as ours are, so that is worth a note in the review too. Here we fix only the formula; moving a query into a file takes the same steps as in **The first queries**.',
       },
       {
         do: 'Fix it: click **Show me in the code** to select the whole of `marginQuery`, then paste this over it:',
@@ -1750,7 +1752,7 @@ export const lessons = [
       },
       newQueryFile(PARETO_HEADLINE_DAX, 'The second model\'s first query gets a file, like the others: '),
       {
-        do: 'Paste the query. It names two measures only the Pareto model has:',
+        do: 'Paste the query. It names two measures from the Pareto model:',
         code: C.PARETO_HEADLINE_DAX,
         edits: [{ file: PARETO_HEADLINE_DAX, from: '', to: C.PARETO_HEADLINE_DAX }],
         see: 'Nothing changes yet.',
@@ -1766,7 +1768,7 @@ export const lessons = [
         code: C.PARETO_V1,
         edits: [{ file: PARETO_TS, from: '', to: C.PARETO_V1 }],
         find: 'rayfinClient.connectors.pareto.executeQuery',
-        see: 'No red lines.',
+        see: 'No red lines. `withFilters` in the imports is greyed out: nothing uses it until **Two models, one page**.',
         why: '`runPareto` is a runner: the function a page passes to `useDax`, which picks the connector, and so the model. It has the same type as `runDax`, and is made once, outside any page, for the reason in **The redraw trap**. Only the connector differs.',
       },
       {
@@ -1873,7 +1875,7 @@ export const lessons = [
         see: 'One measure, by name. The page sends this same text to both models.',
       },
       {
-        do: 'In `src/pareto.ts`, add their two imports on new lines under the marked one:',
+        do: 'Load both files into `src/pareto.ts`: add these two imports on new lines under the marked one.',
         code: C.IMPORT_PARETO_MORE,
         edits: [{ file: PARETO_TS, from: `${C.IMPORT_PARETO_HEADLINE}\n`, to: `${C.IMPORT_PARETO_HEADLINE}\n${C.IMPORT_PARETO_MORE}\n` }],
         see: 'Nothing changes yet.',

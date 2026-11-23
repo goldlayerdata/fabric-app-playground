@@ -367,7 +367,7 @@ function withFilters(dax: string, list: string[]): string {
 
 export const TOTALS_QUERY_CONST = 'export const totalsQuery = salesTotalsDax;';
 
-export const TOTALS_QUERY_FN = `// No year: the file's query as it is. A year: its ROW, inside CALCULATETABLE with the filter.
+export const TOTALS_QUERY_FN = `// No filter: the file's query as it is. Filters: its ROW, inside CALCULATETABLE with them.
 export function totalsQuery(year?: number) {
   const f = filters(year);
   if (f.length === 0) return salesTotalsDax;
