@@ -1,6 +1,6 @@
 // Runs inside the sandboxed preview iframe (sandbox="allow-scripts", no same-origin).
 // Receives the project's compiled files (System modules) from the editor, links them, and draws the
-// default export of src/App.tsx with React 19. The Rayfin packages here are simulated: the client is
+// default export of packages/frontend/src/App.tsx with React 19. The Rayfin packages here are simulated: the client is
 // real-shaped, and executeQuery asks the parent page, which holds the saved results and the query log.
 // Connectors are found by name as Rayfin 2.0 finds them (src/connectors-sim.mjs).
 import * as React from 'react';

@@ -1035,17 +1035,23 @@ function flash(message: string) {
   }, 3000);
 }
 
-/** A short note with an Undo button, above the editor. */
+/** A short note with an Undo button, in the code area's corner. It goes when the code is clicked or typed in. */
+let undoTimer: number | undefined;
+function hideUndo() {
+  $('undo-bar').hidden = true;
+  clearTimeout(undoTimer);
+}
 function showUndo(note: string, undo: () => void) {
   const el = $('undo-bar');
   const b = h('button', { type: 'button' }, 'Undo');
   b.addEventListener('click', () => {
-    el.hidden = true;
+    hideUndo();
     undo();
   });
   el.replaceChildren(h('span', {}, note), b);
   el.hidden = false;
-  window.setTimeout(() => (el.hidden = true), 12000);
+  clearTimeout(undoTimer);
+  undoTimer = window.setTimeout(hideUndo, 8000);
 }
 
 // ---------------------------------------------------------------- editor
@@ -1159,6 +1165,9 @@ const editor = monaco.editor.create($('editor'), {
   fixedOverflowWidgets: true,
   readOnly: true,
 });
+// The Undo note goes as soon as the learner clicks into or types in the code.
+editor.onMouseDown(hideUndo);
+editor.onKeyDown(hideUndo);
 
 // Monaco measures the width of a character once, when the editor is made, and places marks, selections
 // and red lines by it. The code font is a web font that arrives later, so that first measure is of the
@@ -1818,7 +1827,7 @@ async function runNow() {
   if (myRun !== runId) return;
   if (!files[PAGE_FILE]?.trim() || !project.files[PAGE_FILE]?.trim()) {
     setRunState('No page yet');
-    showIdle('No page yet: `src/App.tsx` is empty.');
+    showIdle(`No page yet: \`${PAGE_FILE}\` is empty.`);
     return;
   }
   showIdle(null);
@@ -1868,7 +1877,7 @@ window.addEventListener('message', (e: MessageEvent) => {
   if (!msg || msg.source !== 'playground-preview') return;
   if (msg.type === 'runtimeError' && msg.runId !== undefined && msg.runId !== runId) return;
   if (msg.type === 'runtimeError') showError(`The page threw an error:\n${msg.message}`);
-  if (msg.type === 'empty') showIdle('No page yet: `src/App.tsx` is empty.');
+  if (msg.type === 'empty') showIdle(`No page yet: \`${PAGE_FILE}\` is empty.`);
   if (msg.type === 'query' && msg.runId === runId) onQuery(msg.runId, msg.id, String(msg.connector), msg.decoded !== false, String(msg.query), msg.limit);
   if (msg.type === 'read' && msg.runId === runId) onRead(msg.runId, msg.id, msg as ReadRequest);
   if (msg.type === 'data' && msg.runId === runId) {

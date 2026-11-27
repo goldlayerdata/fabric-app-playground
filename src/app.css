@@ -331,24 +331,26 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 .tree li.file:hover .file-del, .tree li.file:focus-within .file-del { display: block; }
 .tree .file-del { flex-shrink: 0; font-size: 13px; line-height: 1; padding: 2px 4px; margin-right: 2px; color: var(--muted); background: none; border-color: transparent; }
 .tree .file-del:hover { color: var(--red); border-color: var(--red); }
-/* over the top of the code, not above it: the code area doesn't move while it shows */
+/* a small note in the code area's bottom-right corner: the code doesn't move, and its top lines stay in view.
+   It goes as soon as the code is clicked or typed in, or after a few seconds. */
 .undo-bar {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+  bottom: 12px;
+  right: 18px;
+  max-width: min(420px, calc(100% - 36px));
   z-index: 6;
   box-shadow: 0 6px 16px rgb(0 0 0 / 0.35);
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 10px;
-  padding: 5px 12px;
+  padding: 5px 6px 5px 12px;
   background: var(--navy-2);
-  border-bottom: 1px solid var(--line);
+  border: 1px solid var(--line);
+  border-radius: 8px;
   font-size: 13px;
-  flex-shrink: 0;
 }
+.undo-bar span { min-width: 0; overflow-wrap: anywhere; }
+.undo-bar button { flex-shrink: 0; }
 .editor { flex: 1; min-width: 0; min-height: 0; }
 .editor-loading { color: var(--muted); padding: 16px; margin: 0; }
 .status {
